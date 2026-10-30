@@ -27,8 +27,8 @@ local function newFrame()
 end
 
 function helpers.load(files, stubs)
-    for k in pairs(applied) do
-        _G[k] = nil
+    for k, saved in pairs(applied) do
+        _G[k] = saved.prev
     end
     applied = {}
     frames = {}
@@ -38,8 +38,8 @@ function helpers.load(files, stubs)
     _G.geterrorhandler = function() return function() end end
     _G.issecretvalue = function() return false end
     for k, v in pairs(stubs or {}) do
+        applied[k] = { prev = _G[k] }
         _G[k] = v
-        applied[k] = true
     end
 
     local ns = {}

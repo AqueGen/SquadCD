@@ -77,6 +77,14 @@ describe("Core", function()
         assert.is_true(seen)
     end)
 
+    it("helpers.load restores stubbed globals on the next load", function()
+        local original = print
+        loadCore({ print = function() end })
+        assert.are_not.equal(original, print)
+        loadCore()
+        assert.are.equal(original, print)
+    end)
+
     it("unknown subcommand prints usage listing subcommands", function()
         local lines = {}
         local ns = loadCore({ print = function(s) lines[#lines + 1] = s end })
