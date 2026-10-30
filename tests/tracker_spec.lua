@@ -89,10 +89,10 @@ describe("Tracker", function()
     end)
 
     it("confirm keeps a maybe from a different use", function()
-        t:External(PURIFY, "C")
+        t:External(PS, nil)
         now = 120
-        t:Confirm("A", PURIFY)
-        assert.is_true(t:State("B", PURIFY).maybe)
+        t:Confirm("A", PS)
+        assert.is_true(t:State("B", PS).maybe)
     end)
 
     it("members leaving are dropped", function()
@@ -108,6 +108,67 @@ describe("Tracker", function()
         local s = t:State("A", "potion")
         assert.are.equal(ns.Potions[1].cd, s.remaining)
         assert.are.equal(0, s.charges)
+    end)
+
+    it("certain use clears the other maybe", function()
+        t:External(PURIFY, "C")
+        t:Used("A", PURIFY, true)
+        assert.is_true(t:State("B", PURIFY).ready)
+        assert.is_false(t:State("B", PURIFY).maybe)
+    end)
+
+    it("talent read later adds a charge", function()
+        t:Used("A", PS, true)
+        assert.is_false(t:State("A", PS).ready)
+        local list = members()
+        list[1].talents = { [PS] = 1, [373035] = 1 }
+        t:SetMembers(list)
+        local s = t:State("A", PS)
+        assert.is_true(s.ready)
+        assert.are.equal(1, s.charges)
+    end)
+
+    it("talent read later shortens running timer", function()
+        local list = members()
+        list[4] = { guid = "D", unit = "party4", class = "WARRIOR", spec = 73, talents = { [871] = 1 } }
+        t:SetMembers(list)
+        t:Used("D", 871, true)
+        assert.are.equal(180, t:State("D", 871).remaining)
+        list[4].talents = { [871] = 1, [391271] = 1 }
+        t:SetMembers(list)
+        assert.are.equal(162, t:State("D", 871).remaining)
+    end)
+
+    it("State is read-only so Tick still fires ready", function()
+        local calls = 0
+        t:Used("A", PS, true)
+        t.OnChange = function() calls = calls + 1 end
+        now = 100 + 180
+        assert.is_true(t:State("A", PS).ready)
+        t:Tick()
+        assert.are.equal(1, calls)
+    end)
+
+    it("confirm of own maybe fires OnChange", function()
+        t:External(PURIFY, "C")
+        local calls = {}
+        t.OnChange = function(g) calls[#calls + 1] = g end
+        t:Confirm("A", PURIFY)
+        assert.are.same({ "A", "B" }, calls)
+    end)
+
+    it("used on a maybe entry restarts", function()
+        t:Used("A", PS, false)
+        now = 150
+        t:Used("A", PS, true)
+        local s = t:State("A", PS)
+        assert.are.equal(180, s.remaining)
+        assert.is_false(s.maybe)
+    end)
+
+    it("State creates no entries and unknown entry is ready", function()
+        assert.is_true(t:State("A", PS).ready)
+        assert.is_nil(t.entries.A)
     end)
 
     it("unknown spell has no state", function()
