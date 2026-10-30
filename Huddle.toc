@@ -1,0 +1,11 @@
+## Interface: 120100, 120105
+## Title: Huddle
+## Notes: Party cooldown tracker.
+## Author: AqueGen
+## Version: 0.1.0
+## SavedVariables: HuddleDB
+## X-License: All Rights Reserved
+## IconTexture: Interface\AddOns\Huddle\Media\icon
+## AddonCompartmentFunc: Huddle_OnCompartmentClick
+
+Core.lua

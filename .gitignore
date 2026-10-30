@@ -1,0 +1,28 @@
+# Libraries: fetched by the packager from .pkgmeta, never committed.
+Libs/
+
+# WoW leftovers
+*.bak
+*.orig
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / editor
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+*~
+
+# Packager output
+.release/
+*.zip
+RELEASE_NOTES.md
+
+# Working notes: specs, plans and agent scratch stay out of the repo.
+docs/superpowers/
+.superpowers/
