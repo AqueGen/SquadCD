@@ -10,3 +10,4 @@
 
 Core.lua
 Data.lua
+Logic/Cooldowns.lua
