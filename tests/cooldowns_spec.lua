@@ -27,6 +27,23 @@ describe("Cooldowns", function()
         assert.are.equal(2, C.Resolve(871, 73, { [397103] = 1 }).charges)
     end)
 
+    it("charge spell: recovery with flat and pct mods, then max with charge cooldown mods", function()
+        assert.are.equal(90, C.Resolve(227847, 71, { [382953] = 1 }).cd)
+        assert.are.equal(120, C.Resolve(871, 73, { [397103] = 1 }).cd)
+        assert.are.equal(108, C.Resolve(871, 73, { [397103] = 1, [391271] = 1 }).cd)
+        assert.are.equal(48, C.Resolve(204021, 581, { [389732] = 1 }).cd)
+    end)
+
+    it("spec mod counts as rank 1", function()
+        assert.are.equal(30, C.Resolve(57994, 264, {}).cd)
+        assert.are.equal(12, C.Resolve(57994, 263, {}).cd)
+        assert.are.equal(120, C.Resolve(115203, 270, nil).cd)
+    end)
+
+    it("fractional seconds are kept", function()
+        assert.are.equal(13.5, C.Resolve(6552, 73, { [391271] = 1 }).cd)
+    end)
+
     it("talent read later shortens running timer", function()
         local elapsed = 12
         local before = C.Resolve(46968, 73, nil).cd - elapsed
@@ -39,6 +56,15 @@ describe("Cooldowns", function()
         assert.is_true(C.Has(46968, "WARRIOR", 73, nil))
         assert.is_false(C.Has(46968, "WARRIOR", 73, {}))
         assert.is_true(C.Has(46968, "WARRIOR", 73, { [46968] = 1 }))
+    end)
+
+    it("spec match overrides gating, a gated spell otherwise needs the talent", function()
+        assert.is_true(C.Has(51490, "SHAMAN", 262, {}))
+        assert.is_false(C.Has(51490, "SHAMAN", 263, {}))
+        assert.is_true(C.Has(51490, "SHAMAN", 263, { [51490] = 1 }))
+        assert.is_true(C.Has(122470, "MONK", 269, {}))
+        assert.is_false(C.Has(122470, "MONK", 270, {}))
+        assert.is_true(C.Has(122470, "MONK", 270, { [122470] = 1 }))
     end)
 
     it("spec and class filter", function()

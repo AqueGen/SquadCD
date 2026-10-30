@@ -149,12 +149,20 @@ def spell_line(spell, token, buffs):
         fields.append("charges=%d" % spell["maxCharges"])
     if spell["chargeMs"]:
         fields.append("chargeCd=" + seconds(spell["chargeMs"]))
+    if spell["recoveryMs"]:
+        fields.append("recovery=" + seconds(spell["recoveryMs"]))
     if spell["talentGated"]:
         fields.append("talentGated=true")
     if spell["cdMods"]:
         fields.append("cdMods=" + lua_map(spell["cdMods"], seconds))
     if spell["cdPct"]:
         fields.append("cdPct=" + lua_map(spell["cdPct"], num))
+    if spell["chargeMods"]:
+        fields.append("chargeMods=" + lua_map(spell["chargeMods"], seconds))
+    if spell["chargePct"]:
+        fields.append("chargePct=" + lua_map(spell["chargePct"], num))
+    if spell["specMods"]:
+        fields.append("specMods=" + lua_map(spell["specMods"], lambda ids: lua_list(str(i) for i in ids)))
     if spell["chargeAdds"]:
         fields.append("chargeAdds=" + lua_map(spell["chargeAdds"], num))
     if spell["replaces"]:

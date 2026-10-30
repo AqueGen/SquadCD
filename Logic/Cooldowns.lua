@@ -5,17 +5,22 @@ ns.Cooldowns = Cooldowns
 
 local MIN_CD = 1
 
-local function rank(talents, id)
-    return talents and talents[id] or 0
+local function rank(s, specId, talents, id)
+    local r = talents and talents[id]
+    if r then return r end
+    for _, m in ipairs(s.specMods and s.specMods[specId] or {}) do
+        if m == id then return 1 end
+    end
+    return 0
 end
 
-local function apply(base, mods, pcts, talents)
+local function apply(s, specId, talents, base, mods, pcts)
     local cd = base
     for id, v in pairs(mods or {}) do
-        cd = cd + v * rank(talents, id)
+        cd = cd + v * rank(s, specId, talents, id)
     end
     for id, v in pairs(pcts or {}) do
-        cd = cd * (1 + v * rank(talents, id) / 100)
+        cd = cd * (1 + v * rank(s, specId, talents, id) / 100)
     end
     return cd
 end
@@ -23,11 +28,18 @@ end
 function Cooldowns.Resolve(spellId, specId, talents)
     local s = ns.Spells[spellId]
     if not s then return nil end
-    local base = s.chargeCd or s.cd
-    local cd = math.max(MIN_CD, math.floor(apply(base, s.cdMods, s.cdPct, talents) + 0.5))
+    local cd
+    if s.chargeCd then
+        cd = math.max(
+            apply(s, specId, talents, s.recovery or 0, s.cdMods, s.cdPct),
+            apply(s, specId, talents, s.chargeCd, s.chargeMods, s.chargePct))
+    else
+        cd = apply(s, specId, talents, s.cd, s.cdMods, s.cdPct)
+    end
+    cd = math.floor(math.max(MIN_CD, cd) * 1000 + 0.5) / 1000
     local charges = s.charges or 1
     for id, n in pairs(s.chargeAdds or {}) do
-        charges = charges + n * rank(talents, id)
+        charges = charges + n * rank(s, specId, talents, id)
     end
     return {
         cd = cd,
@@ -40,15 +52,13 @@ end
 function Cooldowns.Has(spellId, classToken, specId, talents)
     local s = ns.Spells[spellId]
     if not s or s.class ~= classToken then return false end
-    if s.specs and #s.specs > 0 then
-        local ok = false
-        for _, id in ipairs(s.specs) do
-            if id == specId then ok = true break end
-        end
-        if not ok then return false end
+    local specs = s.specs or {}
+    for _, id in ipairs(specs) do
+        if id == specId then return true end
     end
-    if s.talentGated and talents then
-        return (talents[spellId] or 0) > 0
+    if s.talentGated then
+        if talents then return (talents[spellId] or 0) > 0 end
+        return #specs == 0
     end
-    return true
+    return #specs == 0
 end

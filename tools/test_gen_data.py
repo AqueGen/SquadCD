@@ -63,6 +63,18 @@ class GenDataTests(unittest.TestCase):
         self.assertEqual("buff", gen_data.track_kind("Personal", [1]))
         self.assertEqual("none", gen_data.track_kind("Personal", []))
 
+    def test_spell_line_emits_charge_and_spec_modifiers(self):
+        spell = {"id": 871, "name": "X", "icon": "i", "type": "Personal", "classId": 1, "specs": [],
+                 "cdMs": 180000, "maxCharges": 1, "chargeMs": 180000, "recoveryMs": 8000,
+                 "talentGated": True, "cdMods": {}, "cdPct": {"391271": -10},
+                 "chargeMods": {"397103": -60000}, "chargePct": {"391271": -10},
+                 "specMods": {"264": [137039]}, "chargeAdds": {}, "replaces": [], "races": [], "aoe": False}
+        line = gen_data.spell_line(spell, "WARRIOR", [])
+        self.assertIn("recovery=8,", line)
+        self.assertIn("chargeMods={[397103]=-60}", line)
+        self.assertIn("chargePct={[391271]=-10}", line)
+        self.assertIn("specMods={[264]={137039}}", line)
+
     def test_lua_writer_escapes_names(self):
         bs = chr(92)
         self.assertEqual('"Say ' + bs + '"hi' + bs + '"' + bs + bs + '"', gen_data.lua_str('Say "hi"' + bs))

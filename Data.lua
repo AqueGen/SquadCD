@@ -6,29 +6,29 @@ ns.Classes = {}
 ns.Spells[99]={name="Incapacitating Roar",icon="ability_druid_demoralizingroar",type="CC",class="DRUID",specs={},cd=30,talentGated=true,aoe=true,track="debuff"}
 ns.Spells[408]={name="Kidney Shot",icon="ability_rogue_kidneyshot",type="Stun",class="ROGUE",specs={},cd=30,track="debuff"}
 ns.Spells[475]={name="Remove Curse",icon="spell_nature_removecurse",type="Dispel",class="MAGE",specs={},cd=8,talentGated=true,track="none"}
-ns.Spells[498]={name="Divine Protection",icon="spell_holy_divineprotection",type="Personal",class="PALADIN",specs={65},cd=60,cdMods={[1258011]=30},cdPct={[114154]=-30},buffs={498},track="buff"}
-ns.Spells[527]={name="Purify",icon="spell_holy_dispelmagic",type="Dispel",class="PRIEST",specs={256,257},cd=8,charges=1,chargeCd=8,track="none"}
+ns.Spells[498]={name="Divine Protection",icon="spell_holy_divineprotection",type="Personal",class="PALADIN",specs={65},cd=60,cdMods={[1258011]=30},cdPct={[114154]=-30},specMods={[70]={1258011}},buffs={498},track="buff"}
+ns.Spells[527]={name="Purify",icon="spell_holy_dispelmagic",type="Dispel",class="PRIEST",specs={256,257},cd=8,charges=1,chargeCd=8,recovery=8,track="none"}
 ns.Spells[633]={name="Lay on Hands",icon="spell_holy_layonhands",type="External",class="PALADIN",specs={},cd=600,talentGated=true,cdPct={[114154]=-30,[378425]=-15,[414720]=-40},track="target"}
 ns.Spells[642]={name="Divine Shield",icon="spell_holy_divineshield",type="Personal",class="PALADIN",specs={},cd=300,cdPct={[114154]=-30,[378425]=-15},buffs={642},track="buff"}
 ns.Spells[740]={name="Tranquility",icon="spell_nature_tranquility",type="Group",class="DRUID",specs={},cd=180,talentGated=true,buffs={740},track="buff"}
 ns.Spells[853]={name="Hammer of Justice",icon="spell_holy_sealofmight",type="Stun",class="PALADIN",specs={},cd=45,cdMods={[234299]=-15},track="debuff"}
-ns.Spells[871]={name="Shield Wall",icon="ability_warrior_shieldwall",type="Personal",class="WARRIOR",specs={},cd=180,charges=1,chargeCd=180,talentGated=true,cdPct={[391271]=-10},chargeAdds={[397103]=1},buffs={871},track="buff"}
-ns.Spells[1022]={name="Blessing of Protection",icon="spell_holy_sealofprotection",type="External",class="PALADIN",specs={},cd=300,charges=1,chargeCd=300,talentGated=true,buffs={1022},track="target"}
+ns.Spells[871]={name="Shield Wall",icon="ability_warrior_shieldwall",type="Personal",class="WARRIOR",specs={},cd=180,charges=1,chargeCd=180,recovery=8,talentGated=true,cdPct={[391271]=-10},chargeMods={[397103]=-60},chargePct={[391271]=-10},chargeAdds={[397103]=1},buffs={871},track="buff"}
+ns.Spells[1022]={name="Blessing of Protection",icon="spell_holy_sealofprotection",type="External",class="PALADIN",specs={},cd=300,charges=1,chargeCd=300,recovery=1.5,talentGated=true,chargeMods={[384909]=-60},chargePct={[378425]=-15},buffs={1022},track="target"}
 ns.Spells[1122]={name="Summon Infernal",icon="spell_shadow_summoninfernal",type="Burst",class="WARLOCK",specs={},cd=120,talentGated=true,cdMods={[387084]=-60,[1280483]=-30},track="none"}
 ns.Spells[1719]={name="Recklessness",icon="warrior_talent_icon_innerrage",type="Burst",class="WARRIOR",specs={},cd=90,talentGated=true,buffs={1719},track="buff"}
 ns.Spells[1766]={name="Kick",icon="ability_kick",type="Kick",class="ROGUE",specs={},cd=15,track="kick"}
 ns.Spells[1776]={name="Gouge",icon="ability_gouge",type="CC",class="ROGUE",specs={},cd=25,talentGated=true,track="debuff"}
-ns.Spells[1833]={name="Cheap Shot",icon="ability_cheapshot",type="Stun",class="ROGUE",specs={},cd=12,charges=1,chargeCd=12,track="debuff"}
+ns.Spells[1833]={name="Cheap Shot",icon="ability_cheapshot",type="Stun",class="ROGUE",specs={},cd=12,charges=1,chargeCd=12,recovery=1,track="debuff"}
 ns.Spells[2094]={name="Blind",icon="spell_shadow_mindsteal",type="CC",class="ROGUE",specs={},cd=120,talentGated=true,cdPct={[200733]=-50,[256165]=-25,[441415]=-10},track="debuff"}
 ns.Spells[2139]={name="Counterspell",icon="spell_frost_iceshock",type="Kick",class="MAGE",specs={},cd=25,track="kick"}
 ns.Spells[2782]={name="Remove Corruption",icon="spell_holy_removecurse",type="Dispel",class="DRUID",specs={},cd=8,talentGated=true,track="none"}
 ns.Spells[2908]={name="Soothe",icon="ability_hunter_beastsoothe",type="Purge",class="DRUID",specs={},cd=10,talentGated=true,track="none"}
-ns.Spells[4987]={name="Cleanse",icon="spell_holy_purify",type="Dispel",class="PALADIN",specs={65},cd=8,charges=1,chargeCd=8,track="none"}
+ns.Spells[4987]={name="Cleanse",icon="spell_holy_purify",type="Dispel",class="PALADIN",specs={65},cd=8,charges=1,chargeCd=8,recovery=8,track="none"}
 ns.Spells[5211]={name="Mighty Bash",icon="ability_druid_bash",type="Stun",class="DRUID",specs={},cd=60,talentGated=true,track="debuff"}
 ns.Spells[5246]={name="Intimidating Shout",icon="ability_golemthunderclap",type="CC",class="WARRIOR",specs={},cd=90,talentGated=true,cdMods={[424742]=-15},aoe=true,track="debuff"}
 ns.Spells[5277]={name="Evasion",icon="spell_shadow_shadowward",type="Personal",class="ROGUE",specs={},cd=120,talentGated=true,buffs={5277},track="buff"}
 ns.Spells[5484]={name="Howl of Terror",icon="ability_warlock_howlofterror",type="CC",class="WARLOCK",specs={},cd=40,talentGated=true,cdMods={[429072]=-10,[1270255]=-5},aoe=true,track="debuff"}
-ns.Spells[5938]={name="Shiv",icon="inv_throwingknife_04",type="Purge",class="ROGUE",specs={},cd=30,charges=1,chargeCd=30,talentGated=true,track="none"}
+ns.Spells[5938]={name="Shiv",icon="inv_throwingknife_04",type="Purge",class="ROGUE",specs={},cd=30,charges=1,chargeCd=30,talentGated=true,chargeMods={[1267182]=-15},track="none"}
 ns.Spells[6552]={name="Pummel",icon="inv_gauntlets_04",type="Kick",class="WARRIOR",specs={},cd=15,cdMods={[383115]=-1},cdPct={[391271]=-10},track="kick"}
 ns.Spells[6789]={name="Mortal Coil",icon="ability_warlock_mortalcoil",type="CC",class="WARLOCK",specs={},cd=45,talentGated=true,track="debuff"}
 ns.Spells[6940]={name="Blessing of Sacrifice",icon="spell_holy_sealofsacrifice",type="External",class="PALADIN",specs={},cd=120,talentGated=true,cdMods={[384820]=-60},buffs={6940},track="target"}
@@ -51,7 +51,7 @@ ns.Spells[20572]={name="Blood Fury",icon="racial_orc_berserkerstrength",type="Ra
 ns.Spells[20589]={name="Escape Artist",icon="ability_rogue_trip",type="Racial",specs={},cd=60,races={7},track="none"}
 ns.Spells[20594]={name="Stoneform",icon="spell_shadow_unholystrength",type="Racial",specs={},cd=120,races={3},buffs={65116},track="buff"}
 ns.Spells[22570]={name="Maim",icon="ability_druid_mangle.tga",type="Stun",class="DRUID",specs={},cd=30,talentGated=true,track="debuff"}
-ns.Spells[22812]={name="Barkskin",icon="spell_nature_stoneclawtotem",type="Personal",class="DRUID",specs={},cd=60,cdMods={[137010]=-15},cdPct={[203965]=-12},buffs={22812},track="buff"}
+ns.Spells[22812]={name="Barkskin",icon="spell_nature_stoneclawtotem",type="Personal",class="DRUID",specs={},cd=60,cdMods={[137010]=-15},cdPct={[203965]=-12},specMods={[104]={137010}},buffs={22812},track="buff"}
 ns.Spells[25046]={name="Arcane Torrent",icon="spell_shadow_teleport",type="Racial",specs={},cd=120,races={10},track="none"}
 ns.Spells[26297]={name="Berserking",icon="racial_troll_berserk",type="Racial",specs={},cd=180,races={8},buffs={26297},track="buff"}
 ns.Spells[28730]={name="Arcane Torrent",icon="spell_shadow_teleport",type="Racial",specs={},cd=120,races={10},track="none"}
@@ -61,15 +61,15 @@ ns.Spells[31224]={name="Cloak of Shadows",icon="spell_shadow_nethercloak",type="
 ns.Spells[31661]={name="Dragon's Breath",icon="inv_misc_head_dragon_01",type="CC",class="MAGE",specs={},cd=45,talentGated=true,cdMods={[387807]=-5},cdPct={[431067]=-30},aoe=true,track="debuff"}
 ns.Spells[31821]={name="Aura Mastery",icon="spell_holy_auramastery",type="Group",class="PALADIN",specs={},cd=180,talentGated=true,cdMods={[392911]=-30},buffs={31821},track="buff"}
 ns.Spells[31850]={name="Ardent Defender",icon="spell_holy_ardentdefender",type="Personal",class="PALADIN",specs={},cd=90,talentGated=true,cdPct={[114154]=-30},buffs={31850},track="buff"}
-ns.Spells[31884]={name="Avenging Wrath",icon="spell_holy_avenginewrath",type="Burst",class="PALADIN",specs={},cd=120,talentGated=true,cdMods={[1241511]=-30,[1258011]=-60},cdPct={[204074]=-50},buffs={31884},track="buff"}
+ns.Spells[31884]={name="Avenging Wrath",icon="spell_holy_avenginewrath",type="Burst",class="PALADIN",specs={},cd=120,talentGated=true,cdMods={[1241511]=-30,[1258011]=-60},cdPct={[204074]=-50},specMods={[70]={1258011}},buffs={31884},track="buff"}
 ns.Spells[31935]={name="Avenger's Shield",icon="spell_holy_avengersshield",type="Kick",class="PALADIN",specs={},cd=15,talentGated=true,track="kick"}
 ns.Spells[32375]={name="Mass Dispel",icon="spell_arcane_massdispel",type="Purge",class="PRIEST",specs={},cd=120,talentGated=true,track="none"}
-ns.Spells[33206]={name="Pain Suppression",icon="spell_holy_painsupression",type="External",class="PRIEST",specs={},cd=180,charges=1,chargeCd=180,talentGated=true,chargeAdds={[373035]=1},buffs={33206},track="target"}
+ns.Spells[33206]={name="Pain Suppression",icon="spell_holy_painsupression",type="External",class="PRIEST",specs={},cd=180,charges=1,chargeCd=180,recovery=1.5,talentGated=true,chargeAdds={[373035]=1},buffs={33206},track="target"}
 ns.Spells[33697]={name="Blood Fury",icon="racial_orc_berserkerstrength",type="Racial",specs={},cd=120,races={2},buffs={33697},track="buff"}
 ns.Spells[33702]={name="Blood Fury",icon="racial_orc_berserkerstrength",type="Racial",specs={},cd=120,races={2},buffs={33702},track="buff"}
 ns.Spells[33891]={name="Incarnation: Tree of Life",icon="ability_druid_improvedtreeform",type="Group",class="DRUID",specs={},cd=180,talentGated=true,cdMods={[391174]=-60},buffs={33891},track="buff"}
 ns.Spells[42650]={name="Army of the Dead",icon="spell_deathknight_armyofthedead",type="Burst",class="DEATHKNIGHT",specs={},cd=90,talentGated=true,buffs={42650},track="buff"}
-ns.Spells[45438]={name="Ice Block",icon="spell_frost_frost",type="Personal",class="MAGE",specs={},cd=240,charges=1,chargeCd=240,talentGated=true,chargeAdds={[1244110]=1},buffs={45438},track="buff"}
+ns.Spells[45438]={name="Ice Block",icon="spell_frost_frost",type="Personal",class="MAGE",specs={},cd=240,charges=1,chargeCd=240,talentGated=true,chargeMods={[382424]=-30,[1244110]=-30,[1265517]=-30},chargeAdds={[1244110]=1},buffs={45438},track="buff"}
 ns.Spells[46968]={name="Shockwave",icon="ability_warrior_shockwave",type="Stun",class="WARRIOR",specs={},cd=40,talentGated=true,cdMods={[440992]=-5},aoe=true,track="debuff"}
 ns.Spells[47528]={name="Mind Freeze",icon="spell_deathknight_mindfreeze",type="Kick",class="DEATHKNIGHT",specs={},cd=15,talentGated=true,track="kick"}
 ns.Spells[47585]={name="Dispersion",icon="spell_shadow_dispersion",type="Personal",class="PRIEST",specs={258},cd=120,cdMods={[288733]=-30},buffs={47585},track="buff"}
@@ -89,7 +89,7 @@ ns.Spells[51886]={name="Cleanse Spirit",icon="ability_shaman_cleansespirit",type
 ns.Spells[53480]={name="Roar of Sacrifice",icon="ability_hunter_fervor",type="External",class="HUNTER",specs={},cd=120,talentGated=true,buffs={53480},track="target"}
 ns.Spells[55233]={name="Vampiric Blood",icon="spell_shadow_lifedrain",type="Personal",class="DEATHKNIGHT",specs={},cd=90,talentGated=true,buffs={55233},track="buff"}
 ns.Spells[55342]={name="Mirror Image",icon="spell_magic_lesserinvisibilty",type="Personal",class="MAGE",specs={},cd=120,talentGated=true,cdMods={[1244025]=-30},buffs={55342},track="buff"}
-ns.Spells[57994]={name="Wind Shear",icon="spell_nature_cyclone",type="Kick",class="SHAMAN",specs={},cd=12,talentGated=true,cdMods={[137039]=18},track="kick"}
+ns.Spells[57994]={name="Wind Shear",icon="spell_nature_cyclone",type="Kick",class="SHAMAN",specs={},cd=12,talentGated=true,cdMods={[137039]=18},specMods={[264]={137039}},track="kick"}
 ns.Spells[58984]={name="Shadowmeld",icon="ability_ambush",type="Racial",specs={},cd=120,races={4},buffs={58984},track="buff"}
 ns.Spells[59542]={name="Gift of the Naaru",icon="spell_holy_holyprotection",type="Racial",specs={},cd=120,races={11},buffs={59542},track="buff"}
 ns.Spells[59543]={name="Gift of the Naaru",icon="spell_holy_holyprotection",type="Racial",specs={},cd=120,races={11},buffs={59543},track="buff"}
@@ -98,7 +98,7 @@ ns.Spells[59545]={name="Gift of the Naaru",icon="spell_holy_holyprotection",type
 ns.Spells[59547]={name="Gift of the Naaru",icon="spell_holy_holyprotection",type="Racial",specs={},cd=120,races={11},buffs={59547},track="buff"}
 ns.Spells[59548]={name="Gift of the Naaru",icon="spell_holy_holyprotection",type="Racial",specs={},cd=120,races={11},buffs={59548},track="buff"}
 ns.Spells[59752]={name="Will to Survive",icon="spell_shadow_charm",type="Racial",specs={},cd=180,races={1},buffs={59752},track="buff"}
-ns.Spells[61336]={name="Survival Instincts",icon="ability_druid_tigersroar",type="Personal",class="DRUID",specs={},cd=180,charges=1,chargeCd=180,talentGated=true,chargeAdds={[137010]=1},buffs={61336},track="buff"}
+ns.Spells[61336]={name="Survival Instincts",icon="ability_druid_tigersroar",type="Personal",class="DRUID",specs={},cd=180,charges=1,chargeCd=180,recovery=6,talentGated=true,chargePct={[203965]=-12},specMods={[104]={137010}},chargeAdds={[137010]=1},buffs={61336},track="buff"}
 ns.Spells[62618]={name="Power Word: Barrier",icon="spell_holy_powerwordbarrier",type="Group",class="PRIEST",specs={},cd=180,talentGated=true,buffs={81782},track="buff"}
 ns.Spells[64843]={name="Divine Hymn",icon="spell_holy_divinehymn",type="Group",class="PRIEST",specs={},cd=180,talentGated=true,cdMods={[419110]=-60},buffs={64843},track="buff"}
 ns.Spells[68992]={name="Darkflight",icon="ability_racial_darkflight",type="Racial",specs={},cd=90,races={22},buffs={68992},track="buff"}
@@ -110,7 +110,7 @@ ns.Spells[77761]={name="Stampeding Roar",icon="spell_druid_stamedingroar",type="
 ns.Spells[77764]={name="Stampeding Roar",icon="spell_druid_stampedingroar_cat",type="Movement",class="DRUID",specs={},cd=120,cdMods={[288826]=-60},replaces={106898},buffs={77764},track="buff"}
 ns.Spells[78675]={name="Solar Beam",icon="ability_vehicle_sonicshockwave",type="Kick",class="DRUID",specs={},cd=60,talentGated=true,track="kick"}
 ns.Spells[80483]={name="Arcane Torrent",icon="spell_shadow_teleport",type="Racial",specs={},cd=120,races={10},track="none"}
-ns.Spells[86659]={name="Guardian of Ancient Kings",icon="spell_holy_heroism",type="Personal",class="PALADIN",specs={},cd=180,charges=1,chargeCd=180,talentGated=true,chargeAdds={[1246481]=1},buffs={86659},track="buff"}
+ns.Spells[86659]={name="Guardian of Ancient Kings",icon="spell_holy_heroism",type="Personal",class="PALADIN",specs={},cd=180,charges=1,chargeCd=180,recovery=8,talentGated=true,chargeAdds={[1246481]=1},buffs={86659},track="buff"}
 ns.Spells[88423]={name="Nature's Cure",icon="ability_shaman_cleansespirit",type="Dispel",class="DRUID",specs={105},cd=8,charges=1,chargeCd=8,track="none"}
 ns.Spells[88625]={name="Holy Word: Chastise",icon="spell_holy_chastise",type="CC",class="PRIEST",specs={},cd=60,talentGated=true,cdMods={[1215275]=-15,[1272359]=-5},track="debuff"}
 ns.Spells[89766]={name="Axe Toss",icon="ability_warrior_titansgrip",type="Stun",class="WARLOCK",specs={},cd=30,track="debuff"}
@@ -122,7 +122,7 @@ ns.Spells[102342]={name="Ironbark",icon="spell_druid_ironbark",type="External",c
 ns.Spells[102359]={name="Mass Entanglement",icon="spell_druid_massentanglement",type="CC",class="DRUID",specs={},cd=30,talentGated=true,aoe=true,track="debuff"}
 ns.Spells[102543]={name="Incarnation: Avatar of Ashamane",icon="spell_druid_incarnation",type="Burst",class="DRUID",specs={},cd=180,talentGated=true,cdMods={[391174]=-60},replaces={106951},buffs={102543,252071},track="buff"}
 ns.Spells[102558]={name="Incarnation: Guardian of Ursoc",icon="spell_druid_incarnation",type="Personal",class="DRUID",specs={},cd=180,talentGated=true,cdMods={[391174]=-60},replaces={50334},buffs={102558},track="buff"}
-ns.Spells[102560]={name="Incarnation: Chosen of Elune",icon="spell_druid_incarnation",type="Burst",class="DRUID",specs={},cd=180,charges=1,chargeCd=180,talentGated=true,cdMods={[391174]=-60},chargeAdds={[468743]=1},replaces={194223},buffs={102560},track="buff"}
+ns.Spells[102560]={name="Incarnation: Chosen of Elune",icon="spell_druid_incarnation",type="Burst",class="DRUID",specs={},cd=180,charges=1,chargeCd=180,recovery=1,talentGated=true,cdMods={[391174]=-60},chargeMods={[390378]=-60,[468743]=-60},chargeAdds={[468743]=1},replaces={194223},buffs={102560},track="buff"}
 ns.Spells[102793]={name="Ursol's Vortex",icon="spell_druid_ursolsvortex",type="CC",class="DRUID",specs={},cd=60,talentGated=true,aoe=true,track="debuff"}
 ns.Spells[104773]={name="Unending Resolve",icon="spell_shadow_demonictactics",type="Personal",class="WARLOCK",specs={},cd=180,cdMods={[386659]=-45},buffs={104773},track="buff"}
 ns.Spells[106839]={name="Skull Bash",icon="inv_bone_skull_04",type="Kick",class="DRUID",specs={},cd=15,talentGated=true,track="kick"}
@@ -144,13 +144,13 @@ ns.Spells[114051]={name="Ascendance",icon="inv_misc_questionmark",type="Burst",c
 ns.Spells[114052]={name="Ascendance",icon="inv_misc_questionmark",type="Group",class="SHAMAN",specs={},cd=180,talentGated=true,cdMods={[381785]=-45,[384444]=-60,[462440]=-60},buffs={114052},track="buff"}
 ns.Spells[115078]={name="Paralysis",icon="ability_monk_paralysis",type="CC",class="MONK",specs={},cd=45,talentGated=true,cdMods={[344359]=-15},track="debuff"}
 ns.Spells[115176]={name="Zen Meditation",icon="ability_monk_zenmeditation",type="Personal",class="MONK",specs={},cd=300,talentGated=true,cdPct={[387035]=-25},buffs={115176},track="buff"}
-ns.Spells[115203]={name="Fortifying Brew",icon="ability_monk_fortifyingale_new",type="Personal",class="MONK",specs={},cd=360,talentGated=true,cdMods={[388813]=-30,[1258122]=-240,[1258138]=-240},buffs={120954},track="buff"}
-ns.Spells[115310]={name="Revival",icon="spell_monk_revival",type="Group",class="MONK",specs={},cd=180,charges=1,chargeCd=180,talentGated=true,track="none"}
+ns.Spells[115203]={name="Fortifying Brew",icon="ability_monk_fortifyingale_new",type="Personal",class="MONK",specs={},cd=360,talentGated=true,cdMods={[388813]=-30,[1258122]=-240,[1258138]=-240},specMods={[269]={1258122},[270]={1258138}},buffs={120954},track="buff"}
+ns.Spells[115310]={name="Revival",icon="spell_monk_revival",type="Group",class="MONK",specs={},cd=180,charges=1,chargeCd=180,recovery=1,talentGated=true,chargeMods={[388551]=-30},track="none"}
 ns.Spells[115450]={name="Detox",icon="ability_rogue_imrovedrecuperate",type="Dispel",class="MONK",specs={270},cd=8,charges=1,chargeCd=8,track="none"}
 ns.Spells[115750]={name="Blinding Light",icon="ability_paladin_blindinglight",type="CC",class="PALADIN",specs={},cd=90,talentGated=true,cdMods={[469325]=-15},aoe=true,track="debuff"}
 ns.Spells[116705]={name="Spear Hand Strike",icon="ability_monk_spearhand",type="Kick",class="MONK",specs={},cd=15,talentGated=true,track="kick"}
 ns.Spells[116844]={name="Ring of Peace",icon="spell_monk_ringofpeace",type="CC",class="MONK",specs={},cd=45,talentGated=true,cdMods={[450448]=-5},aoe=true,track="debuff"}
-ns.Spells[116849]={name="Life Cocoon",icon="ability_monk_chicocoon",type="External",class="MONK",specs={},cd=120,charges=1,chargeCd=120,talentGated=true,buffs={116849},track="target"}
+ns.Spells[116849]={name="Life Cocoon",icon="ability_monk_chicocoon",type="External",class="MONK",specs={},cd=120,charges=1,chargeCd=120,recovery=0.75,talentGated=true,chargeMods={[202424]=-45},buffs={116849},track="target"}
 ns.Spells[118038]={name="Die by the Sword",icon="ability_warrior_challange",type="Personal",class="WARRIOR",specs={},cd=120,talentGated=true,cdMods={[383338]=-30},cdPct={[391271]=-10},buffs={118038},track="buff"}
 ns.Spells[119381]={name="Leg Sweep",icon="ability_monk_legsweep",type="Stun",class="MONK",specs={},cd=60,cdMods={[344359]=-10},aoe=true,track="debuff"}
 ns.Spells[121093]={name="Gift of the Naaru",icon="spell_holy_holyprotection",type="Racial",specs={},cd=120,races={11},buffs={121093},track="buff"}
@@ -161,7 +161,7 @@ ns.Spells[122783]={name="Diffuse Magic",icon="spell_monk_diffusemagic",type="Per
 ns.Spells[123904]={name="Invoke Xuen, the White Tiger",icon="ability_monk_summontigerstatue",type="Burst",class="MONK",specs={},cd=120,talentGated=true,cdMods={[388212]=-60,[392986]=-30,[450989]=-25},buffs={123904},track="buff"}
 ns.Spells[129597]={name="Arcane Torrent",icon="spell_shadow_teleport",type="Racial",specs={},cd=120,races={10},track="none"}
 ns.Spells[132469]={name="Typhoon",icon="ability_druid_typhoon",type="CC",class="DRUID",specs={},cd=30,talentGated=true,cdMods={[400140]=-5},aoe=true,track="debuff"}
-ns.Spells[137639]={name="Storm, Earth, and Fire",icon="spell_nature_giftofthewild",type="Burst",class="MONK",specs={},cd=90,charges=2,chargeCd=90,talentGated=true,buffs={137639},track="buff"}
+ns.Spells[137639]={name="Storm, Earth, and Fire",icon="spell_nature_giftofthewild",type="Burst",class="MONK",specs={},cd=90,charges=2,chargeCd=90,recovery=16,talentGated=true,chargeMods={[280197]=-20,[450989]=-10},buffs={137639},track="buff"}
 ns.Spells[147362]={name="Counter Shot",icon="inv_ammo_arrow_03",type="Kick",class="HUNTER",specs={},cd=24,talentGated=true,track="kick"}
 ns.Spells[155145]={name="Arcane Torrent",icon="spell_shadow_teleport",type="Racial",specs={},cd=120,races={10},track="none"}
 ns.Spells[157980]={name="Supernova",icon="spell_mage_supernova",type="CC",class="MAGE",specs={},cd=45,talentGated=true,cdMods={[387807]=-5},aoe=true,track="debuff"}
@@ -171,37 +171,37 @@ ns.Spells[184364]={name="Enraged Regeneration",icon="ability_warrior_focusedrage
 ns.Spells[186265]={name="Aspect of the Turtle",icon="ability_hunter_pet_turtle",type="Personal",class="HUNTER",specs={},cd=180,cdMods={[266921]=-15,[1258485]=-30},buffs={186265},track="buff"}
 ns.Spells[187650]={name="Freezing Trap",icon="spell_frost_chainsofice",type="CC",class="HUNTER",specs={},cd=30,cdMods={[343247]=-5},track="debuff"}
 ns.Spells[187707]={name="Muzzle",icon="ability_hunter_negate",type="Kick",class="HUNTER",specs={},cd=15,talentGated=true,track="kick"}
-ns.Spells[187827]={name="Metamorphosis",icon="ability_demonhunter_metamorphasistank",type="Personal",class="DEMONHUNTER",specs={581},cd=120,charges=1,chargeCd=120,cdMods={[321068]=0},buffs={187827},track="buff"}
+ns.Spells[187827]={name="Metamorphosis",icon="ability_demonhunter_metamorphasistank",type="Personal",class="DEMONHUNTER",specs={581},cd=120,charges=1,chargeCd=120,recovery=1,cdMods={[321068]=0},specMods={[581]={321068}},buffs={187827},track="buff"}
 ns.Spells[190319]={name="Combustion",icon="spell_fire_sealoffire",type="Burst",class="MAGE",specs={},cd=120,talentGated=true,cdMods={[1254194]=-60},buffs={190319},track="buff"}
 ns.Spells[191427]={name="Metamorphosis",icon="ability_demonhunter_metamorphasisdps",type="Burst",class="DEMONHUNTER",specs={577,1456},cd=120,buffs={162264,201453},track="buff"}
 ns.Spells[192058]={name="Capacitor Totem",icon="spell_nature_brilliance",type="Stun",class="SHAMAN",specs={},cd=60,talentGated=true,cdMods={[265046]=-15},aoe=true,track="debuff"}
 ns.Spells[192077]={name="Wind Rush Totem",icon="ability_shaman_windwalktotem",type="Movement",class="SHAMAN",specs={},cd=120,talentGated=true,track="none"}
 ns.Spells[192249]={name="Storm Elemental",icon="inv_stormelemental",type="Burst",class="SHAMAN",specs={},cd=120,charges=1,chargeCd=120,talentGated=true,track="none"}
-ns.Spells[194223]={name="Celestial Alignment",icon="spell_nature_natureguardian",type="Burst",class="DRUID",specs={},cd=180,charges=1,chargeCd=180,talentGated=true,chargeAdds={[468743]=1},buffs={194223},track="buff"}
+ns.Spells[194223]={name="Celestial Alignment",icon="spell_nature_natureguardian",type="Burst",class="DRUID",specs={},cd=180,charges=1,chargeCd=180,recovery=1,talentGated=true,chargeMods={[390378]=-60,[468743]=-60},chargeAdds={[468743]=1},buffs={194223},track="buff"}
 ns.Spells[196718]={name="Darkness",icon="ability_demonhunter_darkness",type="Group",class="DEMONHUNTER",specs={},cd=300,talentGated=true,cdMods={[389783]=-120},buffs={196718},track="buff"}
 ns.Spells[198067]={name="Fire Elemental",icon="spell_fire_elemental_totem",type="Burst",class="SHAMAN",specs={},cd=120,charges=1,chargeCd=120,talentGated=true,track="none"}
-ns.Spells[198589]={name="Blur",icon="ability_demonhunter_blur",type="Personal",class="DEMONHUNTER",specs={577,1480},cd=60,charges=1,chargeCd=60,chargeAdds={[1266307]=1},buffs={212800},track="buff"}
+ns.Spells[198589]={name="Blur",icon="ability_demonhunter_blur",type="Personal",class="DEMONHUNTER",specs={577,1480},cd=60,charges=1,chargeCd=60,recovery=0.5,chargeAdds={[1266307]=1},buffs={212800},track="buff"}
 ns.Spells[198838]={name="Earthen Wall Totem",icon="spell_nature_stoneskintotem",type="Group",class="SHAMAN",specs={},cd=60,talentGated=true,track="none"}
 ns.Spells[198898]={name="Song of Chi-Ji",icon="inv_chaos_orb",type="CC",class="MONK",specs={},cd=30,talentGated=true,track="debuff"}
-ns.Spells[202137]={name="Sigil of Silence",icon="ability_demonhunter_sigilofsilence",type="CC",class="DEMONHUNTER",specs={},cd=90,charges=1,chargeCd=90,talentGated=true,replaces={207684},aoe=true,track="debuff"}
-ns.Spells[202138]={name="Sigil of Chains",icon="ability_demonhunter_sigilofchains",type="CC",class="DEMONHUNTER",specs={581},cd=60,charges=1,chargeCd=60,aoe=true,track="debuff"}
+ns.Spells[202137]={name="Sigil of Silence",icon="ability_demonhunter_sigilofsilence",type="CC",class="DEMONHUNTER",specs={},cd=90,charges=1,chargeCd=90,talentGated=true,chargeMods={[320418]=-15},chargePct={[209281]=0,[389718]=-15},replaces={207684},aoe=true,track="debuff"}
+ns.Spells[202138]={name="Sigil of Chains",icon="ability_demonhunter_sigilofchains",type="CC",class="DEMONHUNTER",specs={581},cd=60,charges=1,chargeCd=60,chargePct={[209281]=0,[389718]=-15},aoe=true,track="debuff"}
 ns.Spells[202719]={name="Arcane Torrent",icon="spell_shadow_teleport",type="Racial",specs={},cd=120,races={10},track="none"}
-ns.Spells[204018]={name="Blessing of Spellwarding",icon="spell_holy_blessingofprotection",type="External",class="PALADIN",specs={},cd=300,charges=1,chargeCd=300,talentGated=true,buffs={204018},track="target"}
-ns.Spells[204021]={name="Fiery Brand",icon="ability_demonhunter_fierybrand",type="Personal",class="DEMONHUNTER",specs={},cd=60,charges=1,chargeCd=60,talentGated=true,chargeAdds={[389732]=1},track="none"}
+ns.Spells[204018]={name="Blessing of Spellwarding",icon="spell_holy_blessingofprotection",type="External",class="PALADIN",specs={},cd=300,charges=1,chargeCd=300,recovery=1.5,talentGated=true,chargeMods={[384909]=-60},chargePct={[378425]=-15},buffs={204018},track="target"}
+ns.Spells[204021]={name="Fiery Brand",icon="ability_demonhunter_fierybrand",type="Personal",class="DEMONHUNTER",specs={},cd=60,charges=1,chargeCd=60,talentGated=true,chargeMods={[389732]=-12},chargeAdds={[389732]=1},track="none"}
 ns.Spells[205180]={name="Summon Darkglare",icon="inv_beholderwarlock",type="Burst",class="WARLOCK",specs={},cd=120,talentGated=true,cdMods={[387084]=-30},buffs={205180},track="buff"}
 ns.Spells[207167]={name="Blinding Sleet",icon="spell_frost_chillingblast",type="CC",class="DEATHKNIGHT",specs={},cd=60,talentGated=true,aoe=true,track="debuff"}
 ns.Spells[207399]={name="Ancestral Protection Totem",icon="spell_nature_reincarnation",type="Group",class="SHAMAN",specs={},cd=300,talentGated=true,buffs={207498},track="buff"}
-ns.Spells[207684]={name="Sigil of Misery",icon="ability_demonhunter_sigilofmisery",type="CC",class="DEMONHUNTER",specs={},cd=120,charges=1,chargeCd=120,talentGated=true,aoe=true,track="debuff"}
-ns.Spells[212641]={name="Guardian of Ancient Kings",icon="spell_holy_heroism",type="Personal",class="PALADIN",specs={},cd=180,charges=1,chargeCd=180,chargeAdds={[1246481]=1},replaces={86659},buffs={212641},track="buff"}
-ns.Spells[213634]={name="Purify Disease",icon="spell_holy_nullifydisease",type="Dispel",class="PRIEST",specs={},cd=8,charges=1,chargeCd=8,talentGated=true,track="none"}
-ns.Spells[213644]={name="Cleanse Toxins",icon="spell_holy_renew",type="Dispel",class="PALADIN",specs={},cd=8,charges=1,chargeCd=8,talentGated=true,track="none"}
+ns.Spells[207684]={name="Sigil of Misery",icon="ability_demonhunter_sigilofmisery",type="CC",class="DEMONHUNTER",specs={},cd=120,charges=1,chargeCd=120,talentGated=true,chargeMods={[320418]=-30},chargePct={[209281]=0,[389718]=-15},aoe=true,track="debuff"}
+ns.Spells[212641]={name="Guardian of Ancient Kings",icon="spell_holy_heroism",type="Personal",class="PALADIN",specs={},cd=180,charges=1,chargeCd=180,recovery=8,chargeAdds={[1246481]=1},replaces={86659},buffs={212641},track="buff"}
+ns.Spells[213634]={name="Purify Disease",icon="spell_holy_nullifydisease",type="Dispel",class="PRIEST",specs={},cd=8,charges=1,chargeCd=8,recovery=8,talentGated=true,track="none"}
+ns.Spells[213644]={name="Cleanse Toxins",icon="spell_holy_renew",type="Dispel",class="PALADIN",specs={},cd=8,charges=1,chargeCd=8,recovery=8,talentGated=true,track="none"}
 ns.Spells[216331]={name="Avenging Crusader",icon="ability_paladin_veneration",type="Burst",class="PALADIN",specs={},cd=60,talentGated=true,cdMods={[1241511]=-30},replaces={31884},buffs={216331},track="buff"}
 ns.Spells[217832]={name="Imprison",icon="ability_demonhunter_imprison",type="CC",class="DEMONHUNTER",specs={},cd=45,talentGated=true,track="debuff"}
 ns.Spells[218164]={name="Detox",icon="ability_rogue_imrovedrecuperate",type="Dispel",class="MONK",specs={},cd=8,charges=1,chargeCd=8,talentGated=true,track="none"}
 ns.Spells[221562]={name="Asphyxiate",icon="ability_deathknight_asphixiate",type="Stun",class="DEATHKNIGHT",specs={},cd=45,talentGated=true,track="debuff"}
-ns.Spells[227847]={name="Bladestorm",icon="ability_warrior_bladestorm",type="Burst",class="WARRIOR",specs={},cd=90,charges=1,chargeCd=90,talentGated=true,cdMods={[382953]=-90},chargeAdds={[382953]=1},buffs={227847},track="buff"}
+ns.Spells[227847]={name="Bladestorm",icon="ability_warrior_bladestorm",type="Burst",class="WARRIOR",specs={},cd=90,charges=1,chargeCd=90,recovery=90,talentGated=true,cdMods={[382953]=-90},chargeAdds={[382953]=1},buffs={227847},track="buff"}
 ns.Spells[228260]={name="Voidform",icon="spell_priest_void-blast",type="Burst",class="PRIEST",specs={},cd=120,talentGated=true,buffs={194249},track="buff"}
-ns.Spells[228920]={name="Ravager",icon="warrior_talent_icon_ravager",type="Burst",class="WARRIOR",specs={},cd=90,charges=1,chargeCd=90,talentGated=true,cdMods={[382953]=-90},chargeAdds={[382953]=1},buffs={228920},track="buff"}
+ns.Spells[228920]={name="Ravager",icon="warrior_talent_icon_ravager",type="Burst",class="WARRIOR",specs={},cd=90,charges=1,chargeCd=90,recovery=8,talentGated=true,cdMods={[382953]=-90},chargeAdds={[382953]=1},buffs={228920},track="buff"}
 ns.Spells[232633]={name="Arcane Torrent",icon="spell_shadow_teleport",type="Racial",specs={},cd=120,races={10},track="none"}
 ns.Spells[255647]={name="Light's Judgment",icon="ability_racial_orbitalstrike",type="Racial",specs={},cd=150,races={30},track="none"}
 ns.Spells[255654]={name="Bull Rush",icon="ability_racial_bullrush",type="Racial",specs={},cd=120,races={28},buffs={255654},track="buff"}
@@ -219,18 +219,18 @@ ns.Spells[291944]={name="Regeneratin'",icon="ability_racial_regeneratin",type="R
 ns.Spells[305483]={name="Lightning Lasso",icon="shaman_pvp_lightninglasso",type="Stun",class="SHAMAN",specs={},cd=45,talentGated=true,track="debuff"}
 ns.Spells[312411]={name="Bag of Tricks",icon="ability_racial_bagoftricks",type="Racial",specs={},cd=90,races={35},track="none"}
 ns.Spells[312924]={name="Hyper Organic Light Originator",icon="ability_racial_hyperorganiclightoriginator",type="Racial",specs={},cd=180,races={37},buffs={312924},track="buff"}
-ns.Spells[322507]={name="Celestial Brew",icon="ability_monk_ironskinbrew",type="Personal",class="MONK",specs={},cd=90,charges=1,chargeCd=90,talentGated=true,chargeAdds={[450892]=1},buffs={322507},track="buff"}
+ns.Spells[322507]={name="Celestial Brew",icon="ability_monk_ironskinbrew",type="Personal",class="MONK",specs={},cd=90,charges=1,chargeCd=90,talentGated=true,chargePct={[325093]=-20},chargeAdds={[450892]=1},buffs={322507},track="buff"}
 ns.Spells[342245]={name="Alter Time",icon="spell_mage_altertime",type="Personal",class="MAGE",specs={},cd=60,talentGated=true,buffs={342246},track="buff"}
 ns.Spells[351338]={name="Quell",icon="ability_evoker_quell",type="Kick",class="EVOKER",specs={},cd=20,talentGated=true,cdMods={[371016]=-20},track="kick"}
-ns.Spells[357170]={name="Time Dilation",icon="ability_evoker_timedilation",type="External",class="EVOKER",specs={},cd=60,charges=1,chargeCd=60,talentGated=true,chargeAdds={[376204]=1},buffs={357170},track="target"}
-ns.Spells[357210]={name="Deep Breath",icon="ability_evoker_deepbreath",type="Burst",class="EVOKER",specs={1468},cd=120,charges=1,chargeCd=120,buffs={357210},track="buff"}
+ns.Spells[357170]={name="Time Dilation",icon="ability_evoker_timedilation",type="External",class="EVOKER",specs={},cd=60,charges=1,chargeCd=60,recovery=1,talentGated=true,chargeMods={[376204]=-10},chargeAdds={[376204]=1},buffs={357170},track="target"}
+ns.Spells[357210]={name="Deep Breath",icon="ability_evoker_deepbreath",type="Burst",class="EVOKER",specs={1468},cd=120,charges=1,chargeCd=120,recovery=1,chargeMods={[386348]=-60},buffs={357210},track="buff"}
 ns.Spells[357214]={name="Wing Buffet",icon="ability_racial_wingbuffet",type="CC",class="EVOKER",specs={},cd=180,aoe=true,track="debuff"}
 ns.Spells[358385]={name="Landslide",icon="ability_earthen_pillar",type="CC",class="EVOKER",specs={},cd=90,talentGated=true,cdMods={[375528]=-30},aoe=true,track="debuff"}
 ns.Spells[359816]={name="Dream Flight",icon="ability_evoker_dreamflight",type="Group",class="EVOKER",specs={},cd=120,talentGated=true,buffs={359816},track="buff"}
 ns.Spells[360194]={name="Deathmark",icon="ability_rogue_deathmark",type="Burst",class="ROGUE",specs={},cd=120,talentGated=true,track="none"}
 ns.Spells[360823]={name="Naturalize",icon="ability_evoker_fontofmagic_green",type="Dispel",class="EVOKER",specs={1468},cd=8,track="none"}
-ns.Spells[363534]={name="Rewind",icon="ability_evoker_rewind",type="Group",class="EVOKER",specs={},cd=240,charges=1,chargeCd=240,talentGated=true,buffs={363534},track="buff"}
-ns.Spells[363916]={name="Obsidian Scales",icon="inv_artifact_dragonscales",type="Personal",class="EVOKER",specs={},cd=90,charges=1,chargeCd=90,talentGated=true,chargeAdds={[375406]=1},buffs={363916},track="buff"}
+ns.Spells[363534]={name="Rewind",icon="ability_evoker_rewind",type="Group",class="EVOKER",specs={},cd=240,charges=1,chargeCd=240,talentGated=true,chargeMods={[381922]=-60},buffs={363534},track="buff"}
+ns.Spells[363916]={name="Obsidian Scales",icon="inv_artifact_dragonscales",type="Personal",class="EVOKER",specs={},cd=90,charges=1,chargeCd=90,recovery=1,talentGated=true,chargePct={[412713]=-10},chargeAdds={[375406]=1},buffs={363916},track="buff"}
 ns.Spells[365350]={name="Arcane Surge",icon="ability_mage_arcanesurge",type="Burst",class="MAGE",specs={},cd=90,talentGated=true,buffs={365362},track="buff"}
 ns.Spells[365585]={name="Expunge",icon="ability_evoker_fontofmagic_green",type="Dispel",class="EVOKER",specs={},cd=8,talentGated=true,track="none"}
 ns.Spells[368970]={name="Tail Swipe",icon="ability_racial_tailswipe",type="CC",class="EVOKER",specs={},cd=180,aoe=true,track="debuff"}
@@ -246,18 +246,18 @@ ns.Spells[383121]={name="Mass Polymorph",icon="spell_nature_doublepolymorph1",ty
 ns.Spells[383762]={name="Bitter Immunity",icon="spell_nature_shamanrage",type="Personal",class="WARRIOR",specs={},cd=180,talentGated=true,track="none"}
 ns.Spells[384352]={name="Doom Winds",icon="ability_ironmaidens_swirlingvortex",type="Burst",class="SHAMAN",specs={},cd=60,talentGated=true,buffs={466772},track="buff"}
 ns.Spells[386071]={name="Disrupting Shout",icon="ability_bullrush",type="Kick",class="WARRIOR",specs={},cd=90,talentGated=true,track="kick"}
-ns.Spells[388615]={name="Restoral",icon="ability_monk_tigerstyle",type="Group",class="MONK",specs={},cd=180,charges=1,chargeCd=180,talentGated=true,track="none"}
+ns.Spells[388615]={name="Restoral",icon="ability_monk_tigerstyle",type="Group",class="MONK",specs={},cd=180,charges=1,chargeCd=180,recovery=1,talentGated=true,chargeMods={[388551]=-30},track="none"}
 ns.Spells[389539]={name="Sentinel",icon="spell_holy_holynova",type="Personal",class="PALADIN",specs={},cd=120,talentGated=true,cdPct={[204074]=-50},replaces={31884},buffs={389539},track="buff"}
 ns.Spells[391528]={name="Convoke the Spirits",icon="inv_ability_druid_convokethespirits",type="Burst",class="DRUID",specs={},cd=120,talentGated=true,cdPct={[393414]=-50,[393991]=-50},buffs={391528},track="buff"}
 ns.Spells[403631]={name="Breath of Eons",icon="ability_evoker_breathofeons",type="Burst",class="EVOKER",specs={},cd=120,talentGated=true,replaces={357210},buffs={403631},track="buff"}
-ns.Spells[403876]={name="Divine Protection",icon="spell_holy_divineprotection",type="Personal",class="PALADIN",specs={70},cd=60,cdMods={[1258011]=30},cdPct={[114154]=-30},buffs={403876},track="buff"}
+ns.Spells[403876]={name="Divine Protection",icon="spell_holy_divineprotection",type="Personal",class="PALADIN",specs={70},cd=60,cdMods={[1258011]=30},cdPct={[114154]=-30},specMods={[70]={1258011}},buffs={403876},track="buff"}
 ns.Spells[404977]={name="Time Skip",icon="ability_evoker_timeskip",type="Burst",class="EVOKER",specs={},cd=180,talentGated=true,buffs={404977},track="buff"}
-ns.Spells[414658]={name="Ice Cold",icon="spell_fire_bluefire",type="Personal",class="MAGE",specs={},cd=240,charges=1,chargeCd=240,talentGated=true,chargeAdds={[1244110]=1},replaces={45438},buffs={414658},track="buff"}
+ns.Spells[414658]={name="Ice Cold",icon="spell_fire_bluefire",type="Personal",class="MAGE",specs={},cd=240,charges=1,chargeCd=240,talentGated=true,chargeMods={[382424]=-30,[1244110]=-30,[1265517]=-30},chargeAdds={[1244110]=1},replaces={45438},buffs={414658},track="buff"}
 ns.Spells[416250]={name="Gift of the Naaru",icon="spell_holy_holyprotection",type="Racial",specs={},cd=120,races={11},buffs={416250},track="buff"}
 ns.Spells[421453]={name="Ultimate Penitence",icon="ability_priest_ascendance",type="Group",class="PRIEST",specs={},cd=240,talentGated=true,buffs={421453},track="buff"}
-ns.Spells[433874]={name="Deep Breath",icon="ability_evoker_deepbreath",type="Burst",class="EVOKER",specs={},cd=120,charges=1,chargeCd=120,replaces={1236943},buffs={433874},track="buff"}
+ns.Spells[433874]={name="Deep Breath",icon="ability_evoker_deepbreath",type="Burst",class="EVOKER",specs={},cd=120,charges=1,chargeCd=120,recovery=1,chargeMods={[386348]=-60},replaces={1236943},buffs={433874},track="buff"}
 ns.Spells[436344]={name="Azerite Surge",icon="ability_earthen_azeritesurge",type="Racial",specs={},cd=120,races={84,85},buffs={436344},track="buff"}
-ns.Spells[446035]={name="Bladestorm",icon="ability_warrior_bladestorm",type="Burst",class="WARRIOR",specs={},cd=90,charges=1,chargeCd=90,cdMods={[382953]=-90},chargeAdds={[382953]=1},replaces={227847},buffs={446035},track="buff"}
+ns.Spells[446035]={name="Bladestorm",icon="ability_warrior_bladestorm",type="Burst",class="WARRIOR",specs={},cd=90,charges=1,chargeCd=90,recovery=90,cdMods={[382953]=-90},chargeAdds={[382953]=1},replaces={227847},buffs={446035},track="buff"}
 ns.Spells[471195]={name="Lay on Hands",icon="spell_holy_layonhands",type="External",class="PALADIN",specs={},cd=600,cdPct={[114154]=-30,[378425]=-15,[414720]=-40},replaces={633},track="target"}
 ns.Spells[474421]={name="Intimidation",icon="artifactability_survivalhunter_eaglesbite",type="Stun",class="HUNTER",specs={},cd=60,talentGated=true,cdMods={[459507]=-20},track="debuff"}
 ns.Spells[1233448]={name="Dark Transformation",icon="achievement_boss_festergutrotface",type="Burst",class="DEATHKNIGHT",specs={},cd=45,talentGated=true,buffs={1233448},track="buff"}
@@ -265,7 +265,7 @@ ns.Spells[1234195]={name="Void Nova",icon="inv_12_voiddh_ability_voidnova",type=
 ns.Spells[1236943]={name="Deep Breath",icon="ability_evoker_deepbreath",type="Burst",class="EVOKER",specs={1467},cd=120,buffs={1236943},track="buff"}
 ns.Spells[1237885]={name="Thorn Bloom",icon="inv_12_haranir_ability_thornbloom",type="Racial",specs={},cd=180,races={86,91},buffs={1238467},track="buff"}
 ns.Spells[1246167]={name="The Hunt",icon="inv_12_voiddh_ability_thehunt",type="Burst",class="DEMONHUNTER",specs={},cd=90,talentGated=true,buffs={1246167,370967},track="buff"}
-ns.Spells[1249625]={name="Zenith",icon="inv_ability_monk_weaponsoforder",type="Burst",class="MONK",specs={},cd=90,charges=2,chargeCd=90,talentGated=true,buffs={1249625},track="buff"}
+ns.Spells[1249625]={name="Zenith",icon="inv_ability_monk_weaponsoforder",type="Burst",class="MONK",specs={},cd=90,charges=2,chargeCd=90,recovery=16,talentGated=true,chargeMods={[280197]=-20,[450989]=-10},buffs={1249625},track="buff"}
 ns.Spells[1249658]={name="Breath of Sindragosa",icon="spell_deathknight_breathofsindragosa",type="Burst",class="DEATHKNIGHT",specs={},cd=90,talentGated=true,buffs={1249658},track="buff"}
 ns.Spells[1250646]={name="Takedown",icon="inv12_ability_hunter_takedown",type="Burst",class="HUNTER",specs={},cd=90,talentGated=true,cdMods={[1251790]=-15},buffs={1250646},track="buff"}
 ns.Spells[1263569]={name="Abomination Limb",icon="ability_maldraxxus_deathknight",type="CC",class="DEATHKNIGHT",specs={},cd=120,talentGated=true,buffs={1263569},track="debuff"}
