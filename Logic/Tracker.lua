@@ -141,6 +141,50 @@ function Tracker:State(guid, spellId)
     }
 end
 
+function Tracker:Snapshot(serverNow, clockNow)
+    local snap = {}
+    for guid, byGuid in pairs(self.entries) do
+        for spellId, e in pairs(byGuid) do
+            if e.spent > 0 and e.start then
+                local offset = serverNow - clockNow
+                local s = { usedServer = e.start + offset, spent = e.spent, maybe = e.maybe }
+                if e.useAt then s.useAtServer = e.useAt + offset end
+                if e.prev then
+                    s.prev = { spent = e.prev.spent, startServer = e.prev.start and e.prev.start + offset }
+                end
+                snap[guid] = snap[guid] or {}
+                snap[guid][spellId] = s
+            end
+        end
+    end
+    return snap
+end
+
+function Tracker:Restore(snap, serverNow, clockNow)
+    local offset = clockNow - serverNow
+    for guid, bySpell in pairs(snap or {}) do
+        for spellId, s in pairs(bySpell) do
+            local m = self.members[guid]
+            local r = m and resolve(m, spellId)
+            if r then
+                local e = {
+                    spent = s.spent,
+                    start = s.usedServer + offset,
+                    maybe = s.maybe and true or false,
+                    useAt = s.useAtServer and s.useAtServer + offset or nil,
+                    prev = s.prev and { spent = s.prev.spent, start = s.prev.startServer and s.prev.startServer + offset or nil } or nil,
+                }
+                local spent, start = project(e, r, clockNow)
+                if spent > 0 then
+                    e.spent, e.start = spent, start
+                    self.entries[guid] = self.entries[guid] or {}
+                    self.entries[guid][spellId] = e
+                end
+            end
+        end
+    end
+end
+
 function Tracker:Tick()
     local now = self.clock()
     local changes = {}
