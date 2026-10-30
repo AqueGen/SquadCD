@@ -34,7 +34,7 @@ def load_effects(path):
 def applies_friendly_aura(spell_id, effects):
     for effect, t0, t1, _ in effects.get(spell_id, []):
         if effect in (EFFECT_APPLY_AURA, EFFECT_APPLY_AREA_AURA_PARTY):
-            if t0 in FRIENDLY_TARGETS or t1 in FRIENDLY_TARGETS or (t0 == 0 and t1 == 0):
+            if t0 in FRIENDLY_TARGETS or t1 in FRIENDLY_TARGETS:
                 return True
     return False
 
@@ -69,7 +69,10 @@ def derive_potions(items, item_effects, spell_categories, spell_cooldowns, effec
             buffs = buff_ids(spell, effects, {})
             if not buffs:
                 continue
-            ms = max([eff["CoolDownMSec"], eff["CategoryCoolDownMSec"]] + list(spell_cooldowns.get(spell, (0, 0))))
+            if eff["SpellCategoryID"] == COMBAT_POTION_CATEGORY:
+                ms = eff["CategoryCoolDownMSec"]
+            else:
+                ms = spell_cooldowns.get(spell, (0, 0))[1]
             if ms > 0:
                 potions.append({"item": item, "buff": buffs[0], "cd": ms / 1000})
     return potions
