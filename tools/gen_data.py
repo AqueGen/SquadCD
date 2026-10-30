@@ -5,11 +5,14 @@ import os
 import urllib.request
 
 WAGO_BUILD = "12.1.5.70575"
-WAGO_URL = "https://wago.tools/db2/SpellEffect/csv?build=" + WAGO_BUILD
+WAGO_URL = "https://wago.tools/db2/%s/csv?build=" + WAGO_BUILD
 EFFECT_APPLY_AURA = 6
 EFFECT_APPLY_AREA_AURA_PARTY = 35
 EFFECT_TRIGGER_SPELL = 64
-# SpellImplicitTarget ids that point at the caster, a pet, an ally or the party
+ON_USE = 0
+COMBAT_POTION_CATEGORY = 4
+ITEM_CLASS_CONSUMABLE = "0"
+ITEM_SUBCLASS_POTION = "1"
 FRIENDLY_TARGETS = {1, 5, 21, 25, 29, 30, 31, 57}
 TRACK_BY_TYPE = {"External": "target", "Kick": "kick", "Stun": "debuff", "CC": "debuff"}
 
@@ -52,6 +55,61 @@ def track_kind(spell_type, buffs):
     if spell_type in TRACK_BY_TYPE:
         return TRACK_BY_TYPE[spell_type]
     return "buff" if buffs else "none"
+
+
+def derive_potions(items, item_effects, spell_categories, spell_cooldowns, effects):
+    potions = []
+    for item in sorted(items):
+        for eff in item_effects.get(item, []):
+            spell = eff["SpellID"]
+            if eff["TriggerType"] != ON_USE:
+                continue
+            if COMBAT_POTION_CATEGORY not in (eff["SpellCategoryID"], spell_categories.get(spell)):
+                continue
+            buffs = buff_ids(spell, effects, {})
+            if not buffs:
+                continue
+            ms = max([eff["CoolDownMSec"], eff["CategoryCoolDownMSec"]] + list(spell_cooldowns.get(spell, (0, 0))))
+            if ms > 0:
+                potions.append({"item": item, "buff": buffs[0], "cd": ms / 1000})
+    return potions
+
+
+def load_potions(cache_dir, effects):
+    def table(name):
+        with open(fetch_table(name, cache_dir), encoding="utf8", newline="") as f:
+            yield from csv.DictReader(f)
+
+    potion_items = {int(r["ID"]) for r in table("Item")
+                    if r["ClassID"] == ITEM_CLASS_CONSUMABLE and r["SubclassID"] == ITEM_SUBCLASS_POTION}
+    expansion = {int(r["ID"]): int(r["ExpansionID"]) for r in table("ItemSparse") if int(r["ID"]) in potion_items}
+    current = max(expansion.values())
+    items = {i for i, e in expansion.items() if e == current}
+    effect_rows = {int(r["ID"]): r for r in table("ItemEffect")}
+    item_effects = {}
+    for r in table("ItemXItemEffect"):
+        item, row = int(r["ItemID"]), effect_rows.get(int(r["ItemEffectID"]))
+        if item in items and row:
+            item_effects.setdefault(item, []).append({
+                "TriggerType": int(row["TriggerType"]),
+                "SpellID": int(row["SpellID"]),
+                "SpellCategoryID": int(row["SpellCategoryID"]),
+                "CoolDownMSec": int(row["CoolDownMSec"]),
+                "CategoryCoolDownMSec": int(row["CategoryCoolDownMSec"]),
+            })
+    spells = {e["SpellID"] for effs in item_effects.values() for e in effs}
+    categories = {int(r["SpellID"]): int(r["Category"]) for r in table("SpellCategories")
+                  if r["DifficultyID"] == "0" and int(r["SpellID"]) in spells}
+    cooldowns = {int(r["SpellID"]): (int(r["RecoveryTime"]), int(r["CategoryRecoveryTime"])) for r in table("SpellCooldowns")
+                 if r["DifficultyID"] == "0" and int(r["SpellID"]) in spells}
+    return derive_potions(items, item_effects, categories, cooldowns, effects)
+
+
+def check_overrides(catalog, overrides):
+    known = {str(s["id"]) for s in catalog["spells"]}
+    for key in overrides.get("buffs", {}):
+        if key not in known:
+            raise ValueError("buffs override %s matches no catalog spell" % key)
 
 
 def lua_str(s):
@@ -108,7 +166,8 @@ def spell_line(spell, token, buffs):
     return "ns.Spells[%d]={%s}" % (spell["id"], ",".join(fields))
 
 
-def render(catalog, effects, overrides):
+def render(catalog, effects, overrides, potions):
+    check_overrides(catalog, overrides)
     tokens = {int(k): v["token"] for k, v in catalog["classes"].items()}
     buff_overrides = overrides.get("buffs", {})
     out = ["local _, ns = ...", "ns.Spells = {}", "ns.TalentEntries = {}", "ns.Specs = {}", "ns.Classes = {}"]
@@ -122,18 +181,20 @@ def render(catalog, effects, overrides):
             spec_id, lua_str(tokens[spec["classId"]]), lua_str(spec["role"]), lua_str(spec["name"])))
     for class_id, token in sorted(tokens.items()):
         out.append("ns.Classes[%d]=%s" % (class_id, lua_str(token)))
-    potions = ",".join("{buff=%d,cd=%s}" % (p["buff"], num(p["cd"])) for p in overrides.get("potions", []))
-    out.append("ns.Potions={%s}" % potions)
+    out.append("ns.Potions={" + ",".join(
+        "{item=%d,buff=%d,cd=%s}" % (p["item"], p["buff"], num(p["cd"])) for p in potions) + "}")
     return "\n".join(out) + "\n"
 
 
-def fetch_effects(cache_dir):
+def fetch_table(name, cache_dir):
     os.makedirs(cache_dir, exist_ok=True)
-    path = os.path.join(cache_dir, "SpellEffect-%s.csv" % WAGO_BUILD)
+    path = os.path.join(cache_dir, "%s-%s.csv" % (name, WAGO_BUILD))
     if not os.path.exists(path):
-        req = urllib.request.Request(WAGO_URL, headers={"User-Agent": "Huddle-gen/1.0"})
-        with urllib.request.urlopen(req, timeout=600) as resp, open(path, "wb") as f:
+        req = urllib.request.Request(WAGO_URL % name, headers={"User-Agent": "Huddle-gen/1.0"})
+        tmp = path + ".part"
+        with urllib.request.urlopen(req, timeout=600) as resp, open(tmp, "wb") as f:
             f.write(resp.read())
+        os.replace(tmp, path)
     return path
 
 
@@ -149,7 +210,8 @@ def main():
         catalog = json.load(f)
     with open(args.overrides, encoding="utf8") as f:
         overrides = json.load(f)
-    text = render(catalog, load_effects(fetch_effects(args.cache)), overrides)
+    effects = load_effects(fetch_table("SpellEffect", args.cache))
+    text = render(catalog, effects, overrides, load_potions(args.cache, effects))
     with open(args.out, "w", encoding="utf8", newline="\n") as f:
         f.write(text)
 

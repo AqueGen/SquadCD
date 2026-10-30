@@ -139,7 +139,7 @@ ns.Spells[109248]={name="Binding Shot",icon="spell_shaman_bindelemental",type="S
 ns.Spells[109304]={name="Exhilaration",icon="ability_hunter_onewithnature",type="Personal",class="HUNTER",specs={},cd=120,cdMods={[270581]=-30},track="none"}
 ns.Spells[110959]={name="Greater Invisibility",icon="ability_mage_greaterinvisibility",type="Personal",class="MAGE",specs={},cd=120,talentGated=true,cdMods={[210476]=-60},buffs={110960},track="buff"}
 ns.Spells[113724]={name="Ring of Frost",icon="spell_frost_ring-of-frost",type="CC",class="MAGE",specs={},cd=45,talentGated=true,cdMods={[387807]=-5},cdPct={[431067]=-30},aoe=true,buffs={136511},track="debuff"}
-ns.Spells[114050]={name="Ascendance",icon="inv_misc_questionmark",type="Burst",class="SHAMAN",specs={},cd=180,talentGated=true,cdMods={[381785]=-45,[384444]=-60,[462440]=-60},buffs={114051},track="buff"}
+ns.Spells[114050]={name="Ascendance",icon="inv_misc_questionmark",type="Burst",class="SHAMAN",specs={},cd=180,talentGated=true,cdMods={[381785]=-45,[384444]=-60,[462440]=-60},buffs={114050,114051},track="buff"}
 ns.Spells[114051]={name="Ascendance",icon="inv_misc_questionmark",type="Burst",class="SHAMAN",specs={},cd=180,talentGated=true,cdMods={[381785]=-45,[384444]=-60,[462440]=-60},replaces={384352},buffs={114051},track="buff"}
 ns.Spells[114052]={name="Ascendance",icon="inv_misc_questionmark",type="Group",class="SHAMAN",specs={},cd=180,talentGated=true,cdMods={[381785]=-45,[384444]=-60,[462440]=-60},buffs={114052},track="buff"}
 ns.Spells[115078]={name="Paralysis",icon="ability_monk_paralysis",type="CC",class="MONK",specs={},cd=45,talentGated=true,cdMods={[344359]=-15},track="debuff"}
@@ -970,4 +970,4 @@ ns.Classes[10]="MONK"
 ns.Classes[11]="DRUID"
 ns.Classes[12]="DEMONHUNTER"
 ns.Classes[13]="EVOKER"
-ns.Potions={}
+ns.Potions={{item=241288,buff=1236994,cd=300},{item=241289,buff=1236994,cd=300},{item=241292,buff=1236998,cd=300},{item=241293,buff=1236998,cd=300},{item=241294,buff=1239479,cd=300},{item=241295,buff=1239479,cd=300},{item=241296,buff=1238443,cd=300},{item=241297,buff=1238443,cd=300},{item=241302,buff=1236551,cd=600},{item=241303,buff=1236551,cd=600},{item=241308,buff=1236616,cd=300},{item=241309,buff=1236616,cd=300},{item=241338,buff=1236652,cd=300},{item=241339,buff=1236652,cd=300},{item=245897,buff=1236616,cd=300},{item=245898,buff=1236616,cd=300},{item=245900,buff=1238443,cd=300},{item=245901,buff=1238443,cd=300},{item=245902,buff=1236994,cd=300},{item=245903,buff=1236994,cd=300},{item=245904,buff=1239479,cd=300},{item=245905,buff=1239479,cd=300},{item=245910,buff=1236998,cd=300},{item=245911,buff=1236998,cd=300},{item=259092,buff=1264446,cd=300},{item=259245,buff=1264689,cd=300},{item=271886,buff=1295132,cd=300},{item=271887,buff=1295132,cd=300},{item=271889,buff=1295015,cd=300},{item=271890,buff=1295015,cd=300},{item=274763,buff=1295132,cd=300},{item=274764,buff=1295132,cd=300},{item=274765,buff=1295015,cd=300}}

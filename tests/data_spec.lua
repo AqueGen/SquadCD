@@ -27,7 +27,16 @@ describe("Data", function()
         assert.are.equal(394207, ns.TalentEntries[24540])
     end)
 
-    it("count of track none stays under half of non-Kick spells", function()
+    it("potions are listed with item, buff and cd", function()
+        assert.is_true(#ns.Potions > 0)
+        for _, p in ipairs(ns.Potions) do
+            assert.is_number(p.item)
+            assert.is_number(p.buff)
+            assert.is_true(p.cd > 0)
+        end
+    end)
+
+    it("count of track none stays under 30% of non-Kick spells", function()
         local none, total = 0, 0
         for _, s in pairs(ns.Spells) do
             if s.type ~= "Kick" then
@@ -36,6 +45,6 @@ describe("Data", function()
             end
         end
         print(("track none: %d of %d non-Kick spells"):format(none, total))
-        assert.is_true(none < total / 2)
+        assert.is_true(none < total * 0.3)
     end)
 end)
