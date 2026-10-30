@@ -68,7 +68,14 @@ SlashCmdList.HUDDLE = function(msg)
     local fn = subcommands[sub:lower()]
     if fn then
         fn(rest)
+        return
     end
+    local names = {}
+    for name in pairs(subcommands) do
+        names[#names + 1] = name
+    end
+    table.sort(names)
+    print("Huddle: unknown command. Use /huddle " .. (#names > 0 and table.concat(names, " | ") or "(none registered)"))
 end
 
 function Huddle_OnCompartmentClick()
@@ -90,7 +97,7 @@ frame:SetScript("OnEvent", function(_, event, name)
     else
         for _, module in ipairs(modules) do
             if module.Enable then
-                xpcall(module.Enable, geterrorhandler(), module)
+                xpcall(function() module:Enable() end, geterrorhandler())
             end
         end
     end

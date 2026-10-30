@@ -1,7 +1,8 @@
-local helpers = dofile("tests/helpers.lua")
+local here = debug.getinfo(1, "S").source:match("^@(.*)[/\\][^/\\]*$") or "tests"
+local helpers = dofile(here .. "/helpers.lua")
 
-local function loadCore()
-    return helpers.load({ "Core.lua" })
+local function loadCore(stubs)
+    return helpers.load({ "Core.lua" }, stubs)
 end
 
 describe("Core", function()
@@ -40,13 +41,16 @@ describe("Core", function()
     end)
 
     it("module Enable errors do not stop later modules", function()
-        local ns = loadCore()
+        local errors = {}
+        local ns = loadCore({ geterrorhandler = function() return function(e) errors[#errors + 1] = e end end })
         local second = false
         ns.RegisterModule("bad", { Enable = function() error("boom") end })
         ns.RegisterModule("good", { Enable = function() second = true end })
         helpers.fire("ADDON_LOADED", "Huddle")
         helpers.fire("PLAYER_LOGIN")
         assert.is_true(second)
+        assert.are.equal(1, #errors)
+        assert.is_truthy(tostring(errors[1]):find("boom", 1, true))
     end)
 
     it("Enable runs in registration order", function()
@@ -61,11 +65,25 @@ describe("Core", function()
 
     it("slash registered before Enable", function()
         local ns = loadCore()
-        local seen
-        ns.RegisterModule("m", { Enable = function() seen = SlashCmdList.HUDDLE ~= nil end })
+        local seen = false
+        ns.RegisterModule("m", {
+            Enable = function()
+                assert(type(SlashCmdList.HUDDLE) == "function", "slash not registered")
+                seen = true
+            end,
+        })
         helpers.fire("ADDON_LOADED", "Huddle")
         helpers.fire("PLAYER_LOGIN")
         assert.is_true(seen)
+    end)
+
+    it("unknown subcommand prints usage listing subcommands", function()
+        local lines = {}
+        local ns = loadCore({ print = function(s) lines[#lines + 1] = s end })
+        ns.Slash("status", function() end)
+        SlashCmdList.HUDDLE("nope")
+        assert.are.equal(1, #lines)
+        assert.is_truthy(lines[1]:find("status", 1, true))
     end)
 
     it("bare /huddle toggles the window and subcommands dispatch", function()
