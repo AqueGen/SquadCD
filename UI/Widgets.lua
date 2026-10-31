@@ -161,6 +161,8 @@ function Group:Segmented(spec)
     if spec.note then
         local note = holder:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         note:SetPoint("LEFT", holder, "LEFT", LABEL_W + controlW + 10, 0)
+        note:SetPoint("RIGHT", self.frame, "RIGHT", -PAD, 0)
+        note:SetJustifyH("LEFT")
         note:SetTextColor(unpack(T.muted))
         note:SetText(spec.note)
     end

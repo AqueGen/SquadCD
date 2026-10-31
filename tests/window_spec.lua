@@ -20,6 +20,7 @@ end
 
 describe("Settings window preview zone", function()
     local ns, pane, refreshed, settings
+    local strings = {}
 
     local function point(f, name)
         for _, p in ipairs(f.points or {}) do
@@ -35,6 +36,12 @@ describe("Settings window preview zone", function()
                 f.parentFrame = parent
                 function f:GetParent() return self.parentFrame or stub(helpers.newFrame()) end
                 function f:SetText(t) self.text = t end
+                function f:CreateFontString()
+                    local s = stub(helpers.newFrame())
+                    function s:SetText(t) self.text = t end
+                    strings[#strings + 1] = s
+                    return s
+                end
                 function f:SetWidth(w) self.width = w end
                 function f:SetHeight(h) self.height = h end
                 function f:HookScript(event, fn)
@@ -93,6 +100,17 @@ describe("Settings window preview zone", function()
         assert.is_nil(point(pane, "BOTTOMRIGHT"))
         assert.are.equal(150, pane.height)
         assert.is_true(settings.backdropResized)
+    end)
+
+    it("keeps a segmented control's side note inside the group", function()
+        local page = ns.Widgets.NewPage(nil)
+        local group = page:Group("G")
+        group:Segmented({ label = "L", options = { { value = 1, text = "A" } }, get = function() return 1 end, set = function() end, note = "Side note" })
+        local note
+        for _, s in ipairs(strings) do
+            if s.text == "Side note" then note = s end
+        end
+        assert.are.equal(group.frame, point(note, "RIGHT")[2])
     end)
 
     it("opens wide enough for the side zone by default", function()

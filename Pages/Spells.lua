@@ -128,4 +128,4 @@ ns.Window.Register("spells", function(page)
         for i = #entries + 1, #rows do rows[i]:Hide() end
         shown = #entries
     end)
-end, { preview = "panel" })
+end)
