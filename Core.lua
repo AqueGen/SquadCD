@@ -8,7 +8,7 @@ ns.DEFAULTS = {
         Dispel = "Off", Purge = "Off", Movement = "Off",
     },
     row = { side = "LEFT", size = 24, spacing = 2, max = 8, point = { "CENTER", -360, 120 } },
-    panel = { point = { "CENTER", 0, -200 }, size = 22, locked = false },
+    panel = { point = { "CENTER", 0, -200 }, size = 22, locked = true },
     spells = {},
     window = {},
     timers = {},
