@@ -457,3 +457,144 @@ describe("LayoutModel.Migrate", function()
         assert.are.equal(once, db.layout)
     end)
 end)
+
+describe("LayoutModel fix round 1", function()
+    it("unsplit of a migrated db leaves no empty section", function()
+        local L = load()
+        local db = v1db()
+        db.placement.CC = "Panel"
+        db.placement.Stun = "Off"
+        L.Migrate(db)
+        local d = db.layout
+        assert.is_true(d.split)
+        L.SetSplit(d, false)
+        for _, s in ipairs(d.sections) do assert.is_true(#s.types > 0) end
+        assertOnePlaceEach(L, d)
+    end)
+
+    it("unsplit drops the duplicate section", function()
+        local L = load()
+        local d = L.Defaults()
+        L.SetSplit(d, true)
+        d.sections[2].types = { "Stun" }
+        d.sections[#d.sections + 1] = { id = "CC", types = { "CC" }, shown = true, ownWindow = false }
+        L.SetSplit(d, false)
+        assert.are.equal(4, #d.sections)
+        assert.are.same({ "Control" }, d.sections[2].types)
+    end)
+
+    it("SetPlace ignores an unknown place and ApplyPreset an invalid preset", function()
+        local L = load()
+        local d = L.Defaults()
+        L.SetPlace(d, "Kick", "bogus")
+        L.ApplyPreset(d, 0)
+        L.ApplyPreset(d, 7)
+        L.ApplyPreset(d, "x")
+        assert.are.same(L.Defaults(), d)
+    end)
+
+    it("VisibleTypeOf maps spell types", function()
+        local L = load()
+        local d = L.Defaults()
+        assert.are.equal("Control", L.VisibleTypeOf(d, "Stun"))
+        assert.are.equal("Control", L.VisibleTypeOf(d, "CC"))
+        assert.are.equal("Kick", L.VisibleTypeOf(d, "Kick"))
+        assert.is_nil(L.VisibleTypeOf(d, "Bogus"))
+        L.SetSplit(d, true)
+        assert.are.equal("Stun", L.VisibleTypeOf(d, "Stun"))
+        assert.are.equal("CC", L.VisibleTypeOf(d, "CC"))
+        assert.is_nil(L.VisibleTypeOf(d, "Control"))
+    end)
+
+    it("Normalize leaves defaults unchanged", function()
+        local L = load()
+        assert.are.same(L.Defaults(), L.Normalize(L.Defaults()))
+        assert.are.same(L.Defaults(), L.Normalize("junk"))
+    end)
+
+    it("Normalize fills a partial layout", function()
+        local L = load()
+        local d = L.Normalize({ sections = { { types = { "Kick" } } }, groups = { { types = { "Burst" } } } })
+        assert.are.equal(2, d.version)
+        assert.are.equal("OnePanel", d.overlay)
+        assert.are.same(ALL, d.typeOrder)
+        assert.are.same({ "Tank", "Melee", "Ranged", "Healer" }, d.rolePriority)
+        assert.are.same({ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 }, d.classOrder.Healer)
+        assert.are.equal("s1", d.sections[1].id)
+        assert.are.equal("Left", d.groups[1].side)
+        assert.are.same({ axis = "Rows", perLine = 3, origin = "TopLeft", sort = "Fixed" }, d.groups[1].shape)
+        assert.are.equal(4, d.groups[1].offsetX)
+        assert.are.same(L.Defaults().panelLook, d.panelLook)
+        assert.is_true(d.timers)
+        assert.are.same({ "CENTER", 0, -200 }, d.panel.point)
+    end)
+
+    it("Normalize clamps out-of-range values", function()
+        local L = load()
+        local d = L.Defaults()
+        d.panelLook = { iconSize = 5, labels = "Bogus", background = "Pink", opacity = 500, nameLetters = 1 }
+        d.memberLook = { iconSize = 99, labels = "Full", background = "None", opacity = -4, nameLetters = 9 }
+        d.panelShape.perLine = 50
+        d.groups[1].shape.perLine = 0
+        d.groups[1].offsetX, d.groups[1].offsetY = 9999, -9999
+        d.groups[1].look = { iconSize = 3, labels = "Full" }
+        d.sections[1].look = { iconSize = 3 }
+        d.overlay, d.kickStyle, d.groups[1].side = "x", "y", "z"
+        L.Normalize(d)
+        assert.are.same({ iconSize = 20, labels = "Glyph", background = "Default", opacity = 100, nameLetters = 3 }, d.panelLook)
+        assert.are.same({ iconSize = 40, labels = "Short", background = "None", opacity = 0, nameLetters = 6 }, d.memberLook)
+        assert.are.equal(12, d.panelShape.perLine)
+        assert.are.equal(1, d.groups[1].shape.perLine)
+        assert.are.equal(400, d.groups[1].offsetX)
+        assert.are.equal(-400, d.groups[1].offsetY)
+        assert.are.equal(12, d.groups[1].look.iconSize)
+        assert.are.equal("Short", d.groups[1].look.labels)
+        assert.are.equal(20, d.sections[1].look.iconSize)
+        assert.are.equal("OnePanel", d.overlay)
+        assert.are.equal("Bars", d.kickStyle)
+        assert.are.equal("Left", d.groups[1].side)
+    end)
+
+    it("Normalize drops unknown and duplicate types, empty sections, and fixes orders", function()
+        local L = load()
+        local d = L.Defaults()
+        d.typeOrder = { "Kick", "Bogus", "Kick", "Group" }
+        d.sections[1].types = { "Kick", "Kick", "Stun", "Bogus" }
+        d.sections[2].types = { "Bogus" }
+        d.groups[1].shape.typeOrder = { "Personal", "Bogus", "Personal" }
+        d.rolePriority = { "Healer", "Healer", "Nope" }
+        d.classOrder.Tank = { 5, 5, 99, "x", 2 }
+        L.Normalize(d)
+        assert.are.same({ "Kick" }, d.sections[1].types)
+        assert.are.equal("External", d.sections[2].id)
+        assert.are.equal(3, #d.sections)
+        assert.are.same({ "Kick", "Group", "Personal", "Burst", "Racial", "Potion", "External", "Control", "Dispel", "Purge", "Movement" }, d.typeOrder)
+        assert.are.same({ "Personal" }, d.groups[1].shape.typeOrder)
+        assert.are.same({ "Healer", "Tank", "Melee", "Ranged" }, d.rolePriority)
+        assert.are.same({ 5, 2, 1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13 }, d.classOrder.Tank)
+    end)
+
+    it("Normalize keeps a type in one container only", function()
+        local L = load()
+        local d = L.Defaults()
+        d.groups[1].types = { "Personal", "Kick", "Burst" }
+        d.sections[3].types = { "External", "Personal" }
+        L.Normalize(d)
+        assert.are.equal("panel", (L.PlaceOf(d, "Kick")))
+        assert.are.equal("panel", (L.PlaceOf(d, "Personal")))
+        assert.are.same({ "Burst" }, d.groups[1].types)
+        assertOnePlaceEach(L, d)
+    end)
+
+    it("Normalize honours split when judging known types", function()
+        local L = load()
+        local d = L.Defaults()
+        d.sections[2].types = { "Stun", "CC" }
+        L.Normalize(d)
+        assert.are.equal("External", d.sections[2].id)
+        L.SetSplit(d, true)
+        d.sections[#d.sections + 1] = { id = "x", types = { "Stun" } }
+        L.Normalize(d)
+        assertOnePlaceEach(L, d)
+    end)
+end)

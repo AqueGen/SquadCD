@@ -110,6 +110,7 @@ local function without(layout, type)
 end
 
 function LayoutModel.SetPlace(layout, type, place)
+    if place ~= "panel" and place ~= "member" and place ~= "off" then return layout end
     if LayoutModel.PlaceOf(layout, type) == place then return layout end
     without(layout, type)
     if place == "panel" then
@@ -168,7 +169,19 @@ function LayoutModel.SetSplit(layout, split)
     end
     containers(layout.sections)
     containers(layout.groups)
+    local kept = {}
+    for _, s in ipairs(layout.sections) do
+        if #s.types > 0 then kept[#kept + 1] = s end
+    end
+    layout.sections = kept
     return layout
+end
+
+function LayoutModel.VisibleTypeOf(layout, spellType)
+    if not layout.split and (spellType == "Stun" or spellType == "CC") then return "Control" end
+    for _, t in ipairs(LayoutModel.VisibleTypes(layout)) do
+        if t == spellType then return t end
+    end
 end
 
 function LayoutModel.VisibleTypes(layout)
@@ -232,6 +245,7 @@ end
 
 function LayoutModel.ApplyPreset(layout, n)
     local preset = LayoutModel.Presets()[n]
+    if not preset then return layout end
     local first = layout.groups[1]
     layout.split = false
     layout.typeOrder = copy(ORDER)
@@ -242,6 +256,165 @@ function LayoutModel.ApplyPreset(layout, n)
     for _, g in ipairs(layout.groups) do
         g.offsetX = first and first.offsetX or 4
         g.offsetY = first and first.offsetY or 0
+    end
+    return layout
+end
+
+local function oneOf(v, list, default)
+    for _, x in ipairs(list) do
+        if v == x then return v end
+    end
+    return default
+end
+
+local function num(v, lo, hi, default)
+    if type(v) ~= "number" or v ~= v then return default end
+    return clamp(v, lo, hi)
+end
+
+local function bool(v, default)
+    if type(v) == "boolean" then return v end
+    return default
+end
+
+local AXES = { "Rows", "Columns" }
+local CORNERS = { "TopLeft", "TopRight", "BottomLeft", "BottomRight" }
+local SORTS = { "Fixed", "ReadyFirst" }
+local SIDES = { "Right", "Left", "Above", "Below" }
+local LABELS = { "None", "Glyph", "Short", "Full" }
+local BACKGROUNDS = { "Default", "Black", "Slate", "None" }
+
+local function cleanLook(look, fallback, minSize, member)
+    if type(look) ~= "table" then return nil end
+    local labels = oneOf(look.labels, LABELS, fallback.labels)
+    if member and labels == "Full" then labels = "Short" end
+    return {
+        iconSize = num(look.iconSize, minSize, 40, fallback.iconSize),
+        labels = labels,
+        background = oneOf(look.background, BACKGROUNDS, fallback.background),
+        opacity = num(look.opacity, 0, 100, fallback.opacity),
+        nameLetters = num(look.nameLetters, 3, 6, fallback.nameLetters),
+    }
+end
+
+local function cleanShape(s, fallback, known)
+    if type(s) ~= "table" then return fallback and copy(fallback) end
+    local base = fallback or shape("Rows", 3, "TopLeft")
+    local out = {
+        axis = oneOf(s.axis, AXES, base.axis),
+        perLine = num(s.perLine, 1, 12, base.perLine),
+        origin = oneOf(s.origin, CORNERS, base.origin),
+        sort = oneOf(s.sort, SORTS, base.sort),
+    }
+    if type(s.typeOrder) == "table" then
+        out.typeOrder = {}
+        local seen = {}
+        for _, t in ipairs(s.typeOrder) do
+            if known[t] and not seen[t] then
+                seen[t] = true
+                out.typeOrder[#out.typeOrder + 1] = t
+            end
+        end
+    end
+    return out
+end
+
+function LayoutModel.Normalize(layout)
+    local d = LayoutModel.Defaults()
+    if type(layout) ~= "table" then return d end
+    layout.version = 2
+    layout.overlay = oneOf(layout.overlay, { "OnePanel", "Windows" }, d.overlay)
+    layout.kickStyle = oneOf(layout.kickStyle, { "Bars", "Icons" }, d.kickStyle)
+    layout.split = bool(layout.split, d.split)
+    layout.timers = bool(layout.timers, d.timers)
+    layout.memberFit = bool(layout.memberFit, d.memberFit)
+    layout.panelShape = cleanShape(layout.panelShape, d.panelShape, {})
+    layout.panelShape.typeOrder = nil
+    layout.panelLook = cleanLook(layout.panelLook, d.panelLook, 20) or d.panelLook
+    layout.memberLook = cleanLook(layout.memberLook, d.memberLook, 12, true) or d.memberLook
+    local panel = type(layout.panel) == "table" and layout.panel or {}
+    local point = type(panel.point) == "table" and #panel.point >= 1 and panel.point or d.panel.point
+    layout.panel = { point = point, locked = bool(panel.locked, true) }
+
+    local shown = LayoutModel.VisibleTypes(layout)
+    local known = {}
+    for _, t in ipairs(shown) do known[t] = true end
+    local order, seen = {}, {}
+    for _, list in ipairs({ type(layout.typeOrder) == "table" and layout.typeOrder or {}, shown }) do
+        for _, t in ipairs(list) do
+            if known[t] and not seen[t] then
+                seen[t] = true
+                order[#order + 1] = t
+            end
+        end
+    end
+    layout.typeOrder = order
+
+    local placed = {}
+    local function claim(types)
+        local out = {}
+        for _, t in ipairs(type(types) == "table" and types or {}) do
+            if known[t] and not placed[t] then
+                placed[t] = true
+                out[#out + 1] = t
+            end
+        end
+        return out
+    end
+    local ids, sections = {}, {}
+    for _, s in ipairs(type(layout.sections) == "table" and layout.sections or {}) do
+        if type(s) == "table" then
+            local types = claim(s.types)
+            if #types > 0 then
+                local id = type(s.id) == "string" and s.id ~= "" and not ids[s.id] and s.id or nil
+                if not id then
+                    local n = 1
+                    while ids["s" .. n] do n = n + 1 end
+                    id = "s" .. n
+                end
+                ids[id] = true
+                sections[#sections + 1] = {
+                    id = id, types = types, shown = bool(s.shown, true), ownWindow = bool(s.ownWindow, false),
+                    shape = cleanShape(s.shape, nil, known),
+                    look = cleanLook(s.look, layout.panelLook, 20),
+                }
+            end
+        end
+    end
+    layout.sections = sections
+
+    local groups = {}
+    for _, g in ipairs(type(layout.groups) == "table" and layout.groups or {}) do
+        if type(g) == "table" then
+            groups[#groups + 1] = {
+                types = claim(g.types),
+                side = oneOf(g.side, SIDES, "Left"),
+                shape = cleanShape(g.shape, newGroupShape(), known),
+                look = cleanLook(g.look, layout.memberLook, 12, true),
+                shown = bool(g.shown, true),
+                offsetX = num(g.offsetX, -400, 400, 4),
+                offsetY = num(g.offsetY, -400, 400, 0),
+                gap = num(g.gap, 0, 40, nil),
+            }
+        end
+    end
+    layout.groups = groups
+
+    if type(layout.rolePriority) ~= "table" then layout.rolePriority = {} end
+    layout.rolePriority = LayoutModel.RoleOrder(layout)
+    local classOrder = type(layout.classOrder) == "table" and layout.classOrder or {}
+    layout.classOrder = {}
+    for _, role in ipairs(ROLES) do
+        local out, have = {}, {}
+        local src = type(classOrder[role]) == "table" and classOrder[role] or {}
+        for i = 1, #src + CLASS_COUNT do
+            local c = i <= #src and src[i] or i - #src
+            if type(c) == "number" and c >= 1 and c <= CLASS_COUNT and c % 1 == 0 and not have[c] then
+                have[c] = true
+                out[#out + 1] = c
+            end
+        end
+        layout.classOrder[role] = out
     end
     return layout
 end

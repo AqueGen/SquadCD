@@ -38,6 +38,7 @@ end
 
 function ns.Defaults(db)
     ns.LayoutModel.Migrate(db)
+    db.layout = ns.LayoutModel.Normalize(db.layout)
     local defaults = {}
     for k, v in pairs(ns.DEFAULTS) do
         if k ~= "layout" then defaults[k] = v end
