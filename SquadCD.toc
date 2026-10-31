@@ -36,6 +36,7 @@ UI/Rows.lua
 UI/Panel.lua
 UI/Display.lua
 UI/Demo.lua
+UI/PanelPreview.lua
 UI/WidgetRules.lua
 UI/Widgets.lua
 UI/LayoutParts.lua
