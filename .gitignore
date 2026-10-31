@@ -26,3 +26,4 @@ RELEASE_NOTES.md
 # Working notes: specs, plans and agent scratch stay out of the repo.
 docs/superpowers/
 .superpowers/
+__pycache__/

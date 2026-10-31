@@ -10,16 +10,25 @@ local BLIZZARD = { "PlayerFrame", "TargetFrame", "FocusFrame", "PartyFrame", "Co
 local found = {}
 local stack
 
+local function plain(frame, method, ...)
+    local ok, value = pcall(frame[method], frame, ...)
+    if not ok or issecretvalue(value) then return nil end
+    return value
+end
+
+local function usable(frame)
+    return plain(frame, "IsForbidden") == false and plain(frame, "IsVisible") == true
+end
+
 local function unitOf(frame)
-    if frame:IsForbidden() or not frame:IsObjectType("Button") then return end
-    local unit = frame:GetAttribute("unit")
-    if issecretvalue(unit) then return end
-    return TOKENS[unit] and unit or nil
+    if plain(frame, "IsObjectType", "Button") ~= true then return end
+    local unit = plain(frame, "GetAttribute", "unit")
+    return unit and TOKENS[unit] and unit or nil
 end
 
 local function scan(parent, depth, skip, hits)
     for _, child in ipairs({ parent:GetChildren() }) do
-        if not skip[child] and not child:IsForbidden() and child:IsVisible() then
+        if not skip[child] and usable(child) then
             local unit = unitOf(child)
             if unit and not hits[unit] then
                 hits[unit] = child
@@ -63,13 +72,13 @@ local function blizzard(unit)
     if party then
         for i = 1, 4 do
             local f = party["MemberFrame" .. i]
-            if f and f:IsVisible() and f:GetAttribute("unit") == unit then return f end
+            if f and usable(f) and plain(f, "GetAttribute", "unit") == unit then return f end
         end
     end
     local compact = CompactPartyFrame
-    if compact and compact:IsVisible() and compact.memberUnitFrames then
+    if compact and usable(compact) and compact.memberUnitFrames then
         for _, f in ipairs(compact.memberUnitFrames) do
-            if f:IsVisible() and f:GetAttribute("unit") == unit then return f end
+            if usable(f) and plain(f, "GetAttribute", "unit") == unit then return f end
         end
     end
 end
