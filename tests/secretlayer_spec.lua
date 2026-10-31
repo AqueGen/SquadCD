@@ -68,6 +68,13 @@ describe("SecretLayer", function()
         assert.same({ 0 }, layer.cooling.calls.SetAlpha)
     end)
 
+    it("measures the line on a font string outside the secret anchors", function()
+        local strip = layer.slots[1].coolText
+        rawset(strip, "GetStringHeight", function() error("attempt to perform numeric conversion on a secret number value") end)
+        layer:SetLook("tex", 30)
+        assert.equal(11, layer.line)
+    end)
+
     it("hides timers when the setting is off", function()
         layer:SetTimers(false)
         assert.same({ false }, layer.window.calls.SetShown)
@@ -87,5 +94,20 @@ describe("Icon with a secret track", function()
         icon:Update({ ready = true, unknown = true }, 100, true)
         assert.same({ "" }, icon.mark.calls.SetText)
         assert.is_not_true((icon.tex.calls.SetDesaturated or {})[1])
+    end)
+
+    it("falls back to the plain icon when the layer fails", function()
+        local made, reported = {}, 0
+        local ns = helpers.load(FILES, {
+            CreateFrame = function(kind) return stub(kind, made) end,
+            C_Spell = { GetSpellTexture = function() return "tex" end },
+            geterrorhandler = function() return function() reported = reported + 1 end end,
+        })
+        ns.SecretTracks = { Bind = function() return true end, Unbind = function() end, Track = function() return {} end }
+        ns.SecretLayer.New = function() error("boom") end
+        local icon = ns.Icon.New(stub("Frame", made))
+        icon:SetSpell({ id = 48792 }, { guid = "A", spec = 250 }, 30)
+        assert.is_false(icon.secret)
+        assert.equal(1, reported)
     end)
 end)

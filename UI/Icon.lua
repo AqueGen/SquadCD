@@ -90,10 +90,19 @@ function Icon:BindSecret(spell, member, size)
     self.secret = false
     if not (ns.SecretTracks and ns.SecretLayer) then return end
     if not self.layer and not ns.SecretTracks.Track(member.guid, spell.id) then return end
-    self.layer = self.layer or ns.SecretLayer.New(self)
-    self.layer:SetLook(texture(spell), size)
-    self.secret = ns.SecretTracks.Bind(self.layer, member.guid, spell.id)
-    self.layer:Show(self.secret)
+    local ok = xpcall(function()
+        self.layer = self.layer or ns.SecretLayer.New(self)
+        self.layer:SetLook(texture(spell), size)
+        self.secret = ns.SecretTracks.Bind(self.layer, member.guid, spell.id)
+        self.layer:Show(self.secret)
+    end, geterrorhandler())
+    if not ok then
+        self.secret = false
+        if self.layer then
+            ns.SecretTracks.Unbind(self.layer)
+            pcall(self.layer.Show, self.layer, false)
+        end
+    end
 end
 
 function Icon:SetLabel(text, r, g, b)

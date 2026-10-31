@@ -71,6 +71,19 @@ function Layer.New(icon)
     return self
 end
 
+-- Strips hang from secret-valued bar fills, so their own measurements come back secret; measure on a free string.
+local measurer, heights = nil, {}
+
+local function lineHeight(fontSize)
+    if not heights[fontSize] then
+        measurer = measurer or CreateFrame("Frame", nil, UIParent):CreateFontString(nil, "OVERLAY")
+        measurer:SetFont(T.FONT, fontSize, "OUTLINE")
+        measurer:SetText("0")
+        heights[fontSize] = math.ceil(measurer:GetStringHeight())
+    end
+    return heights[fontSize]
+end
+
 function Layer:SetLook(texture, size)
     self.size = size
     for _, slot in ipairs(self.slots) do
@@ -81,9 +94,7 @@ function Layer:SetLook(texture, size)
             text:SetWidth(size)
         end
     end
-    local probe = self.slots[1].coolText
-    probe:SetText("0")
-    self.line = math.ceil(probe:GetStringHeight()) + SPACING
+    self.line = lineHeight(math.max(8, math.floor(size * 0.42))) + SPACING
     self.window:SetSize(size, self.line)
 end
 
