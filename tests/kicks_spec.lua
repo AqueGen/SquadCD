@@ -39,9 +39,39 @@ describe("OwnCasts", function()
         assert.same({ { "P", 642, true } }, used)
     end)
 
-    it("replaced spell maps to lowest tracked id", function()
-        helpers.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "c", 106898)
-        assert.equal(77761, used[1][2])
+    it("potion use spell maps to the potion pseudo-spell", function()
+        helpers.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "c", ns.Potions[1].spell)
+        assert.same({ { "P", "potion", true } }, used)
+    end)
+
+    it("spell the player has keeps its own id", function()
+        local druid = { class = "DRUID", spec = 103, talents = { [106898] = 1 } }
+        assert.equal(106898, ns.OwnCasts.Resolve(106898, druid))
+    end)
+
+    it("replaced spell maps to the lowest replacer the player has", function()
+        local druid = { class = "DRUID", spec = 103, talents = {} }
+        assert.equal(77761, ns.OwnCasts.Resolve(106898, druid))
+    end)
+
+    it("Sigil of Misery stays Misery without Sigil of Silence", function()
+        local dh = { class = "DEMONHUNTER", spec = 581, talents = { [207684] = 1 } }
+        assert.equal(207684, ns.OwnCasts.Resolve(207684, dh))
+    end)
+
+    it("Berserk stays Berserk without Incarnation", function()
+        local feral = { class = "DRUID", spec = 103, talents = { [106951] = 1 } }
+        assert.equal(106951, ns.OwnCasts.Resolve(106951, feral))
+    end)
+
+    it("Berserk maps to Incarnation when only Incarnation is talented", function()
+        local feral = { class = "DRUID", spec = 103, talents = { [102543] = 1 } }
+        assert.equal(102543, ns.OwnCasts.Resolve(106951, feral))
+    end)
+
+    it("talented Guardian of Ancient Kings keeps 86659", function()
+        local prot = { class = "PALADIN", spec = 66, talents = { [86659] = 1 } }
+        assert.equal(86659, ns.OwnCasts.Resolve(86659, prot))
     end)
 
     it("secret spell id is counted and ignored", function()
