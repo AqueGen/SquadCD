@@ -30,7 +30,7 @@ end
 
 local function start(mode, units, extra)
     local ns = helpers.load(FILES, game(mode, units, extra))
-    helpers.fire("ADDON_LOADED", "Huddle")
+    helpers.fire("ADDON_LOADED", "SquadCD")
     ns.DB.timers = { A = { [33206] = { usedServer = 1000000, spent = 1 } } }
     local rosters = {}
     ns.Group.OnRoster = function(list) rosters[#rosters + 1] = list end
@@ -123,7 +123,7 @@ describe("Group status", function()
     it("secret roster reports secret and does not load", function()
         local ns = helpers.load(FILES, game("party"))
         _G.issecretvalue = function(v) return v == "A" end
-        helpers.fire("ADDON_LOADED", "Huddle")
+        helpers.fire("ADDON_LOADED", "SquadCD")
         helpers.fire("PLAYER_LOGIN")
         helpers.fire("GROUP_ROSTER_UPDATE")
         assert.are.equal("secret", ns.Group.Status())

@@ -29,14 +29,14 @@ end
 
 function Probe.Run()
     local d = Probe.Data()
-    print(("Huddle probe: group %s, sensors %s%s"):format(d.group, d.mode, d.reason and (" (" .. d.reason .. ")") or ""))
-    if d.note then print("Huddle probe: " .. d.note) end
+    print(("SquadCD probe: group %s, sensors %s%s"):format(d.group, d.mode, d.reason and (" (" .. d.reason .. ")") or ""))
+    if d.note then print("SquadCD probe: " .. d.note) end
     for _, u in ipairs(d.units) do
         local r, h = u.read, u.hit
-        print(("Huddle probe: %s shown: plain %d (true %d), secret %d, error %d - hit-test: true %d, false %d, secret %d, error %d"):format(
+        print(("SquadCD probe: %s shown: plain %d (true %d), secret %d, error %d - hit-test: true %d, false %d, secret %d, error %d"):format(
             u.unit, r["true"] + r["false"], r["true"], r.secret, r.error, h["true"], h["false"], h.secret, h.error))
     end
-    print("Huddle probe: buffs seen since login: " .. (#d.seen > 0 and table.concat(d.seen, ", ") or "none"))
+    print("SquadCD probe: buffs seen since login: " .. (#d.seen > 0 and table.concat(d.seen, ", ") or "none"))
 end
 
 ns.Slash("probe", Probe.Run)

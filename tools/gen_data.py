@@ -236,7 +236,7 @@ def fetch_table(name, cache_dir):
     os.makedirs(cache_dir, exist_ok=True)
     path = os.path.join(cache_dir, "%s-%s.csv" % (name, WAGO_BUILD))
     if not os.path.exists(path):
-        req = urllib.request.Request(WAGO_URL % name, headers={"User-Agent": "Huddle-gen/1.0"})
+        req = urllib.request.Request(WAGO_URL % name, headers={"User-Agent": "SquadCD-gen/1.0"})
         tmp = path + ".part"
         with urllib.request.urlopen(req, timeout=600) as resp, open(tmp, "wb") as f:
             f.write(resp.read())

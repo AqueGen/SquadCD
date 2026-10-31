@@ -93,7 +93,7 @@ local warned = false
 function Display.Changed()
     if InCombatLockdown() and not warned then
         warned = true
-        print("Huddle: the change applies when combat ends.")
+        print("SquadCD: the change applies when combat ends.")
     end
     Display.Rebuild()
 end

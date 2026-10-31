@@ -51,7 +51,7 @@ describe("Wizard window", function()
     local function shownSettings()
         local n = 0
         for _, f in ipairs(created) do
-            if f.name == "HuddleSettings" and f.shown then n = n + 1 end
+            if f.name == "SquadCDSettings" and f.shown then n = n + 1 end
         end
         return n
     end
@@ -117,7 +117,7 @@ describe("Wizard window", function()
         W.Open()
         local edited = ns.DB.layout
         edited.timers = false
-        HuddleWizard.scripts.OnHide(HuddleWizard)
+        SquadCDWizard.scripts.OnHide(SquadCDWizard)
         assert.is_true(W.IsOpen())
         assert.are.equal(edited, ns.DB.layout)
         click("Cancel")

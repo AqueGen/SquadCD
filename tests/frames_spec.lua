@@ -144,7 +144,7 @@ describe("Member chip", function()
             PaintChoice = function() end,
         }
         assert.is_true(ns.EditMode.StartMembers())
-        local at = HuddleMemberChip.points[1]
+        local at = SquadCDMemberChip.points[1]
         assert.are.same({ "TOPLEFT", "BOTTOMLEFT" }, { at[1], at[3] })
         assert.are.equal(holder, at[2])
     end)

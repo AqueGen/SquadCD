@@ -55,7 +55,7 @@ describe("Core", function()
         local second = false
         ns.RegisterModule("bad", { Enable = function() error("boom") end })
         ns.RegisterModule("good", { Enable = function() second = true end })
-        helpers.fire("ADDON_LOADED", "Huddle")
+        helpers.fire("ADDON_LOADED", "SquadCD")
         helpers.fire("PLAYER_LOGIN")
         assert.is_true(second)
         assert.are.equal(1, #errors)
@@ -67,7 +67,7 @@ describe("Core", function()
         local order = {}
         ns.RegisterModule("a", { Enable = function() order[#order + 1] = "a" end })
         ns.RegisterModule("b", { Enable = function() order[#order + 1] = "b" end })
-        helpers.fire("ADDON_LOADED", "Huddle")
+        helpers.fire("ADDON_LOADED", "SquadCD")
         helpers.fire("PLAYER_LOGIN")
         assert.are.same({ "a", "b" }, order)
     end)
@@ -77,11 +77,11 @@ describe("Core", function()
         local seen = false
         ns.RegisterModule("m", {
             Enable = function()
-                assert(type(SlashCmdList.HUDDLE) == "function", "slash not registered")
+                assert(type(SlashCmdList.SQUADCD) == "function", "slash not registered")
                 seen = true
             end,
         })
-        helpers.fire("ADDON_LOADED", "Huddle")
+        helpers.fire("ADDON_LOADED", "SquadCD")
         helpers.fire("PLAYER_LOGIN")
         assert.is_true(seen)
     end)
@@ -98,27 +98,27 @@ describe("Core", function()
         local lines = {}
         local ns = loadCore({ print = function(s) lines[#lines + 1] = s end })
         ns.Slash("status", function() end)
-        SlashCmdList.HUDDLE("nope")
+        SlashCmdList.SQUADCD("nope")
         assert.are.equal(1, #lines)
         assert.is_truthy(lines[1]:find("status", 1, true))
     end)
 
-    it("bare /huddle toggles the window and subcommands dispatch", function()
+    it("bare /squadcd toggles the window and subcommands dispatch", function()
         local ns = loadCore()
         local toggled, got = 0, nil
         ns.ToggleWindow = function() toggled = toggled + 1 end
         ns.Slash("status", function(rest) got = rest end)
-        SlashCmdList.HUDDLE("")
-        SlashCmdList.HUDDLE("Status  now")
+        SlashCmdList.SQUADCD("")
+        SlashCmdList.SQUADCD("Status  now")
         assert.are.equal(1, toggled)
         assert.are.equal("now", got)
     end)
 
-    it("sets ns.DB from HuddleDB on ADDON_LOADED", function()
+    it("sets ns.DB from SquadCDDB on ADDON_LOADED", function()
         local ns = loadCore()
-        _G.HuddleDB = { placement = { Kick = "Off" } }
-        helpers.fire("ADDON_LOADED", "Huddle")
-        assert.are.equal(_G.HuddleDB, ns.DB)
+        _G.SquadCDDB = { placement = { Kick = "Off" } }
+        helpers.fire("ADDON_LOADED", "SquadCD")
+        assert.are.equal(_G.SquadCDDB, ns.DB)
         assert.are.equal("off", (ns.LayoutModel.PlaceOf(ns.DB.layout, "Kick")))
     end)
 end)

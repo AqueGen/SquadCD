@@ -129,14 +129,14 @@ describe("EditMode", function()
 
     it("Esc hides the bar and ends edit mode", function()
         E.StartPanels()
-        HuddleEditBar:Hide()
-        HuddleEditBar.scripts.OnHide(HuddleEditBar)
+        SquadCDEditBar:Hide()
+        SquadCDEditBar.scripts.OnHide(SquadCDEditBar)
         assert.is_false(E.Panels())
     end)
 
     it("a bar hidden with UIParent keeps edit mode on", function()
         E.StartPanels()
-        HuddleEditBar.scripts.OnHide(HuddleEditBar)
+        SquadCDEditBar.scripts.OnHide(SquadCDEditBar)
         assert.is_true(E.Panels())
     end)
 

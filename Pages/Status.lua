@@ -36,7 +36,7 @@ end
 
 local function ModeText()
     local d = ns.Probe.Data()
-    local lines = { "Group: " .. d.group .. (d.group == "party" and "" or " - Huddle works in a party only") }
+    local lines = { "Group: " .. d.group .. (d.group == "party" and "" or " - SquadCD works in a party only") }
     lines[2] = "Buff readout: " .. (MODES[d.mode] or d.mode)
     if d.reason then lines[3] = "Reason: " .. d.reason end
     if d.note then lines[#lines + 1] = d.note end
@@ -72,7 +72,7 @@ end
 
 local function MembersText()
     if ns.Group.Status() == "secret" then return "The party roster is secret right now." end
-    if #roster == 0 then return "No party members. Huddle works in a party only." end
+    if #roster == 0 then return "No party members. SquadCD works in a party only." end
     local lines = {}
     for _, m in ipairs(roster) do
         local name = UnitName(m.unit)

@@ -10,7 +10,7 @@ local DEFAULT_W, DEFAULT_H = 860, 560
 local MIN_W, MIN_H = 820, 420
 local TITLE_H, MENU_W, ENTRY_H, GAP, PAD = 28, 150, 20, 4, 8
 local PAGES = {
-    { key = "about", label = "What Huddle does" },
+    { key = "about", label = "What SquadCD does" },
     { key = "presets", label = "Presets and types" },
     { key = "panels", label = "Panels" },
     { key = "members", label = "At party frames" },
@@ -81,8 +81,8 @@ local function TitleButton(parent, text, width, anchor, onClick)
 end
 
 local function Build()
-    frame = CreateFrame("Frame", "HuddleSettings", UIParent, "BackdropTemplate")
-    tinsert(UISpecialFrames, "HuddleSettings")
+    frame = CreateFrame("Frame", "SquadCDSettings", UIParent, "BackdropTemplate")
+    tinsert(UISpecialFrames, "SquadCDSettings")
     frame:SetFrameStrata("DIALOG")
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
@@ -116,7 +116,7 @@ local function Build()
     local name = title:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     name:SetPoint("LEFT", PAD, 0)
     name:SetTextColor(unpack(T.gold))
-    name:SetText("Huddle")
+    name:SetText("SquadCD")
 
     local close = TitleButton(title, "X", 22, title, function() frame:Hide() end)
     unlock = TitleButton(title, "Move the panels", 110, close, ns.EditMode.TogglePanels)

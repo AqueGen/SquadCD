@@ -17,11 +17,11 @@ local driver = CreateFrame("Frame")
 
 local function blocked(what)
     if InCombatLockdown() then
-        print("Huddle: " .. what .. " is available out of combat only.")
+        print("SquadCD: " .. what .. " is available out of combat only.")
         return true
     end
     if ns.Wizard and ns.Wizard.IsOpen() then
-        print("Huddle: " .. what .. " is available after the layout wizard closes.")
+        print("SquadCD: " .. what .. " is available after the layout wizard closes.")
         return true
     end
     return false
@@ -52,7 +52,7 @@ local function releaseDemo()
 end
 
 local function endPreview()
-    if ns.Preview.Cancel(ns.DB) then print("Huddle: preset preview cancelled, edits apply to your saved layout.") end
+    if ns.Preview.Cancel(ns.DB) then print("SquadCD: preset preview cancelled, edits apply to your saved layout.") end
 end
 
 function EditMode.DemoChanged()
@@ -229,8 +229,8 @@ end
 
 local function editBar()
     if bar then return bar end
-    bar = CreateFrame("Frame", "HuddleEditBar", UIParent, "BackdropTemplate")
-    tinsert(UISpecialFrames, "HuddleEditBar")
+    bar = CreateFrame("Frame", "SquadCDEditBar", UIParent, "BackdropTemplate")
+    tinsert(UISpecialFrames, "SquadCDEditBar")
     bar:SetFrameStrata("DIALOG")
     bar:SetClampedToScreen(true)
     bar:SetPoint("TOP", UIParent, "TOP", 0, -60)

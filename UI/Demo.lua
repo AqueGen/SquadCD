@@ -4,11 +4,11 @@ local Demo = {}
 ns.Demo = Demo
 
 local MEMBERS = {
-    { guid = "HuddleDemo1", unit = "player", class = "DEMONHUNTER", spec = 581, name = "Vexhal", race = 10, own = true },
-    { guid = "HuddleDemo2", unit = "party1", class = "PRIEST", spec = 256, name = "Lumenia" },
-    { guid = "HuddleDemo3", unit = "party2", class = "MAGE", spec = 64, name = "Frostwyn", race = 2, unread = true },
-    { guid = "HuddleDemo4", unit = "party3", class = "PALADIN", spec = 70, name = "Aurik" },
-    { guid = "HuddleDemo5", unit = "party4", class = "MONK", spec = 269, name = "Kaito" },
+    { guid = "SquadCDDemo1", unit = "player", class = "DEMONHUNTER", spec = 581, name = "Vexhal", race = 10, own = true },
+    { guid = "SquadCDDemo2", unit = "party1", class = "PRIEST", spec = 256, name = "Lumenia" },
+    { guid = "SquadCDDemo3", unit = "party2", class = "MAGE", spec = 64, name = "Frostwyn", race = 2, unread = true },
+    { guid = "SquadCDDemo4", unit = "party3", class = "PALADIN", spec = 70, name = "Aurik" },
+    { guid = "SquadCDDemo5", unit = "party4", class = "MONK", spec = 269, name = "Kaito" },
 }
 local CHARGED = 204021
 
@@ -88,7 +88,7 @@ end
 function Demo.Set(next)
     if next ~= "Off" and next ~= "Me" and next ~= "Group" then return end
     if InCombatLockdown() then
-        print("Huddle: demo is available out of combat only.")
+        print("SquadCD: demo is available out of combat only.")
         return
     end
     mode = next
@@ -113,7 +113,7 @@ function Demo.Toggle()
     Demo.Set(mode == "Off" and "Group" or "Off")
 end
 
-function Huddle_Demo()
+function SquadCD_Demo()
     Demo.Toggle()
 end
 

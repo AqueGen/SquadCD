@@ -25,7 +25,7 @@ local function presetCards(page)
     Parts.PresetCards(group, {
         pick = function(n)
             if ns.EditMode.Panels() or ns.EditMode.Members() then
-                print("Huddle: finish the edit mode first (Done), then preview a preset.")
+                print("SquadCD: finish the edit mode first (Done), then preview a preset.")
                 return
             end
             Preview.Show(ns.DB, n)

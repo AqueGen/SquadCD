@@ -50,8 +50,9 @@ function ns.Slash(sub, fn)
     subcommands[sub:lower()] = fn
 end
 
-SLASH_HUDDLE1 = "/huddle"
-SlashCmdList.HUDDLE = function(msg)
+SLASH_SQUADCD1 = "/squadcd"
+SLASH_SQUADCD2 = "/scd"
+SlashCmdList.SQUADCD = function(msg)
     local sub, rest = (msg or ""):match("^%s*(%S*)%s*(.-)%s*$")
     if sub == "" then
         if ns.ToggleWindow then
@@ -69,10 +70,10 @@ SlashCmdList.HUDDLE = function(msg)
         names[#names + 1] = name
     end
     table.sort(names)
-    print("Huddle: unknown command. Use /huddle " .. (#names > 0 and table.concat(names, " | ") or "(none registered)"))
+    print("SquadCD: unknown command. Use /squadcd " .. (#names > 0 and table.concat(names, " | ") or "(none registered)"))
 end
 
-function Huddle_OnCompartmentClick()
+function SquadCD_OnCompartmentClick()
     if ns.ToggleWindow then
         ns.ToggleWindow()
     end
@@ -86,8 +87,8 @@ frame:SetScript("OnEvent", function(_, event, name)
         if name ~= addonName then
             return
         end
-        HuddleDB = HuddleDB or {}
-        ns.DB = ns.Defaults(HuddleDB)
+        SquadCDDB = SquadCDDB or {}
+        ns.DB = ns.Defaults(SquadCDDB)
     else
         for _, module in ipairs(modules) do
             if module.Enable then

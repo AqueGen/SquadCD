@@ -1,12 +1,12 @@
 ## Interface: 120100, 120105
-## Title: Huddle
+## Title: SquadCD
 ## Notes: Party cooldown tracker.
 ## Author: AqueGen
 ## Version: 0.1.0
-## SavedVariables: HuddleDB
+## SavedVariables: SquadCDDB
 ## X-License: All Rights Reserved
-## IconTexture: Interface\AddOns\Huddle\Media\icon
-## AddonCompartmentFunc: Huddle_OnCompartmentClick
+## IconTexture: Interface\AddOns\SquadCD\Media\icon
+## AddonCompartmentFunc: SquadCD_OnCompartmentClick
 
 Logic/LayoutModel.lua
 Core.lua

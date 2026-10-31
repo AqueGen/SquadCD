@@ -25,7 +25,7 @@ end
 
 local function mainContainer()
     if main then return main end
-    main = newContainer("HuddlePanel")
+    main = newContainer("SquadCDPanel")
     return main
 end
 

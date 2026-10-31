@@ -11,7 +11,7 @@ local DEFAULT_W, DEFAULT_H, MIN_W, MIN_H = 760, 600, 660, 420
 local TITLE_H, HEAD_H, FOOT_H, PAD = 28, 54, 40, 8
 local SIZES = { { value = 22, text = "Small" }, { value = 26, text = "Medium" }, { value = 32, text = "Large" } }
 local STEPS = {
-    { title = "Preset", hint = "A starting point for the whole layout. Every choice can be changed later in the Huddle settings (/huddle)." },
+    { title = "Preset", hint = "A starting point for the whole layout. Every choice can be changed later in the SquadCD settings (/squadcd)." },
     { title = "Types and order", hint = "Panel, next to each party frame, or off, and the order of the types." },
     { title = "Size and position", hint = "How big the panel icons are, and where the panels sit on screen." },
 }
@@ -118,8 +118,8 @@ local function showStep(step)
 end
 
 local function build()
-    frame = CreateFrame("Frame", "HuddleWizard", UIParent, "BackdropTemplate")
-    tinsert(UISpecialFrames, "HuddleWizard")
+    frame = CreateFrame("Frame", "SquadCDWizard", UIParent, "BackdropTemplate")
+    tinsert(UISpecialFrames, "SquadCDWizard")
     frame:SetFrameStrata("DIALOG")
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
@@ -144,7 +144,7 @@ local function build()
     local name = title:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     name:SetPoint("LEFT", PAD, 0)
     name:SetTextColor(unpack(T.gold))
-    name:SetText("Huddle - Layout wizard")
+    name:SetText("SquadCD - Layout wizard")
     local x = Widgets.Button(title, "X", 22)
     x:SetPoint("RIGHT", title, "RIGHT", -(TITLE_H - 22) / 2, 0)
     x:SetScript("OnClick", function() close(false) end)
@@ -234,11 +234,11 @@ function Wizard.Open()
         return
     end
     if editing() then
-        print("Huddle: finish the edit mode first (Done), then open the layout wizard.")
+        print("SquadCD: finish the edit mode first (Done), then open the layout wizard.")
         return
     end
     wanted = true
-    if InCombatLockdown() then print("Huddle: the layout wizard opens when combat ends.") end
+    if InCombatLockdown() then print("SquadCD: the layout wizard opens when combat ends.") end
     try()
 end
 

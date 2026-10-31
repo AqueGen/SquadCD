@@ -1,6 +1,6 @@
 local helpers = {}
 
-local ADDON = "Huddle"
+local ADDON = "SquadCD"
 local root = debug.getinfo(1, "S").source:match("^@(.*)[/\\]tests[/\\][^/\\]*$") or "."
 local frames
 local applied = {}
@@ -35,7 +35,7 @@ function helpers.load(files, stubs)
     end
     applied = {}
     frames = {}
-    _G.HuddleDB = nil
+    _G.SquadCDDB = nil
     _G.SlashCmdList = {}
     _G.CreateFrame = newFrame
     _G.geterrorhandler = function() return function() end end

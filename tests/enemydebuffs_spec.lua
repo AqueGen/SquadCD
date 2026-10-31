@@ -109,7 +109,7 @@ end
 local function start(opts)
     local w = world(opts)
     local ns = helpers.load(FILES, w.stubs)
-    helpers.fire("ADDON_LOADED", "Huddle")
+    helpers.fire("ADDON_LOADED", "SquadCD")
     helpers.fire("PLAYER_LOGIN")
     helpers.fire("PLAYER_ENTERING_WORLD")
     w.flush()

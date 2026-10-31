@@ -3,12 +3,12 @@ local _, ns = ...
 local WHITE = ns.Theme.text
 
 ns.Window.Register("about", function(page)
-    local does = page:Group("What Huddle does")
-    does:Note({ color = WHITE, text = "Huddle shows your party's cooldowns. Each type of cooldown (defensives, externals, kicks, control, raid defensives, dispels, burst, racials, potions, movement) shows either in a section of the group panel, in a member group next to each party frame, or not at all. By default kicks, control, externals and raid defensives sit in the panel and each member's defensives, burst, racials and potions sit left of their party frame." })
-    does:Note("An icon counts down from the moment the spell was used and lights up when it is ready. In the panel the Next marker shows who presses next on kicks, control, externals and raid defensives: the first ready member by role and class priority. Blue border: \"maybe\" - two members could have used it and Huddle cannot tell who. Orange dot: that member's talents are not read yet, so the timer uses the base cooldown. Grey icon with \"?\": Huddle cannot see this spell for that member right now, so it may or may not be ready.")
+    local does = page:Group("What SquadCD does")
+    does:Note({ color = WHITE, text = "SquadCD shows your party's cooldowns. Each type of cooldown (defensives, externals, kicks, control, raid defensives, dispels, burst, racials, potions, movement) shows either in a section of the group panel, in a member group next to each party frame, or not at all. By default kicks, control, externals and raid defensives sit in the panel and each member's defensives, burst, racials and potions sit left of their party frame." })
+    does:Note("An icon counts down from the moment the spell was used and lights up when it is ready. In the panel the Next marker shows who presses next on kicks, control, externals and raid defensives: the first ready member by role and class priority. Blue border: \"maybe\" - two members could have used it and SquadCD cannot tell who. Orange dot: that member's talents are not read yet, so the timer uses the base cooldown. Grey icon with \"?\": SquadCD cannot see this spell for that member right now, so it may or may not be ready.")
 
     local cannot = page:Group("What it cannot do")
-    cannot:Note({ color = WHITE, text = "Party only. In a raid group or when you are not in a group, Huddle shows nothing and does no work." })
+    cannot:Note({ color = WHITE, text = "Party only. In a raid group or when you are not in a group, SquadCD shows nothing and does no work." })
     cannot:Note("A teammate's spell shows only when it leaves a buff or a debuff the game lets addons see. Spells with no such aura (most dispels, many burst cooldowns) show for you only; the Spells page marks them \"not trackable for others\".")
     cannot:Note("When the game hides party buffs from addons (secret mode), teammates' defensives and externals are not tracked and show the grey \"?\". Your own cooldowns and kicks still work. The Status page shows which mode is on and why.")
     cannot:Note("Settings and panel moves change frames, which the game allows out of combat only. A change made in combat applies when combat ends.")

@@ -190,8 +190,8 @@ end
 
 local function frame()
     if chip then return chip end
-    chip = CreateFrame("Frame", "HuddleMemberChip", UIParent, "BackdropTemplate")
-    tinsert(UISpecialFrames, "HuddleMemberChip")
+    chip = CreateFrame("Frame", "SquadCDMemberChip", UIParent, "BackdropTemplate")
+    tinsert(UISpecialFrames, "SquadCDMemberChip")
     chip:SetFrameStrata("DIALOG")
     chip:SetClampedToScreen(true)
     chip:EnableMouse(true)
