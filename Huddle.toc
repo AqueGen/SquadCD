@@ -13,3 +13,5 @@ Data.lua
 Logic/Cooldowns.lua
 Logic/Tracker.lua
 Logic/Persist.lua
+Game/Inspect.lua
+Game/Group.lua
