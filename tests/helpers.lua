@@ -31,7 +31,7 @@ end
 helpers.newFrame = newFrame
 
 helpers.VELVET = {}
-for _, name in ipairs({ "LibStub", "Core", "Tokens", "Button", "Group", "Nav", "Segments", "Slider", "Checkbox", "End" }) do
+for _, name in ipairs({ "LibStub", "Core", "Tokens", "Button", "Group", "Nav", "Segments", "Slider", "Checkbox", "Preview", "End" }) do
     helpers.VELVET[#helpers.VELVET + 1] = "Libs/LibVelvet-1.0/" .. name .. ".lua"
 end
 
