@@ -117,6 +117,28 @@ describe("Panel preview", function()
         assert.are.equal(wide, pane.fit.w)
     end)
 
+    it("names what the cursor is on and opens its settings on click", function()
+        local pick
+        local make = ns.Panel.New
+        ns.Panel.New = function(opts)
+            pick = opts.pick
+            return make(opts)
+        end
+        local focused
+        ns.Window = { Focus = function(page, key) focused = { page, key } end }
+        pane = fakePane()
+        ns.PanelPreview.Attach(pane)
+        local target = { page = "panels", key = "section:2", label = "Section 2: Control" }
+        local f = stub(helpers.newFrame())
+        function f:CreateTexture() return stub(helpers.newFrame()) end
+        pick.hover(target, f)
+        assert.are.equal("Section 2: Control - click to edit", pane.captionText)
+        pick.hover(nil)
+        assert.are.equal("Preview: the Demo party, 5 members", pane.captionText)
+        pick.click(target)
+        assert.are.same({ "panels", "section:2" }, focused)
+    end)
+
     it("follows a settings change", function()
         ns.Display.Changed()
         assert.is_not_nil(pane.fit)

@@ -9,12 +9,36 @@ local MEMBERS = 5
 local CAPTION = "Preview: the Demo party, 5 members"
 local EMPTY = "Nothing to show: every type is off or hidden."
 local FRAME_W, FRAME_H, FRAME_GAP, PANEL_GAP = 120, 46, 2, 16
+local GLOW = { 1, 0.82, 0, 0.2 }
+local PARTY_LOOK = { page = "members", key = "look", label = "Party frames default look" }
 
 local pane, host, panelHost, panel, rows, source
 local frames, byUnit = {}, {}
 local listening = false
 local elapsed = 0
 local sight = { live = false, plain = true, secret = {} }
+
+local lit
+
+local pick = {
+    hover = function(target, frame)
+        if lit then lit:Hide() end
+        lit = nil
+        if not target then
+            pane:SetCaption(CAPTION)
+            return
+        end
+        frame.pickGlow = frame.pickGlow or frame:CreateTexture(nil, "OVERLAY")
+        frame.pickGlow:SetAllPoints(frame)
+        frame.pickGlow:SetColorTexture(unpack(GLOW))
+        frame.pickGlow:Show()
+        lit = frame.pickGlow
+        pane:SetCaption(target.label .. " - click to edit")
+    end,
+    click = function(target)
+        ns.Window.Focus(target.page, target.key)
+    end,
+}
 
 local spare
 local anchors = {
@@ -53,6 +77,10 @@ local function partyFrame(i)
     f.fill:SetAllPoints(f)
     f.name = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     f.name:SetPoint("TOP", f, "TOP", 0, -4)
+    f:EnableMouse(true)
+    f:SetScript("OnEnter", function(self) pick.hover(PARTY_LOOK, self) end)
+    f:SetScript("OnLeave", function() pick.hover(nil) end)
+    f:SetScript("OnMouseUp", function() pick.click(PARTY_LOOK) end)
     frames[i] = f
     return f
 end
@@ -122,8 +150,8 @@ function PanelPreview.Attach(target)
     pane = target
     host = CreateFrame("Frame", nil, pane.stage)
     panelHost = CreateFrame("Frame", nil, host)
-    panel = ns.Panel.New({ parent = panelHost })
-    rows = ns.Rows.New({ parent = host, anchors = anchors })
+    panel = ns.Panel.New({ parent = panelHost, pick = pick })
+    rows = ns.Rows.New({ parent = host, anchors = anchors, pick = pick })
     pane:SetCaption(CAPTION)
     pane:HookScript("OnHide", PanelPreview.Stop)
     if not listening then

@@ -268,6 +268,7 @@ function Page:Refresh()
     end
     local offsets, total = Rules.Stack(blocks, PAD)
     for index, group in ipairs(self.groups) do
+        group.offset = offsets[index]
         if offsets[index] then
             group.frame:ClearAllPoints()
             group.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -offsets[index])
@@ -276,6 +277,12 @@ function Page:Refresh()
     end
     self.frame:SetHeight(math.max(total, 1))
     self.frame:GetParent():SetHeight(math.max(total, 1))
+end
+
+function Page:Find(key)
+    for _, group in ipairs(self.groups) do
+        if group.key == key then return group end
+    end
 end
 
 function Page:Fail()

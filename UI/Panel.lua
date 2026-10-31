@@ -83,7 +83,7 @@ local function fill(c, key, list, layout)
         local cellW, cellH = widgets(c, l, item.entries, bars, look.iconSize, look.nameLetters, item.type == "Kick")
         local cells = {}
         for k = 1, l.count do cells[k] = { w = cellW, h = cellH } end
-        l.type, l.shape, l.labels = item.type, Model.LineShape(layout, item.section, item.type), look.labels
+        l.type, l.shape, l.labels, l.section = item.type, Model.LineShape(layout, item.section, item.type), look.labels, item.section
         local rects, w, h = Grid.Place(cells, l.shape, CELL_GAP)
         l.rects = rects
         l.head = bars and ns.KickBars.H or look.iconSize
@@ -182,6 +182,22 @@ local function new(opts)
         return windows[i]
     end
 
+    local function pickable(frame, target)
+        frame.pick = target
+        if frame.pickReady then return end
+        frame.pickReady = true
+        frame:EnableMouse(true)
+        frame:SetScript("OnEnter", function(self) opts.pick.hover(self.pick, self) end)
+        frame:SetScript("OnLeave", function() opts.pick.hover(nil) end)
+        frame:SetScript("OnMouseUp", function(self) opts.pick.click(self.pick) end)
+    end
+
+    local function sectionTarget(layout, section)
+        for i, s in ipairs(layout.sections) do
+            if s == section then return { page = "panels", key = "section:" .. i, label = "Section " .. i .. ": " .. nameOf(s) } end
+        end
+    end
+
     local function placeOf(section, groups)
         local pos = section.pos
         if preview and pos and not (pos.dockTo and groups[pos.dockTo]) then return nil end
@@ -252,7 +268,14 @@ local function new(opts)
             local f = c.frame
             local look = key == "panel" and layout.panelLook or Model.LookOf(layout, sectionOf[key])
             T.Backdrop(f, look)
-            f:EnableMouse(false)
+            if opts.pick then
+                pickable(f, key == "panel" and { page = "panels", key = "look", label = "Panel look and shape" } or sectionTarget(layout, sectionOf[key]))
+                for _, l in ipairs(c.lines) do
+                    if l.section and (l.count or 0) > 0 then pickable(l.tab.frame, sectionTarget(layout, l.section)) end
+                end
+            else
+                f:EnableMouse(false)
+            end
             f:SetSize(r.w, r.h)
             f:ClearAllPoints()
             f:SetPoint("TOPLEFT", opts.parent, "TOPLEFT", r.x - x0, -(r.y - y0))

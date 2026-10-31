@@ -51,6 +51,13 @@ local function new(opts)
         if not g then
             g = { frame = CreateFrame("Frame", nil, opts.parent, "BackdropTemplate"), icons = {}, tabs = {} }
             if opts.parent == UIParent then g.frame:SetFrameStrata("MEDIUM") end
+            if opts.pick then
+                local target = { page = "members", key = "group:" .. gi, label = "Group " .. gi .. " at party frames" }
+                g.frame:EnableMouse(true)
+                g.frame:SetScript("OnEnter", function(self) opts.pick.hover(target, self) end)
+                g.frame:SetScript("OnLeave", function() opts.pick.hover(nil) end)
+                g.frame:SetScript("OnMouseUp", function() opts.pick.click(target) end)
+            end
             members[i][gi] = g
         end
         return g

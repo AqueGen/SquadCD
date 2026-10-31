@@ -44,6 +44,7 @@ describe("Settings window preview zone", function()
                 end
                 function f:SetWidth(w) self.width = w end
                 function f:SetHeight(h) self.height = h end
+                function f:SetBackdropBorderColor(...) self.edge = { ... } end
                 made[#made + 1] = f
                 function f:HookScript(event, fn)
                     local prev = self.scripts[event]
@@ -64,6 +65,7 @@ describe("Settings window preview zone", function()
             InCombatLockdown = function() return false end,
             UIParent = stub({ GetEffectiveScale = function() return 1 end }),
             GetCursorPosition = function() return cursor, 0 end,
+            C_Timer = { After = function() end },
             UISpecialFrames = {},
             tinsert = table.insert,
             GameTooltip_Hide = function() end,
@@ -130,6 +132,26 @@ describe("Settings window preview zone", function()
         bar.scripts.OnMouseUp(bar)
         assert.are.equal(before + 60, pane.width)
         assert.are.equal(before + 60, ns.DB.window.zoneW)
+    end)
+
+    it("focus opens the page, scrolls to the keyed group and lights its edge", function()
+        local target
+        ns.Window.Register("members", function(page)
+            page:Group("Top"):Note("x")
+            target = page:Group("Group 2")
+            target.key = "group:2"
+            target:Note("y")
+        end, { preview = "panel" })
+        local scrolled
+        ns.Window.Show("about")
+        for _, f in ipairs(made) do
+            function f:GetVerticalScrollRange() return 1000 end
+            function f:SetVerticalScroll(v) scrolled = v end
+        end
+        ns.Window.Focus("members", "group:2")
+        assert.is_true(scrolled > 0)
+        assert.are.equal(target.offset, scrolled)
+        assert.are.same(LibStub("LibVelvet-1.0").T.underline, target.frame.edge)
     end)
 
     it("opens wide enough for the side zone by default", function()

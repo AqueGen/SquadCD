@@ -13,6 +13,7 @@ local MIN_W, MIN_H = 820, 420
 local TITLE_H, MENU_W, ENTRY_H, GAP, PAD = 28, 150, 20, 4, 8
 local SCROLLBAR, BOTTOM = 30, 20
 local COLUMN_MIN, ZONE_MIN, ZONE_MAX, BAND_H = 500, 260, 380, 150
+local FLASH = 1.2
 local PAGES = {
     { key = "about", label = "What SquadCD does" },
     { key = "presets", label = "Presets and types" },
@@ -225,6 +226,15 @@ function Window.Show(key)
     page:Refresh()
     scroll:SetVerticalScroll(0)
     if pane:IsShown() then ns.PanelPreview.Refresh() end
+end
+
+function Window.Focus(key, groupKey)
+    if current ~= key or not (frame and frame:IsShown()) then Window.Show(key) end
+    local group = pages[key] and pages[key]:Find(groupKey)
+    if not (group and group.offset) then return end
+    scroll:SetVerticalScroll(math.min(group.offset, scroll:GetVerticalScrollRange()))
+    group.frame:SetBackdropBorderColor(unpack(UI.T.underline))
+    C_Timer.After(FLASH, function() group.frame:SetBackdropBorderColor(unpack(UI.T.border)) end)
 end
 
 function Window.Hide()

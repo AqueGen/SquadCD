@@ -14,6 +14,7 @@ end
 local function groupEditor(page, gi)
     local function g() return layout().groups[gi] end
     local group = page:Group("Group " .. gi)
+    group.key = "group:" .. gi
     group.visible = function() return g() ~= nil end
     group:Note("Click a type to turn it off.")
     Parts.Types(group, {
@@ -107,6 +108,7 @@ ns.Window.Register("members", function(page)
     })
 
     local look = page:Group("Party frames default look")
+    look.key = "look"
     look:Note("Every group with \"Same look as the party frames default\" uses this look.")
     Parts.Look(look, {
         member = true,

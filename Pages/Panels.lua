@@ -33,6 +33,7 @@ local function sectionEditor(page, i)
         for k, t in ipairs(section().types) do names[k] = Parts.Label(t) end
         return "Section " .. i .. ": " .. table.concat(names, ", ")
     end)
+    group.key = "section:" .. i
     group.visible = function() return section() ~= nil end
     local function edit(fn)
         local s = section()
@@ -95,6 +96,7 @@ end
 
 ns.Window.Register("panels", function(page)
     local panels = page:Group("Panels")
+    panels.key = "panels"
     panels:Segmented({
         label = "Show cooldowns", options = SHOW_WHEN, width = 260, get = get("showWhen"),
         set = function(value)
@@ -117,6 +119,7 @@ ns.Window.Register("panels", function(page)
     panels:Note("Bars: one bar per member that fills as the kick comes back. Icons: one icon per member.")
 
     local look = page:Group("Panel look and shape")
+    look.key = "look"
     look:Note("Every section and window with \"Same as the panel\" uses these.")
     Parts.Look(look, {
         get = function() return layout().panelLook end,

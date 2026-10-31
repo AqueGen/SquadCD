@@ -168,6 +168,52 @@ describe("Panel instances", function()
     end)
 end)
 
+describe("Preview picking", function()
+    local function line(ns, si, type)
+        local spell = { id = 999001, type = type }
+        return { section = ns.DB.layout.sections[si], type = type, entries = { { spell = spell, member = { guid = "A", class = "PRIEST", spec = 256, name = "A" } } } }
+    end
+
+    it("a preview panel picks its look", function()
+        local ns = load({ "UI/Panel.lua" })
+        local picked = {}
+        local preview = ns.Panel.New({ parent = frameStub(), pick = { click = function(t) picked[#picked + 1] = t end, hover = function() end } })
+        preview.Build({ line(ns, 3, "External") })
+        local c = preview.Containers()[1]
+        c.frame.scripts.OnMouseUp(c.frame)
+        assert.are.same({ page = "panels", key = "look", label = "Panel look and shape" }, picked[1])
+    end)
+
+    it("the live panel takes no mouse", function()
+        local ns = load({ "UI/Panel.lua" })
+        ns.Panel.Build({ line(ns, 3, "External") })
+        local c = ns.Panel.Containers()[1]
+        assert.is_false(c.frame.mouse)
+    end)
+
+    it("a preview row at a party frame picks its member group", function()
+        local ns = load({ "UI/Rows.lua" })
+        local picked
+        local rows = ns.Rows.New({
+            parent = frameStub(),
+            pick = { click = function(t) picked = t end, hover = function() end },
+            anchors = {
+                FrameFor = function() return frameStub(), false end,
+                SizeOf = function() return 0, 0 end,
+                Stack = function() return frameStub() end,
+                PlaceStack = function() end,
+            },
+        })
+        local layout = ns.DB.layout
+        layout.memberFit = false
+        layout.groups = { { types = { "Personal" }, side = "Left", shape = { axis = "Rows", perLine = 8, origin = "TopLeft", sort = "Fixed" }, offsetX = 0, offsetY = 0, gap = 2, shown = true } }
+        rows.Build({ { member = { guid = "A", unit = "player", class = "PRIEST" }, own = true, groups = { [1] = { { type = "Personal", spells = { { id = 1 } } } } } } })
+        local holder = icons[1].frame.points[1][2]
+        holder.scripts.OnMouseUp(holder)
+        assert.are.same({ page = "members", key = "group:1", label = "Group 1 at party frames" }, picked)
+    end)
+end)
+
 describe("Panel preview docking", function()
     it("chains a window whose dock target has no lines next to the panel", function()
         local ns = load({ "UI/Panel.lua" })
