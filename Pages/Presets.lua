@@ -246,7 +246,7 @@ local function typesTable(page)
     local header = CreateFrame("Frame", nil, holder)
     header:SetPoint("TOPLEFT")
     header:SetSize(560, 18)
-    for _, h in ipairs({ { "Type", NAME_X }, { "Show in", PLACE_X }, { "Merge", SPLIT_X }, { "Order", ORDER_X } }) do
+    for _, h in ipairs({ { "Type", NAME_X }, { "Show in", PLACE_X }, { "Split", SPLIT_X }, { "Order", ORDER_X } }) do
         local s = header:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         s:SetPoint("LEFT", header, "LEFT", h[2], 0)
         s:SetTextColor(unpack(T.gold))
@@ -268,11 +268,11 @@ local function typesTable(page)
             page:Refresh()
         end)
         row.up:SetScript("OnClick", function()
-            Parts.Edit(Model.MoveType, row.type, -1)
+            Parts.Edit(Model.MoveInOrder, row.type, -1)
             page:Refresh()
         end)
         row.down:SetScript("OnClick", function()
-            Parts.Edit(Model.MoveType, row.type, 1)
+            Parts.Edit(Model.MoveInOrder, row.type, 1)
             page:Refresh()
         end)
         rows[i] = row
@@ -304,7 +304,7 @@ local function typesTable(page)
             end
         end
     end)
-    group:Note("Up and Down set the order of types inside every panel section and member group. Sections keep the order of the Panels page.")
+    group:Note("Up and Down set the order of types inside every panel section and member group. A type alone in its panel section moves its whole section past the next section in the panel; sections in their own window keep their place.")
 end
 
 local function newItem(parent)
@@ -372,7 +372,15 @@ local function priority(page)
     end)
     keys:RegisterEvent("PLAYER_REGEN_DISABLED")
     keys:SetScript("OnEvent", function(self) self:EnableKeyboard(false) end)
-    holder:SetScript("OnHide", function() if not InCombatLockdown() then keys:EnableKeyboard(false) end end)
+    local function deaf()
+        if not InCombatLockdown() then keys:EnableKeyboard(false) end
+    end
+    local function left()
+        if not holder:IsMouseOver() then deaf() end
+    end
+    holder:EnableMouse(true)
+    holder:SetScript("OnLeave", left)
+    holder:SetScript("OnHide", deaf)
 
     local function wire(item, list, index)
         item:SetScript("OnClick", function()
@@ -381,6 +389,7 @@ local function priority(page)
             listening()
             page:Refresh()
         end)
+        item:SetScript("OnLeave", left)
         item:SetScript("OnDragStart", function() item.dragging = true end)
         item:SetScript("OnDragStop", function()
             item.dragging = nil

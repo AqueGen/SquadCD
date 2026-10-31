@@ -102,6 +102,30 @@ function LayoutModel.MoveType(layout, type, step)
     return layout
 end
 
+function LayoutModel.MoveSection(layout, id, step)
+    local slots, at = {}, nil
+    for i, s in ipairs(layout.sections) do
+        if s.shown and not LayoutModel.OwnWindow(layout, s) then
+            slots[#slots + 1] = i
+            if s.id == id then at = #slots end
+        end
+    end
+    local other = at and slots[at + step]
+    if other then
+        local list, i = layout.sections, slots[at]
+        list[i], list[other] = list[other], list[i]
+    end
+    return layout
+end
+
+function LayoutModel.MoveInOrder(layout, type, step)
+    LayoutModel.MoveType(layout, type, step)
+    local place, at = LayoutModel.PlaceOf(layout, type)
+    local s = place == "panel" and layout.sections[at]
+    if s and #s.types == 1 then LayoutModel.MoveSection(layout, s.id, step) end
+    return layout
+end
+
 function LayoutModel.MoveRole(layout, from, to)
     move(layout.rolePriority, from, to)
     return layout

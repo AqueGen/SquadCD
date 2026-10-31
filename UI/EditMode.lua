@@ -45,6 +45,10 @@ local function releaseDemo()
     setDemo("Off")
 end
 
+local function endPreview()
+    if ns.Preview.Cancel(ns.DB) then print("Huddle: preset preview cancelled, edits apply to your saved layout.") end
+end
+
 function EditMode.DemoChanged()
     if not settingDemo then startedDemo = false end
 end
@@ -273,6 +277,7 @@ end
 function EditMode.StartPanels()
     if panels then return true end
     if blocked("Moving the panels") then return false end
+    endPreview()
     panels = true
     editBar():Show()
     showDemo()
@@ -304,6 +309,7 @@ end
 function EditMode.StartMembers()
     if members then return true end
     if blocked("Editing at party frames") then return false end
+    endPreview()
     members, selected = true, 1
     showDemo()
     ns.Display.Rebuild()

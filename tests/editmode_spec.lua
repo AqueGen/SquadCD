@@ -1,7 +1,7 @@
 local here = debug.getinfo(1, "S").source:match("^@(.*)[/\\][^/\\]*$") or "tests"
 local helpers = dofile(here .. "/helpers.lua")
 
-local FILES = { "Logic/LayoutModel.lua", "Core.lua", "Logic/Docking.lua", "Logic/MemberEdit.lua", "UI/Theme.lua", "UI/EditMode.lua" }
+local FILES = { "Logic/LayoutModel.lua", "Core.lua", "Logic/Docking.lua", "Logic/MemberEdit.lua", "Logic/Preview.lua", "UI/Theme.lua", "UI/EditMode.lua" }
 
 local function stub(f)
     return setmetatable(f, {
@@ -103,6 +103,19 @@ describe("EditMode", function()
         assert.is_false(E.Members())
         assert.are.equal(2, #printed)
         assert.truthy(printed[1]:find("out of combat"))
+    end)
+
+    it("starting edit mode cancels a preset preview first and says so", function()
+        local saved = ns.DB.layout
+        ns.Preview.Show(ns.DB, 3)
+        assert.is_true(E.StartPanels())
+        assert.are.equal(saved, ns.DB.layout)
+        assert.is_nil(ns.Preview.Showing())
+        assert.truthy(printed[1]:find("preview cancelled"))
+        E.StopPanels()
+        ns.Preview.Show(ns.DB, 2)
+        assert.is_true(E.StartMembers())
+        assert.are.equal(saved, ns.DB.layout)
     end)
 
     it("Move the panels then Done", function()

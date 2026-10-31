@@ -87,8 +87,13 @@ function Display.Rebuild(late)
     end)
 end
 
+local warned = false
+
 function Display.Changed()
-    if InCombatLockdown() then print("Huddle: the change applies when combat ends.") end
+    if InCombatLockdown() and not warned then
+        warned = true
+        print("Huddle: the change applies when combat ends.")
+    end
     Display.Rebuild()
 end
 
@@ -106,6 +111,7 @@ function Display.IsLive()
 end
 
 driver:SetScript("OnEvent", function(_, event)
+    if event == "PLAYER_REGEN_ENABLED" then warned = false end
     if event ~= "PLAYER_REGEN_ENABLED" then
         Display.Rebuild()
     elseif pending then

@@ -7,16 +7,17 @@ local FILES = {
 }
 
 describe("Display combat end", function()
-    local ns, builds, changed, combat, timers
+    local ns, builds, changed, combat, timers, printed
 
     before_each(function()
-        builds, changed, combat, timers = 0, false, false, {}
+        builds, changed, combat, timers, printed = 0, false, false, {}, {}
         ns = helpers.load(FILES, {
             InCombatLockdown = function() return combat end,
             UnitGUID = function() return "P" end,
             UnitName = function() return "Name" end,
             GetTime = function() return 100 end,
             C_Timer = { After = function(_, fn) timers[#timers + 1] = fn end },
+            print = function(line) printed[#printed + 1] = line end,
         })
         ns.DB = ns.Defaults({})
         ns.Rows = { Build = function() builds = builds + 1 end, Update = function() end, Hide = function() end }
@@ -48,5 +49,17 @@ describe("Display combat end", function()
         helpers.fire("PLAYER_REGEN_ENABLED")
         for _, fn in ipairs(timers) do fn() end
         assert.are.equal(1, builds)
+    end)
+
+    it("says a change waits for combat end once per combat", function()
+        combat = true
+        ns.Display.Changed()
+        ns.Display.Changed()
+        assert.are.equal(1, #printed)
+        combat = false
+        helpers.fire("PLAYER_REGEN_ENABLED")
+        combat = true
+        ns.Display.Changed()
+        assert.are.equal(2, #printed)
     end)
 end)
