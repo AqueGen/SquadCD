@@ -24,4 +24,8 @@ describe("settings theme", function()
         assert.equal(ns.Theme.TYPES, ns.SettingsTheme.TYPES)
         assert.equal(ns.Theme.ClassColor, ns.SettingsTheme.ClassColor)
     end)
+
+    it("passes the hover token through for row highlights", function()
+        assert.same({ 1, 1, 1, 0.04 }, ns.SettingsTheme.hover)
+    end)
 end)

@@ -9,7 +9,7 @@ local UI = LibStub("LibVelvet-1.0")
 -- The settings window's look; anything it lacks (TYPES, ClassColor...) comes from the in-game theme.
 ns.SettingsTheme = setmetatable({
     bg = UI.T.bg, panel = UI.T.panel, border = UI.T.border, control = UI.T.control, gold = UI.T.gold,
-    text = UI.T.text, muted = UI.T.muted, selected = UI.T.selected, FLAT = UI.FLAT,
+    text = UI.T.text, muted = UI.T.muted, selected = UI.T.selected, hover = UI.T.hover, FLAT = UI.FLAT,
 }, { __index = ns.Theme })
 
 local T = ns.SettingsTheme
