@@ -11,7 +11,7 @@ ns.Spells[498]={name="Divine Protection",icon="spell_holy_divineprotection",type
 ns.Spells[527]={name="Purify",icon="spell_holy_dispelmagic",type="Dispel",class="PRIEST",specs={256,257},cd=8,charges=1,chargeCd=8,recovery=8,track="none"}
 ns.Spells[633]={name="Lay on Hands",icon="spell_holy_layonhands",type="External",class="PALADIN",specs={},cd=600,talentGated=true,cdPct={[114154]=-30,[378425]=-15,[414720]=-40},track="target"}
 ns.Spells[642]={name="Divine Shield",icon="spell_holy_divineshield",type="Personal",class="PALADIN",specs={},cd=300,cdPct={[114154]=-30,[378425]=-15},buffs={642,63148,133093,335103},dur=8,track="buff"}
-ns.Spells[740]={name="Tranquility",icon="spell_nature_tranquility",type="Group",class="DRUID",specs={},cd=180,talentGated=true,buffs={740,21791,25817,38659,51972,57054,63241,63554,100854,237843,278955,1236573,1236574,1264623},dur=6,track="buff"}
+ns.Spells[740]={name="Tranquility",icon="spell_nature_tranquility",type="Group",class="DRUID",specs={},cd=180,talentGated=true,cdMods={[197073]=-30},buffs={740,21791,25817,38659,51972,57054,63241,63554,100854,237843,278955,1236573,1236574,1264623},dur=6,track="buff"}
 ns.Spells[853]={name="Hammer of Justice",icon="spell_holy_sealofmight",type="Stun",class="PALADIN",specs={},cd=45,cdMods={[234299]=-15},debuffs={853},track="debuff"}
 ns.Spells[871]={name="Shield Wall",icon="ability_warrior_shieldwall",type="Personal",class="WARRIOR",specs={},cd=180,charges=1,chargeCd=180,recovery=8,talentGated=true,cdPct={[391271]=-10},chargeMods={[397103]=-60},chargePct={[391271]=-10},chargeAdds={[397103]=1},buffs={871,15062,29390,31731,41104,41196,84159,145057,316834},dur=8,track="buff"}
 ns.Spells[1022]={name="Blessing of Protection",icon="spell_holy_sealofprotection",type="External",class="PALADIN",specs={},cd=300,charges=1,chargeCd=300,recovery=1.5,talentGated=true,chargeMods={[384909]=-60},chargePct={[378425]=-15},buffs={1022},dur=10,track="target"}
@@ -40,7 +40,7 @@ ns.Spells[10326]={name="Turn Evil",icon="ability_paladin_turnevil",type="CC",cla
 ns.Spells[12975]={name="Last Stand",icon="spell_holy_ashestoashes",type="Personal",class="WARRIOR",specs={},cd=180,talentGated=true,buffs={12975,1243659},dur=8,track="buff"}
 ns.Spells[13750]={name="Adrenaline Rush",icon="spell_shadow_shadowworddominate",type="Burst",class="ROGUE",specs={},cd=180,talentGated=true,buffs={13750,186286},dur=15,track="buff"}
 ns.Spells[15286]={name="Vampiric Embrace",icon="spell_shadow_unsummonbuilding",type="Group",class="PRIEST",specs={258},cd=120,buffs={15286},dur=12,track="buff"}
-ns.Spells[15487]={name="Silence",icon="ability_priest_silence",type="Kick",class="PRIEST",specs={258},cd=30,track="kick"}
+ns.Spells[15487]={name="Silence",icon="ability_priest_silence",type="Kick",class="PRIEST",specs={258},cd=30,cdMods={[263716]=-15},track="kick"}
 ns.Spells[19236]={name="Desperate Prayer",icon="spell_holy_testoffaith",type="Personal",class="PRIEST",specs={},cd=90,talentGated=true,buffs={19236},dur=10,track="buff"}
 ns.Spells[19505]={name="Devour Magic",icon="spell_nature_purge",type="Purge",class="WARLOCK",specs={},cd=15,track="none"}
 ns.Spells[19574]={name="Bestial Wrath",icon="ability_druid_ferociousbite",type="Burst",class="HUNTER",specs={},cd=90,talentGated=true,cdMods={[231548]=-60},buffs={19574,186254,207033,211183,1235388,1285912},dur=15,track="buff"}
@@ -77,7 +77,7 @@ ns.Spells[47585]={name="Dispersion",icon="spell_shadow_dispersion",type="Persona
 ns.Spells[47788]={name="Guardian Spirit",icon="spell_holy_guardianspirit",type="External",class="PRIEST",specs={},cd=180,talentGated=true,buffs={47788,255312},dur=10,track="target"}
 ns.Spells[48707]={name="Anti-Magic Shell",icon="spell_shadow_antimagicshell",type="Personal",class="DEATHKNIGHT",specs={},cd=60,cdMods={[205727]=-20,[457574]=20},buffs={48707,171465,311975,410358,444741,451777},dur=5,track="buff"}
 ns.Spells[48743]={name="Death Pact",icon="spell_shadow_deathpact",type="Personal",class="DEATHKNIGHT",specs={},cd=120,talentGated=true,cdMods={[1266818]=-30},buffs={48743,443609},dur=15,track="buff"}
-ns.Spells[48792]={name="Icebound Fortitude",icon="spell_deathknight_iceboundfortitude",type="Personal",class="DEATHKNIGHT",specs={},cd=120,talentGated=true,buffs={48792},dur=8,track="buff"}
+ns.Spells[48792]={name="Icebound Fortitude",icon="spell_deathknight_iceboundfortitude",type="Personal",class="DEATHKNIGHT",specs={},cd=120,talentGated=true,cdMods={[373926]=-60},buffs={48792},dur=8,track="buff"}
 ns.Spells[49028]={name="Dancing Rune Weapon",icon="inv_sword_07",type="Personal",class="DEATHKNIGHT",specs={},cd=120,talentGated=true,cdMods={[377637]=-30},buffs={49028,81256,192566,377671,1237032,1237128,1264353},dur=8,track="buff"}
 ns.Spells[49039]={name="Lichborne",icon="spell_shadow_raisedead",type="Personal",class="DEATHKNIGHT",specs={},cd=120,cdMods={[389682]=-30,[437122]=-30},buffs={49039,50397,287081},dur=10,track="buff"}
 ns.Spells[50334]={name="Berserk",icon="ability_druid_berserk",type="Personal",class="DRUID",specs={},cd=180,talentGated=true,buffs={50334,106951,343223},dur=15,track="buff"}
@@ -132,7 +132,7 @@ ns.Spells[106951]={name="Berserk",icon="ability_druid_berserk",type="Burst",clas
 ns.Spells[107079]={name="Quaking Palm",icon="pandarenracial_quiveringpain",type="Racial",specs={},cd=120,races={24,25,26},track="none"}
 ns.Spells[107570]={name="Storm Bolt",icon="warrior_talent_icon_stormbolt",type="Stun",class="WARRIOR",specs={},cd=30,talentGated=true,cdMods={[436162]=10},cdPct={[391271]=-10},debuffs={132169},track="debuff"}
 ns.Spells[107574]={name="Avatar",icon="warrior_talent_icon_avatar",type="Burst",class="WARRIOR",specs={},cd=90,talentGated=true,buffs={107574,129020,316438,389748},dur=20,track="buff"}
-ns.Spells[108199]={name="Gorefiend's Grasp",icon="ability_deathknight_aoedeathgrip",type="CC",class="DEATHKNIGHT",specs={},cd=90,talentGated=true,aoe=true,debuffs={108199},track="debuff"}
+ns.Spells[108199]={name="Gorefiend's Grasp",icon="ability_deathknight_aoedeathgrip",type="CC",class="DEATHKNIGHT",specs={},cd=90,talentGated=true,cdMods={[206970]=-30},aoe=true,debuffs={108199},track="debuff"}
 ns.Spells[108271]={name="Astral Shift",icon="ability_shaman_astralshift",type="Personal",class="SHAMAN",specs={},cd=120,talentGated=true,cdMods={[381647]=-30},buffs={108271,263786},dur=12,track="buff"}
 ns.Spells[108280]={name="Healing Tide Totem",icon="ability_shaman_healingtide",type="Group",class="SHAMAN",specs={},cd=180,talentGated=true,cdMods={[462440]=-60},buffs={108280,254413,343205},dur=10,track="buff"}
 ns.Spells[108416]={name="Dark Pact",icon="spell_shadow_deathpact",type="Personal",class="WARLOCK",specs={},cd=60,talentGated=true,buffs={108416},dur=20,track="buff"}
@@ -166,7 +166,7 @@ ns.Spells[137639]={name="Storm, Earth, and Fire",icon="spell_nature_giftofthewil
 ns.Spells[147362]={name="Counter Shot",icon="inv_ammo_arrow_03",type="Kick",class="HUNTER",specs={},cd=24,talentGated=true,track="kick"}
 ns.Spells[155145]={name="Arcane Torrent",icon="spell_shadow_teleport",type="Racial",specs={},cd=120,races={10},classes={"PALADIN"},track="none"}
 ns.Spells[157980]={name="Supernova",icon="spell_mage_supernova",type="CC",class="MAGE",specs={},cd=45,talentGated=true,cdMods={[387807]=-5},aoe=true,track="debuff"}
-ns.Spells[179057]={name="Chaos Nova",icon="spell_fire_felfirenova",type="Stun",class="DEMONHUNTER",specs={},cd=45,talentGated=true,aoe=true,debuffs={179057},track="debuff"}
+ns.Spells[179057]={name="Chaos Nova",icon="spell_fire_felfirenova",type="Stun",class="DEMONHUNTER",specs={},cd=45,talentGated=true,cdMods={[206477]=-12},aoe=true,debuffs={179057},track="debuff"}
 ns.Spells[183752]={name="Disrupt",icon="ability_demonhunter_consumemagic",type="Kick",class="DEMONHUNTER",specs={},cd=15,track="kick"}
 ns.Spells[184364]={name="Enraged Regeneration",icon="ability_warrior_focusedrage",type="Personal",class="WARRIOR",specs={},cd=120,talentGated=true,cdPct={[391271]=-10},buffs={184364,316474},dur=8,track="buff"}
 ns.Spells[186265]={name="Aspect of the Turtle",icon="ability_hunter_pet_turtle",type="Personal",class="HUNTER",specs={},cd=180,cdMods={[266921]=-15,[1258485]=-30},buffs={186265},dur=8,track="buff"}
@@ -213,7 +213,7 @@ ns.Spells[265187]={name="Summon Demonic Tyrant",icon="inv_summondemonictyrant",t
 ns.Spells[265221]={name="Fireblood",icon="ability_racial_fireblood",type="Racial",specs={},cd=120,races={34},buffs={265226},dur=8,track="buff"}
 ns.Spells[274738]={name="Ancestral Call",icon="ability_racial_ancestralcall",type="Racial",specs={},cd=120,races={36},buffs={274738},dur=15,track="buff"}
 ns.Spells[278326]={name="Consume Magic",icon="spell_misc_zandalari_council_soulswap",type="Purge",class="DEMONHUNTER",specs={},cd=10,talentGated=true,track="none"}
-ns.Spells[279302]={name="Frostwyrm's Fury",icon="achievement_boss_sindragosa",type="Burst",class="DEATHKNIGHT",specs={},cd=90,talentGated=true,track="none"}
+ns.Spells[279302]={name="Frostwyrm's Fury",icon="achievement_boss_sindragosa",type="Burst",class="DEATHKNIGHT",specs={},cd=90,talentGated=true,cdPct={[377047]=-50},track="none"}
 ns.Spells[287712]={name="Haymaker",icon="ability_racial_haymaker",type="Racial",specs={},cd=150,races={32},track="none"}
 ns.Spells[288613]={name="Trueshot",icon="ability_trueshot",type="Burst",class="HUNTER",specs={},cd=120,talentGated=true,cdMods={[260404]=-30},buffs={288613,211327},dur=15,track="buff"}
 ns.Spells[291944]={name="Regeneratin'",icon="ability_racial_regeneratin",type="Racial",specs={},cd=180,races={31},buffs={291944},dur=6,track="buff"}
@@ -262,7 +262,7 @@ ns.Spells[446035]={name="Bladestorm",icon="ability_warrior_bladestorm",type="Bur
 ns.Spells[471195]={name="Lay on Hands",icon="spell_holy_layonhands",type="External",class="PALADIN",specs={},cd=600,cdPct={[114154]=-30,[378425]=-15,[414720]=-40},replaces={633},track="target"}
 ns.Spells[474421]={name="Intimidation",icon="artifactability_survivalhunter_eaglesbite",type="Stun",class="HUNTER",specs={},cd=60,talentGated=true,cdMods={[459507]=-20},debuffs={24394},track="debuff"}
 ns.Spells[1233448]={name="Dark Transformation",icon="achievement_boss_festergutrotface",type="Burst",class="DEATHKNIGHT",specs={},cd=45,talentGated=true,buffs={1233448,63560,325554,1235391},dur=15,track="buff"}
-ns.Spells[1234195]={name="Void Nova",icon="inv_12_voiddh_ability_voidnova",type="Stun",class="DEMONHUNTER",specs={},cd=45,talentGated=true,aoe=true,debuffs={1234195},track="debuff"}
+ns.Spells[1234195]={name="Void Nova",icon="inv_12_voiddh_ability_voidnova",type="Stun",class="DEMONHUNTER",specs={},cd=45,talentGated=true,cdMods={[206477]=-12},aoe=true,debuffs={1234195},track="debuff"}
 ns.Spells[1236943]={name="Deep Breath",icon="ability_evoker_deepbreath",type="Burst",class="EVOKER",specs={1467},cd=120,buffs={1236943,357210,362010,362019,433874,1247728},dur=4,track="buff"}
 ns.Spells[1237885]={name="Thorn Bloom",icon="inv_12_haranir_ability_thornbloom",type="Racial",specs={},cd=180,races={86,91},buffs={1238467},dur=12,track="buff"}
 ns.Spells[1246167]={name="The Hunt",icon="inv_12_voiddh_ability_thehunt",type="Burst",class="DEMONHUNTER",specs={},cd=90,talentGated=true,buffs={1246167,370967,345396,345422,370965,370968,370973},dur=2,track="buff"}
@@ -271,6 +271,7 @@ ns.Spells[1249658]={name="Breath of Sindragosa",icon="spell_deathknight_breathof
 ns.Spells[1250646]={name="Takedown",icon="inv12_ability_hunter_takedown",type="Burst",class="HUNTER",specs={},cd=90,talentGated=true,cdMods={[1251790]=-15},buffs={1250646,1251703},dur=8,track="buff"}
 ns.Spells[1263569]={name="Abomination Limb",icon="ability_maldraxxus_deathknight",type="CC",class="DEATHKNIGHT",specs={},cd=120,talentGated=true,buffs={1263569,315443,340735},debuffs={1263566},track="debuff"}
 ns.Spells[1276452]={name="Grimoire: Imp Lord",icon="inv_imp3_purple",type="Burst",class="WARLOCK",specs={},cd=120,talentGated=true,track="none"}
+ns.TalentEntries[9928]=263716
 ns.TalentEntries[24540]=394207
 ns.TalentEntries[51794]=394182
 ns.TalentEntries[51798]=394181
@@ -320,9 +321,11 @@ ns.TalentEntries[91502]=1122
 ns.TalentEntries[91554]=205180
 ns.TalentEntries[91581]=388827
 ns.TalentEntries[91587]=231793
+ns.TalentEntries[96162]=377047
 ns.TalentEntries[96170]=108199
 ns.TalentEntries[96172]=207167
 ns.TalentEntries[96174]=205727
+ns.TalentEntries[96175]=373926
 ns.TalentEntries[96176]=374383
 ns.TalentEntries[96178]=457574
 ns.TalentEntries[96187]=389682
@@ -336,6 +339,7 @@ ns.TalentEntries[96222]=1249658
 ns.TalentEntries[96236]=279302
 ns.TalentEntries[96260]=377637
 ns.TalentEntries[96269]=49028
+ns.TalentEntries[96300]=206970
 ns.TalentEntries[96308]=55233
 ns.TalentEntries[96322]=1233448
 ns.TalentEntries[96333]=42650
@@ -413,6 +417,7 @@ ns.TalentEntries[102606]=384909
 ns.TalentEntries[102623]=10326
 ns.TalentEntries[102626]=218164
 ns.TalentEntries[103102]=382550
+ns.TalentEntries[103107]=197073
 ns.TalentEntries[103108]=740
 ns.TalentEntries[103119]=391528
 ns.TalentEntries[103120]=33891
@@ -453,6 +458,7 @@ ns.TalentEntries[103747]=419110
 ns.TalentEntries[103755]=64843
 ns.TalentEntries[103774]=47788
 ns.TalentEntries[103776]=88625
+ns.TalentEntries[103794]=263716
 ns.TalentEntries[103795]=406788
 ns.TalentEntries[103834]=10060
 ns.TalentEntries[103836]=390670
@@ -514,6 +520,7 @@ ns.TalentEntries[112878]=389718
 ns.TalentEntries[112881]=202137
 ns.TalentEntries[112886]=320387
 ns.TalentEntries[112906]=209281
+ns.TalentEntries[112909]=206477
 ns.TalentEntries[112911]=179057
 ns.TalentEntries[112912]=389763
 ns.TalentEntries[112914]=391397

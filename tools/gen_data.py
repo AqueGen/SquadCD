@@ -69,6 +69,63 @@ def same_name_buffs(spell_id, buffs, effects, names, class_sets):
     return list(buffs) + extra
 
 
+SPELLMOD_COOLDOWN = "11"
+AURA_FLAT_MOD, AURA_PCT_MOD = 107, 108
+
+
+def load_class_options(path):
+    with open(path, encoding="utf8", newline="") as f:
+        return {int(r["SpellID"]): (int(r["SpellClassSet"]), tuple(int(r["SpellClassMask_%d" % i]) for i in range(4)))
+                for r in csv.DictReader(f)}
+
+
+def load_cd_modifiers(effect_path, options):
+    mods = []
+    with open(effect_path, encoding="utf8", newline="") as f:
+        for r in csv.DictReader(f):
+            aura = int(r["EffectAura"])
+            if r["Effect"] != "6" or aura not in (AURA_FLAT_MOD, AURA_PCT_MOD) or r["EffectMiscValue_0"] != SPELLMOD_COOLDOWN:
+                continue
+            sid = int(r["SpellID"])
+            if sid not in options:
+                continue
+            mask = tuple(int(r["EffectSpellClassMask_%d" % i]) for i in range(4))
+            mods.append((sid, aura, int(float(r["EffectBasePointsF"])), options[sid][0], mask))
+    return mods
+
+
+def talent_cd_mods(spell_id, options, mods, talents):
+    own = options.get(spell_id)
+    flat, pct = {}, {}
+    if not own or not own[0]:
+        return flat, pct
+    for sid, aura, points, class_set, mask in mods:
+        if sid in talents and class_set == own[0] and any(a & b for a, b in zip(own[1], mask)):
+            (flat if aura == AURA_FLAT_MOD else pct)[sid] = points
+    return flat, pct
+
+
+def merge_cd_mods(spell, flat, pct):
+    if spell["chargeMs"]:
+        return
+    for sid, ms in flat.items():
+        spell["cdMods"].setdefault(str(sid), ms)
+    for sid, p in pct.items():
+        spell["cdPct"].setdefault(str(sid), p)
+
+
+def load_talent_entries(node_entry_path, definition_path):
+    with open(definition_path, encoding="utf8", newline="") as f:
+        spell_of = {int(r["ID"]): int(r["SpellID"]) for r in csv.DictReader(f)}
+    entries = {}
+    with open(node_entry_path, encoding="utf8", newline="") as f:
+        for r in csv.DictReader(f):
+            spell = spell_of.get(int(r["TraitDefinitionID"]))
+            if spell:
+                entries.setdefault(spell, []).append(int(r["ID"]))
+    return entries
+
+
 def load_class_sets(path):
     with open(path, encoding="utf8", newline="") as f:
         return {int(r["SpellID"]): int(r["SpellClassSet"]) for r in csv.DictReader(f)}
@@ -246,21 +303,34 @@ def spell_line(spell, token, buffs, debuffs=(), tokens=None, durations=None):
     return "ns.Spells[%d]={%s}" % (spell["id"], ",".join(fields))
 
 
-def render(catalog, effects, overrides, potions, durations=None, names=None, class_sets=None):
+def render(catalog, effects, overrides, potions, durations=None, names=None, class_sets=None, options=None, cd_mods=None,
+           talent_entries=None):
     check_overrides(catalog, overrides)
     tokens = {int(k): v["token"] for k, v in catalog["classes"].items()}
     buff_overrides = overrides.get("buffs", {})
     debuff_overrides = overrides.get("debuffs", {})
+    entries = {int(k): v for k, v in catalog["talentEntries"].items()}
+    talent_spells = set(entries.values()) | set(talent_entries or {})
+    used = set()
     out = [COPYRIGHT, "local _, ns = ...", "ns.Spells = {}", "ns.TalentEntries = {}", "ns.Specs = {}", "ns.Classes = {}"]
     for spell in sorted(catalog["spells"], key=lambda s: s["id"]):
         token = tokens.get(spell["classId"])
+        if options and cd_mods:
+            spell = dict(spell, cdMods=dict(spell["cdMods"]), cdPct=dict(spell["cdPct"]))
+            flat, pct = talent_cd_mods(spell["id"], options, cd_mods, talent_spells)
+            merge_cd_mods(spell, flat, pct)
+            used.update(int(k) for k in list(spell["cdMods"]) + list(spell["cdPct"]))
         buffs = buff_ids(spell["id"], effects, buff_overrides)
         if names and str(spell["id"]) not in buff_overrides:
             buffs = same_name_buffs(spell["id"], buffs, effects, names, class_sets or {})
         out.append(spell_line(spell, token, buffs,
                               debuff_ids(spell["id"], effects, debuff_overrides), tokens, durations))
-    for entry, talent in sorted(catalog["talentEntries"].items(), key=lambda kv: int(kv[0])):
-        out.append("ns.TalentEntries[%s]=%d" % (entry, talent))
+    known = set(entries.values())
+    for spell_id in used - known:
+        for entry in (talent_entries or {}).get(spell_id, []):
+            entries.setdefault(entry, spell_id)
+    for entry, talent in sorted(entries.items()):
+        out.append("ns.TalentEntries[%d]=%d" % (entry, talent))
     for spec_id, spec in sorted(catalog["specs"].items(), key=lambda kv: int(kv[0])):
         out.append("ns.Specs[%s]={class=%s,role=%s,name=%s%s}" % (
             spec_id, lua_str(tokens[spec["classId"]]), lua_str(spec["role"]), lua_str(spec["name"]),
@@ -299,8 +369,13 @@ def main():
     effects = load_effects(fetch_table("SpellEffect", args.cache))
     durations = load_durations(fetch_table("SpellMisc", args.cache), fetch_table("SpellDuration", args.cache))
     names = load_names(fetch_table("SpellName", args.cache))
-    class_sets = load_class_sets(fetch_table("SpellClassOptions", args.cache))
-    text = render(catalog, effects, overrides, load_potions(args.cache, effects), durations, names, class_sets)
+    options_path = fetch_table("SpellClassOptions", args.cache)
+    class_sets = load_class_sets(options_path)
+    options = load_class_options(options_path)
+    cd_mods = load_cd_modifiers(fetch_table("SpellEffect", args.cache), options)
+    talent_entries = load_talent_entries(fetch_table("TraitNodeEntry", args.cache), fetch_table("TraitDefinition", args.cache))
+    text = render(catalog, effects, overrides, load_potions(args.cache, effects), durations, names, class_sets,
+                  options, cd_mods, talent_entries)
     with open(args.out, "w", encoding="utf8", newline="\n") as f:
         f.write(text)
 

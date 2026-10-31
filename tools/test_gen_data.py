@@ -74,6 +74,50 @@ class GenDataTests(unittest.TestCase):
         class_sets = {48707: 15, 410358: 15, 444740: 15, 31662: 0}
         self.assertEqual([48707, 410358], gen_data.same_name_buffs(48707, [48707], effects, names, class_sets))
 
+    def test_talent_cd_mods_from_spell_masks(self):
+        options = {48707: (15, (131072, 0, 0, 0)), 871: (4, (1, 0, 0, 0))}
+        mods = [
+            (410320, 107, -10000, 15, (131072, 0, 0, 0)),
+            (205727, 107, -20000, 15, (131072, 0, 0, 0)),
+            (106227, 108, -50, 15, (131072, 0, 0, 0)),
+            (999, 107, -5000, 4, (131072, 0, 0, 0)),
+            (114154, 108, -30, 15, (131072, 0, 0, 0)),
+        ]
+        talents = {410320, 205727, 999, 114154}
+        flat, pct = gen_data.talent_cd_mods(48707, options, mods, talents)
+        self.assertEqual({410320: -10000, 205727: -20000}, flat)
+        self.assertEqual({114154: -30}, pct)
+
+    def test_spell_line_merges_derived_cd_mods(self):
+        spell = {"id": 48707, "name": "X", "icon": "i", "type": "Personal", "classId": 6, "specs": [],
+                 "cdMs": 60000, "maxCharges": 0, "chargeMs": 0, "recoveryMs": 0, "talentGated": False,
+                 "cdMods": {"205727": -20000}, "cdPct": {}, "chargeMods": {}, "chargePct": {}, "specMods": {},
+                 "chargeAdds": {}, "replaces": [], "races": [], "aoe": False}
+        gen_data.merge_cd_mods(spell, {410320: -10000, 205727: -20000}, {})
+        self.assertIn("cdMods={[205727]=-20,[410320]=-10}", gen_data.spell_line(spell, "DEATHKNIGHT", [48707]))
+
+    def test_load_talent_entries_maps_spell_to_entries(self):
+        import tempfile
+        d = tempfile.mkdtemp()
+        node, definition = os.path.join(d, "n.csv"), os.path.join(d, "d.csv")
+        with open(definition, "w", encoding="utf8") as f:
+            f.write("ID,SpellID\n101212,48792\n200,410320\n")
+        with open(node, "w", encoding="utf8") as f:
+            f.write("ID,TraitDefinitionID\n96210,101212\n500,200\n501,200\n")
+        self.assertEqual({48792: [96210], 410320: [500, 501]}, gen_data.load_talent_entries(node, definition))
+
+    def test_render_adds_entries_for_derived_modifiers(self):
+        catalog = {"spells": [{"id": 48707, "name": "X", "icon": "i", "type": "Personal", "classId": 6, "specs": [],
+                               "cdMs": 60000, "maxCharges": 0, "chargeMs": 0, "recoveryMs": 0, "talentGated": False,
+                               "cdMods": {}, "cdPct": {}, "chargeMods": {}, "chargePct": {}, "specMods": {},
+                               "chargeAdds": {}, "replaces": [], "races": [], "aoe": False}],
+                   "talentEntries": {}, "specs": {}, "classes": {"6": {"token": "DEATHKNIGHT"}}}
+        options = {48707: (15, (131072, 0, 0, 0))}
+        mods = [(410320, 107, -10000, 15, (131072, 0, 0, 0))]
+        text = gen_data.render(catalog, {}, {}, [], None, None, None, options, mods, {410320: [500]})
+        self.assertIn("cdMods={[410320]=-10}", text)
+        self.assertIn("ns.TalentEntries[500]=410320", text)
+
     def test_load_durations_joins_misc_and_duration(self):
         import tempfile
         d = tempfile.mkdtemp()
