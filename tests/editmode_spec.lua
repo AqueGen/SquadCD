@@ -30,7 +30,7 @@ local function panelFrame(left, top, w, h)
 end
 
 describe("EditMode", function()
-    local ns, E, combat, printed, rebuilds, changed, demo, cursorX, cursorY, created, mouseDown, members, alt, containers
+    local ns, E, combat, printed, rebuilds, changed, flushes, demo, cursorX, cursorY, created, mouseDown, members, alt, containers
 
     local function scriptOf(name)
         for i = #created, 1, -1 do
@@ -39,7 +39,7 @@ describe("EditMode", function()
     end
 
     before_each(function()
-        combat, printed, rebuilds, changed, demo, members = false, {}, 0, 0, { mode = "Off", calls = {} }, false
+        combat, printed, rebuilds, changed, flushes, demo, members = false, {}, 0, 0, 0, { mode = "Off", calls = {} }, false
         cursorX, cursorY, created, mouseDown = 500, 500, {}, true
         ns = helpers.load(FILES, {
             InCombatLockdown = function() return combat end,
@@ -81,6 +81,7 @@ describe("EditMode", function()
                 E.Refresh()
             end,
             Changed = function() changed = changed + 1 end,
+            Flush = function() flushes = flushes + 1 end,
             HasMembers = function() return members end,
         }
         ns.Demo = {
@@ -128,8 +129,15 @@ describe("EditMode", function()
 
     it("Esc hides the bar and ends edit mode", function()
         E.StartPanels()
+        HuddleEditBar:Hide()
         HuddleEditBar.scripts.OnHide(HuddleEditBar)
         assert.is_false(E.Panels())
+    end)
+
+    it("a bar hidden with UIParent keeps edit mode on", function()
+        E.StartPanels()
+        HuddleEditBar.scripts.OnHide(HuddleEditBar)
+        assert.is_true(E.Panels())
     end)
 
     it("shows the demo when nothing is on screen and stops it after", function()
@@ -191,6 +199,18 @@ describe("EditMode", function()
         mouseDown = false
         driver.scripts.OnUpdate(driver, 0.01)
         assert.are.same({ "TOPLEFT", 160, -130 }, ns.DB.layout.panel.point)
+    end)
+
+    it("is dragging from the press, and a release without a move flushes held rebuilds", function()
+        E.StartPanels()
+        local overlay, down = scriptOf("OnMouseDown")
+        down(overlay, "LeftButton")
+        assert.is_true(E.Dragging())
+        mouseDown = false
+        local driver, update = scriptOf("OnUpdate")
+        update(driver, 0.01)
+        assert.is_false(E.Dragging())
+        assert.are.equal(1, flushes)
     end)
 
     it("combat start ends both modes and keeps the panel being dragged where it was dropped", function()

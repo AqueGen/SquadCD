@@ -78,13 +78,14 @@ local function measure(row, g, gi, layout, isStack, fw, fh)
     local tabW = TAB[look.labels] or 0
     local lead = tabW > 0 and tabW + TAB_GAP or 0
     local shape = g.shape
+    local gap = g.gap or ICON_GAP
     if layout.memberFit and not isStack then
-        shape = Grid.FitShape(shape, side, total, size, size, lead, fw, fh, ICON_GAP)
+        shape = Grid.FitShape(shape, side, total, size, size, lead, fw, fh, gap)
     end
     local tabs = Grid.Tabs(counts, shape.perLine)
     local cells = {}
     for k = 1, total do cells[k] = { w = size + (tabs[k] and lead or 0), h = size } end
-    local rects, w, h = Grid.PlaceMemberRow(cells, shape, side, isStack and 0 or fh, ICON_GAP)
+    local rects, w, h = Grid.PlaceMemberRow(cells, shape, side, isStack and 0 or fh, gap)
     return {
         gi = gi, group = g, look = look, size = size, side = side, tabW = tabW, tabs = tabs, rects = rects,
         corner = Grid.MemberOrigin(shape.origin, side), w = w + 2 * RING, h = h + 2 * RING,

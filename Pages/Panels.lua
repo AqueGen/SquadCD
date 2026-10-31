@@ -70,7 +70,7 @@ local function sectionEditor(page, i)
     group:Check({
         label = "Same shape as the panel",
         get = function() return section() and section().shape == nil end,
-        set = function(on) edit(function(l, s) s.shape = not on and Parts.Copy(l.panelShape) or nil end) end,
+        set = function(on) edit(function(l, s) s.shape = not on and ns.Copy(l.panelShape) or nil end) end,
         visible = own,
     })
     Parts.Shape(group, {
@@ -81,7 +81,7 @@ local function sectionEditor(page, i)
     group:Check({
         label = "Same look as the panel",
         get = function() return section() and section().look == nil end,
-        set = function(on) edit(function(l, s) s.look = not on and Parts.Copy(l.panelLook) or nil end) end,
+        set = function(on) edit(function(l, s) s.look = not on and ns.Copy(l.panelLook) or nil end) end,
     })
     Parts.Look(group, {
         get = function() return section() and section().look or layout().panelLook end,

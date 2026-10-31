@@ -112,6 +112,18 @@ describe("Wizard window", function()
         assert.are.equal(before, ns.DB.layout)
     end)
 
+    it("a hide that comes from UIParent keeps the wizard and its edits", function()
+        local before = ns.DB.layout
+        W.Open()
+        local edited = ns.DB.layout
+        edited.timers = false
+        HuddleWizard.scripts.OnHide(HuddleWizard)
+        assert.is_true(W.IsOpen())
+        assert.are.equal(edited, ns.DB.layout)
+        click("Cancel")
+        assert.are.equal(before, ns.DB.layout)
+    end)
+
     it("the settings window stays shut while the wizard is open", function()
         W.Open()
         ns.Window.Show()

@@ -18,13 +18,6 @@ local LABELS = { { value = "None", text = "None" }, { value = "Glyph", text = "G
 local BACKGROUNDS = { { value = "Default", text = "Default" }, { value = "Black", text = "Black" }, { value = "Slate", text = "Slate" }, { value = "None", text = "None" } }
 local WIDE = 280
 
-function Parts.Copy(v)
-    if type(v) ~= "table" then return v end
-    local t = {}
-    for k, x in pairs(v) do t[k] = Parts.Copy(x) end
-    return t
-end
-
 function Parts.Edit(fn, ...)
     fn(ns.DB.layout, ...)
     ns.LayoutModel.Normalize(ns.DB.layout)

@@ -2,12 +2,7 @@ local _, ns = ...
 
 local Model = ns.LayoutModel
 
-local function copy(v)
-    if type(v) ~= "table" then return v end
-    local t = {}
-    for k, x in pairs(v) do t[k] = copy(x) end
-    return t
-end
+local copy = ns.Copy
 
 local function new()
     local Preview = {}

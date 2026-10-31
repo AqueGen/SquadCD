@@ -9,16 +9,7 @@ ns.DEFAULTS = {
     timers = {},
 }
 
-local function copy(v)
-    if type(v) ~= "table" then
-        return v
-    end
-    local t = {}
-    for k, x in pairs(v) do
-        t[k] = copy(x)
-    end
-    return t
-end
+local copy = ns.Copy
 
 local function fill(db, defaults)
     for k, v in pairs(defaults) do

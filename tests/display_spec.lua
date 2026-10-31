@@ -7,7 +7,7 @@ local FILES = {
 }
 
 describe("Display combat end", function()
-    local ns, builds, changed, combat, timers, printed
+    local ns, builds, changed, combat, timers, printed, dragging
 
     before_each(function()
         builds, changed, combat, timers, printed = 0, false, false, {}, {}
@@ -23,7 +23,8 @@ describe("Display combat end", function()
         ns.Rows = { Build = function() builds = builds + 1 end, Update = function() end, Hide = function() end }
         ns.Panel = { Build = function() end, Update = function() end, Hide = function() end }
         ns.Anchors = { Scan = function() return changed end }
-        ns.EditMode = { Refresh = function() end }
+        dragging = false
+        ns.EditMode = { Refresh = function() end, Dragging = function() return dragging end }
         local tracker = ns.Tracker.New(function() return 100 end)
         ns.Display.SetSource({ members = { { guid = "P", unit = "player", class = "PALADIN", spec = 66 } }, tracker = tracker })
         builds = 0
@@ -48,6 +49,18 @@ describe("Display combat end", function()
         timers = {}
         helpers.fire("PLAYER_REGEN_ENABLED")
         for _, fn in ipairs(timers) do fn() end
+        assert.are.equal(1, builds)
+    end)
+
+    it("holds rebuilds while a panel is dragged and runs one on flush", function()
+        dragging = true
+        ns.Display.Rebuild()
+        ns.Display.Rebuild()
+        assert.are.equal(0, builds)
+        dragging = false
+        ns.Display.Flush()
+        assert.are.equal(1, builds)
+        ns.Display.Flush()
         assert.are.equal(1, builds)
     end)
 

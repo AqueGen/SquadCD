@@ -20,6 +20,7 @@ local function tick()
     if not tracker then return end
     local isLive = source == live
     if isLive then tracker:Tick() end
+    sight.live = isLive
     sight.plain = not isLive or ns.Sensors.Mode() == "plain"
     sight.secret = isLive and ns.EnemyDebuffs.SecretIds() or NONE
     sight.timers = ns.DB.layout.timers
@@ -58,7 +59,7 @@ local generation = 0
 
 function Display.Rebuild(late)
     if not ns.DB then return end
-    if InCombatLockdown() then
+    if InCombatLockdown() or ns.EditMode.Dragging() then
         pending = true
         return
     end
@@ -95,6 +96,10 @@ function Display.Changed()
         print("Huddle: the change applies when combat ends.")
     end
     Display.Rebuild()
+end
+
+function Display.Flush()
+    if pending then Display.Rebuild() end
 end
 
 function Display.SetSource(src)

@@ -190,7 +190,8 @@ local function build()
     back:SetScript("OnClick", function() showStep(current - 1) end)
     Widgets.Grip(frame, MIN_W, MIN_H)
 
-    frame:SetScript("OnHide", function()
+    frame:SetScript("OnHide", function(self)
+        if self:IsShown() then return end
         if keep then
             held.Apply()
         elseif held.Cancel(ns.DB) then

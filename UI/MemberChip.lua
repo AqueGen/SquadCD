@@ -177,10 +177,11 @@ end
 
 local function follow()
     local holder = ns.Rows.Holder(ns.EditMode.Selected())
+    local top = holder and ns.Anchors.Plain(holder, "GetTop")
     chip:ClearAllPoints()
     if not holder then
         chip:SetPoint("TOP", UIParent, "TOP", 0, -100)
-    elseif (holder:GetTop() or 0) + DISTANCE + chip:GetHeight() <= UIParent:GetTop() then
+    elseif type(top) == "number" and top + DISTANCE + chip:GetHeight() <= UIParent:GetTop() then
         chip:SetPoint("BOTTOMLEFT", holder, "TOPLEFT", 0, DISTANCE)
     else
         chip:SetPoint("TOPLEFT", holder, "BOTTOMLEFT", 0, -DISTANCE)
@@ -196,7 +197,8 @@ local function frame()
     chip:EnableMouse(true)
     T.Panel(chip)
     chip:SetBackdropBorderColor(unpack(T.gold))
-    chip:SetScript("OnHide", function()
+    chip:SetScript("OnHide", function(self)
+        if self:IsShown() then return end
         if ns.EditMode.Members() then ns.EditMode.StopMembers() end
     end)
     return chip

@@ -8,14 +8,9 @@ Docking.SNAP = 16
 local TOUCH = 2
 local MAIN = "panel"
 
--- Rect: { x, y, w, h }, x to the right, y DOWN from the UIParent top-left corner.
--- WoW conversion: TOPLEFT of UIParent at (x, -y); rects and screen must share one effective scale.
--- Stored position of a section window (section.pos): { x, y } absolute, plus
--- { dockTo = id, side = "Right"|"Left"|"Above"|"Below", offset = n } when docked.
--- side is the side of the target the window sits on; offset is the distance of its
--- top (Right/Left) or left (Above/Below) edge from the target's. x, y keep the last
--- absolute spot and are the fallback when the target is missing or hidden.
--- The main panel has id "panel".
+function Docking.Screen()
+    return { x = 0, y = 0, w = UIParent:GetWidth(), h = UIParent:GetHeight() }
+end
 
 local function right(r) return r.x + r.w end
 local function bottom(r) return r.y + r.h end

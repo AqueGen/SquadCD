@@ -13,11 +13,7 @@ local function clamp(v, lo, hi)
     return math.max(lo, math.min(hi, v))
 end
 
-local function copy(t)
-    local out = {}
-    for k, v in pairs(t) do out[k] = v end
-    return out
-end
+local copy = ns.Copy
 
 local function groupOf(layout, gi)
     return layout.groups[gi]

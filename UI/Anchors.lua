@@ -16,6 +16,8 @@ local function plain(frame, method, ...)
     return value
 end
 
+Anchors.Plain = plain
+
 local function usable(frame)
     return plain(frame, "IsForbidden") == false and plain(frame, "IsVisible") == true
 end

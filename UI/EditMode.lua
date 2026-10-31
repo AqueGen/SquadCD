@@ -63,10 +63,6 @@ local function round(v)
     return math.floor(v + 0.5)
 end
 
-local function screen()
-    return { x = 0, y = 0, w = UIParent:GetWidth(), h = UIParent:GetHeight() }
-end
-
 local function scaleOf(f)
     return f:GetEffectiveScale() / UIParent:GetEffectiveScale()
 end
@@ -120,7 +116,10 @@ local function finish()
     if not d then return end
     drag = nil
     driver:SetScript("OnUpdate", nil)
-    if not d.moved then return end
+    if not d.moved then
+        ns.Display.Flush()
+        return
+    end
     if InCombatLockdown() then
         ns.Display.Rebuild()
         return
@@ -138,7 +137,7 @@ local function move()
     local dx, dy = cx - d.x0, d.y0 - cy
     if not d.moved and math.abs(dx) + math.abs(dy) < THRESHOLD then return end
     d.moved = true
-    local scr = screen()
+    local scr = D.Screen()
     local function clamped(x, y)
         local box = { x = d.box.x + x, y = d.box.y + y, w = d.box.w, h = d.box.h }
         local bx, by = D.Clamp(box, scr)
@@ -247,7 +246,8 @@ local function editBar()
     reset:SetPoint("RIGHT", done, "LEFT", -6, 0)
     reset:SetScript("OnClick", function() EditMode.ResetArrangement() end)
     bar:SetSize(text:GetStringWidth() + 20 + 130 + 70 + 18, 32)
-    bar:SetScript("OnHide", function()
+    bar:SetScript("OnHide", function(self)
+        if self:IsShown() then return end
         if panels then EditMode.StopPanels() end
     end)
     return bar
@@ -259,6 +259,10 @@ end
 
 function EditMode.Members()
     return members
+end
+
+function EditMode.Dragging()
+    return drag ~= nil
 end
 
 function EditMode.Selected()
@@ -345,7 +349,6 @@ function EditMode.EditMembers(edit)
     if type(picked) == "number" then selected = picked end
     selected = math.max(1, math.min(selected, #layout.groups))
     ns.Display.Changed()
-    EditMode.Refresh()
 end
 
 driver:SetScript("OnEvent", function(_, event)

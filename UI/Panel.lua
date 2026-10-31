@@ -161,10 +161,6 @@ local function nameOf(section)
     return table.concat(names, ", ")
 end
 
-local function screen()
-    return { x = 0, y = 0, w = UIParent:GetWidth(), h = UIParent:GetHeight() }
-end
-
 function Panel.Build(list)
     local layout = ns.DB.layout
     roleOrder, classOrder = Model.RoleOrder(layout), layout.classOrder
@@ -195,7 +191,7 @@ function Panel.Build(list)
     if not groups.panel and main then main.frame:Hide() end
     for i = nextWindow, #windows do windows[i].frame:Hide() end
 
-    local scr = screen()
+    local scr = ns.Docking.Screen()
     local loose = {}
     for _, key in ipairs(order) do
         if key ~= "panel" and not sectionOf[key].pos then loose[#loose + 1] = sizes[key] end
@@ -241,6 +237,12 @@ local function fallback(buf)
     return buf
 end
 
+local function dead(unit)
+    if not unit then return false end
+    local v = UnitIsDeadOrGhost(unit)
+    return not issecretvalue(v) and v == true
+end
+
 local states, cds = {}, {}
 
 function Panel.Update(tracker, now, sight)
@@ -260,6 +262,7 @@ function Panel.Update(tracker, now, sight)
                         local buf = #alts == 1 and w.buf or e.buf
                         if not tracker:State(e.member.guid, e.spell.id, buf) then fallback(buf) end
                         buf.unknown = buf.ready and ns.LayoutRules.Unknown(e.spell.id, e.own, sight.plain, sight.secret)
+                        buf.dead = sight.live and dead(e.member.unit)
                         if #alts > 1 then states[a], cds[a] = buf, ns.Spells[e.spell.id] and ns.Spells[e.spell.id].cd or 0 end
                     end
                     if #alts > 1 then

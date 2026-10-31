@@ -85,8 +85,6 @@ local function start(count)
     ns.Display.SetSource({ members = list, tracker = tracker })
 end
 
-Demo.MODES = { "Off", "Me", "Group" }
-
 function Demo.Set(next)
     if next ~= "Off" and next ~= "Me" and next ~= "Group" then return end
     if InCombatLockdown() then

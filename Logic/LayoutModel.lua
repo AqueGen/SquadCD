@@ -15,12 +15,14 @@ local V1_PLACEMENT = {
 }
 local V1_SIDES = { LEFT = "Left", RIGHT = "Right", ABOVE = "Above", BELOW = "Below" }
 
-local function copy(v)
+function ns.Copy(v)
     if type(v) ~= "table" then return v end
     local t = {}
-    for k, x in pairs(v) do t[k] = copy(x) end
+    for k, x in pairs(v) do t[k] = ns.Copy(x) end
     return t
 end
+
+local copy = ns.Copy
 
 local function clamp(v, lo, hi)
     return math.max(lo, math.min(hi, v))

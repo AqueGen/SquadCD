@@ -63,7 +63,7 @@ local function groupEditor(page, gi)
     group:Check({
         label = "Same look as the party frames default",
         get = function() return g() and g().look == nil end,
-        set = function(on) Parts.Edit(function(l) if l.groups[gi] then l.groups[gi].look = not on and Parts.Copy(l.memberLook) or nil end end) end,
+        set = function(on) Parts.Edit(function(l) if l.groups[gi] then l.groups[gi].look = not on and ns.Copy(l.memberLook) or nil end end) end,
     })
     Parts.Look(group, {
         member = true,

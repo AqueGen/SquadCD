@@ -24,6 +24,10 @@ local function presetCards(page)
     group:Note("Click a preset to see it on screen. Apply keeps it, Cancel goes back. Leaving this page also goes back.")
     Parts.PresetCards(group, {
         pick = function(n)
+            if ns.EditMode.Panels() or ns.EditMode.Members() then
+                print("Huddle: finish the edit mode first (Done), then preview a preset.")
+                return
+            end
             Preview.Show(ns.DB, n)
             ns.Display.Changed()
             page:Refresh()
@@ -58,7 +62,10 @@ local function presetCards(page)
         text = "No party? Set the demo above to Whole group to see the preview.",
         visible = function() return previewing() and not ns.Display.HasMembers() and not ns.Demo.Running() end,
     })
-    page.frame:HookScript("OnHide", cancelPreview)
+    page.frame:HookScript("OnHide", function()
+        if not UIParent:IsShown() then return end
+        cancelPreview()
+    end)
 end
 
 local function newItem(parent)
