@@ -87,8 +87,12 @@ end
 
 local function settle()
     local after = snapshot()
+    local own
+    for _, m in ipairs(roster) do
+        if m.unit == "player" then own = m.guid end
+    end
     for _, guid in ipairs(Kicks.Deltas(baseline, after)) do
-        if not credited[guid] then credit(guid) end
+        if not credited[guid] and guid ~= own then credit(guid) end
     end
     for guid, n in pairs(after) do baseline[guid] = n end
     credited = {}

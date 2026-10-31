@@ -177,6 +177,13 @@ describe("Kicks events", function()
         assert.same({ { "A", 96231 } }, used)
     end)
 
+    it("regen skips the player, whose kick OwnCasts already records", function()
+        ns.Group.OnRoster({ { guid = "A", class = "PALADIN", spec = 66, unit = "player" }, members[2] })
+        baselineTotals = { A = 2, B = 3 }
+        helpers.fire("PLAYER_REGEN_ENABLED")
+        assert.same({ { "B", 187707 } }, used)
+    end)
+
     it("friendly nameplate ignored", function()
         helpers.fire("UNIT_SPELLCAST_INTERRUPTED", "nameplate2", "c", 1, "A")
         assert.equal(0, #used)
