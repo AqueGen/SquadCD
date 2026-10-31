@@ -61,6 +61,19 @@ class GenDataTests(unittest.TestCase):
         self.assertIn("buffs={48792},dur=8,track", gen_data.spell_line(spell, "DEATHKNIGHT", [48792], (), None, {48792: 8000}))
         self.assertNotIn("dur=", gen_data.spell_line(spell, "DEATHKNIGHT", [48792], (), None, {}))
 
+    def test_same_name_buffs_adds_friendly_variants(self):
+        effects = {
+            48707: [(6, 1, 0, 0)],
+            410358: [(6, 21, 0, 0)],
+            444740: [(3, 92, 0, 0)],
+            7121: [(6, 1, 0, 0)],
+        }
+        effects[31662] = [(6, 21, 0, 0)]
+        names = {48707: "Anti-Magic Shell", 410358: "Anti-Magic Shell", 444740: "Anti-Magic Shell", 7121: "Anti-Magic Shield",
+                 31662: "Anti-Magic Shell"}
+        class_sets = {48707: 15, 410358: 15, 444740: 15, 31662: 0}
+        self.assertEqual([48707, 410358], gen_data.same_name_buffs(48707, [48707], effects, names, class_sets))
+
     def test_load_durations_joins_misc_and_duration(self):
         import tempfile
         d = tempfile.mkdtemp()

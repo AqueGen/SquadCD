@@ -54,6 +54,26 @@ def buff_ids(spell_id, effects, buff_overrides):
     return ids
 
 
+def load_names(path):
+    with open(path, encoding="utf8", newline="") as f:
+        return {int(r["ID"]): r["Name_lang"] for r in csv.DictReader(f)}
+
+
+# Talents and hero trees re-cast the same spell under other ids (Anti-Magic Shell lands as one of them in 12.1.5).
+def same_name_buffs(spell_id, buffs, effects, names, class_sets):
+    name, own = names.get(spell_id), class_sets.get(spell_id)
+    if not buffs or not name or not own:
+        return buffs
+    extra = sorted(i for i, n in names.items()
+                   if n == name and i not in buffs and class_sets.get(i) == own and applies_friendly_aura(i, effects))
+    return list(buffs) + extra
+
+
+def load_class_sets(path):
+    with open(path, encoding="utf8", newline="") as f:
+        return {int(r["SpellID"]): int(r["SpellClassSet"]) for r in csv.DictReader(f)}
+
+
 def applies_hostile_aura(spell_id, effects):
     for effect, t0, t1, _ in effects.get(spell_id, []):
         if effect == EFFECT_APPLY_AURA and (t0 in HOSTILE_TARGETS or t1 in HOSTILE_TARGETS):
@@ -226,7 +246,7 @@ def spell_line(spell, token, buffs, debuffs=(), tokens=None, durations=None):
     return "ns.Spells[%d]={%s}" % (spell["id"], ",".join(fields))
 
 
-def render(catalog, effects, overrides, potions, durations=None):
+def render(catalog, effects, overrides, potions, durations=None, names=None, class_sets=None):
     check_overrides(catalog, overrides)
     tokens = {int(k): v["token"] for k, v in catalog["classes"].items()}
     buff_overrides = overrides.get("buffs", {})
@@ -234,7 +254,10 @@ def render(catalog, effects, overrides, potions, durations=None):
     out = [COPYRIGHT, "local _, ns = ...", "ns.Spells = {}", "ns.TalentEntries = {}", "ns.Specs = {}", "ns.Classes = {}"]
     for spell in sorted(catalog["spells"], key=lambda s: s["id"]):
         token = tokens.get(spell["classId"])
-        out.append(spell_line(spell, token, buff_ids(spell["id"], effects, buff_overrides),
+        buffs = buff_ids(spell["id"], effects, buff_overrides)
+        if names and str(spell["id"]) not in buff_overrides:
+            buffs = same_name_buffs(spell["id"], buffs, effects, names, class_sets or {})
+        out.append(spell_line(spell, token, buffs,
                               debuff_ids(spell["id"], effects, debuff_overrides), tokens, durations))
     for entry, talent in sorted(catalog["talentEntries"].items(), key=lambda kv: int(kv[0])):
         out.append("ns.TalentEntries[%s]=%d" % (entry, talent))
@@ -275,7 +298,9 @@ def main():
         overrides = json.load(f)
     effects = load_effects(fetch_table("SpellEffect", args.cache))
     durations = load_durations(fetch_table("SpellMisc", args.cache), fetch_table("SpellDuration", args.cache))
-    text = render(catalog, effects, overrides, load_potions(args.cache, effects), durations)
+    names = load_names(fetch_table("SpellName", args.cache))
+    class_sets = load_class_sets(fetch_table("SpellClassOptions", args.cache))
+    text = render(catalog, effects, overrides, load_potions(args.cache, effects), durations, names, class_sets)
     with open(args.out, "w", encoding="utf8", newline="\n") as f:
         f.write(text)
 
