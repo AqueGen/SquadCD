@@ -4,7 +4,7 @@ local _, ns = ...
 local Wizard = {}
 ns.Wizard = Wizard
 
-local T = ns.Theme
+local T = ns.SettingsTheme
 local Widgets = ns.Widgets
 local Parts = ns.LayoutParts
 

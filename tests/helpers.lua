@@ -30,6 +30,11 @@ end
 
 helpers.newFrame = newFrame
 
+helpers.VELVET = {}
+for _, name in ipairs({ "LibStub", "Core", "Tokens", "Button", "Group", "Nav", "Segments", "Slider", "Checkbox", "End" }) do
+    helpers.VELVET[#helpers.VELVET + 1] = "Libs/LibVelvet-1.0/" .. name .. ".lua"
+end
+
 function helpers.load(files, stubs)
     for k, saved in pairs(applied) do
         _G[k] = saved.prev
@@ -41,6 +46,8 @@ function helpers.load(files, stubs)
     _G.CreateFrame = newFrame
     _G.geterrorhandler = function() return function() end end
     _G.issecretvalue = function() return false end
+    _G.strmatch = string.match
+    _G.CreateColor = function(r, g, b, a) return { r = r, g = g, b = b, a = a } end
     for k, v in pairs(stubs or {}) do
         applied[k] = { prev = _G[k] }
         _G[k] = v

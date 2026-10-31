@@ -3,7 +3,8 @@ local _, ns = ...
 
 local Widgets = ns.Widgets
 local Rules = ns.WidgetRules
-local T = ns.Theme
+local T = ns.SettingsTheme
+local UI = LibStub("LibVelvet-1.0")
 
 local Window = {}
 
@@ -37,10 +38,7 @@ end
 
 local function Paint()
     for key, entry in pairs(entries) do
-        local on = key == current
-        entry:SetBackdropColor(unpack(on and T.selected or T.panel))
-        entry.label:SetTextColor(unpack(on and T.gold or T.text))
-        entry.bar:SetShown(on)
+        UI.PaintNav(entry, key == current and "selected" or "normal")
     end
     demo:SetText(ns.Demo.Running() and "Stop demo" or "Demo")
     unlock:SetText(ns.EditMode.Panels() and "Done" or "Move the panels")
@@ -49,15 +47,7 @@ end
 local function BuildMenu()
     local y = -PAD
     for _, item in ipairs(PAGES) do
-        local entry = Widgets.Button(menu, item.label, MENU_W - 2 * PAD)
-        entry:SetBackdropBorderColor(unpack(T.border))
-        entry.label:ClearAllPoints()
-        entry.label:SetPoint("LEFT", entry, "LEFT", PAD, 0)
-        entry.bar = entry:CreateTexture(nil, "OVERLAY")
-        entry.bar:SetPoint("TOPLEFT")
-        entry.bar:SetPoint("BOTTOMLEFT")
-        entry.bar:SetWidth(2)
-        entry.bar:SetColorTexture(unpack(T.gold))
+        local entry = UI.NavEntry(menu, item.label, MENU_W - 2 * PAD, ENTRY_H)
         entry:SetScript("OnClick", function() Window.Show(item.key) end)
         entry:SetPoint("TOPLEFT", menu, "TOPLEFT", PAD, y)
         entries[item.key] = entry

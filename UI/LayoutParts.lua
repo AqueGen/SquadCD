@@ -4,7 +4,7 @@ local _, ns = ...
 local Parts = {}
 ns.LayoutParts = Parts
 
-local T = ns.Theme
+local T = ns.SettingsTheme
 local Widgets = ns.Widgets
 local CHIP_GAP, CHIP_H = 4, 22
 
@@ -329,8 +329,7 @@ local function newTypeRow(parent)
         row.places[i] = b
         x = x + p.w - 1
     end
-    row.split = CreateFrame("CheckButton", nil, row, "MinimalCheckboxTemplate")
-    row.split:SetSize(22, 22)
+    row.split = LibStub("LibVelvet-1.0").Checkbox(row, 22)
     row.split:SetPoint("LEFT", row, "LEFT", SPLIT_X, 0)
     row.split.text = row.split:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     row.split.text:SetPoint("LEFT", row.split, "RIGHT", 2, 0)

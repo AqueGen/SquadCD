@@ -1,7 +1,7 @@
 -- Copyright (c) 2026 AqueGen. All rights reserved. See LICENSE.
 local _, ns = ...
 
-local T = ns.Theme
+local T = ns.SettingsTheme
 local Widgets = ns.Widgets
 local Parts = ns.LayoutParts
 local Model = ns.LayoutModel

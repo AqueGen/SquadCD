@@ -6,6 +6,7 @@ local FILES = {
     "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/LayoutGrid.lua", "Logic/LayoutRules.lua", "Logic/Preview.lua", "UI/Theme.lua",
     "UI/WidgetRules.lua", "UI/Widgets.lua", "UI/LayoutParts.lua", "UI/Window.lua", "Pages/Presets.lua",
 }
+for i = #helpers.VELVET, 1, -1 do table.insert(FILES, 1, helpers.VELVET[i]) end
 
 local function stub(f)
     return setmetatable(f, {

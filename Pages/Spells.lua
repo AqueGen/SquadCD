@@ -1,7 +1,7 @@
 -- Copyright (c) 2026 AqueGen. All rights reserved. See LICENSE.
 local _, ns = ...
 
-local T = ns.Theme
+local T = ns.SettingsTheme
 local Widgets = ns.Widgets
 local TAB_W, TAB_MIN_W, TAB_H, TAB_COLUMNS = 92, 84, 24, 7
 local ROW_H = 22
@@ -55,8 +55,7 @@ end
 local function NewRow(list)
     local row = CreateFrame("Frame", nil, list)
     row:SetHeight(ROW_H)
-    row.check = CreateFrame("CheckButton", nil, row, "MinimalCheckboxTemplate")
-    row.check:SetSize(20, 20)
+    row.check = LibStub("LibVelvet-1.0").Checkbox(row, 20)
     row.check:SetPoint("LEFT")
     row.check:SetScript("OnClick", function(self)
         if self:GetChecked() then ns.DB.spells[row.id] = nil else ns.DB.spells[row.id] = false end

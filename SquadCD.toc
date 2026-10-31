@@ -8,6 +8,7 @@
 ## IconTexture: Interface\AddOns\SquadCD\Media\icon
 ## AddonCompartmentFunc: SquadCD_OnCompartmentClick
 
+Libs\LibVelvet-1.0\lib.xml
 Logic/LayoutModel.lua
 Core.lua
 Data.lua
