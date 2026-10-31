@@ -25,16 +25,28 @@ local function refreshWindow()
     if ns.Window then ns.Window.Refresh() end
 end
 
+local settingDemo = false
+
+local function setDemo(mode)
+    settingDemo = true
+    ns.Demo.Set(mode)
+    settingDemo = false
+end
+
 local function showDemo()
     if ns.Display.HasMembers() or ns.Demo.Running() then return end
+    setDemo("Group")
     startedDemo = true
-    ns.Demo.Set("Group")
 end
 
 local function releaseDemo()
     if panels or members or not startedDemo or InCombatLockdown() then return end
     startedDemo = false
-    if ns.Demo.Mode() == "Group" then ns.Demo.Set("Off") end
+    setDemo("Off")
+end
+
+function EditMode.DemoChanged()
+    if not settingDemo then startedDemo = false end
 end
 
 local function round(v)
@@ -117,15 +129,18 @@ local function move()
     if not d.moved and math.abs(dx) + math.abs(dy) < THRESHOLD then return end
     d.moved = true
     local scr = screen()
-    local box = { x = d.box.x + dx, y = d.box.y + dy, w = d.box.w, h = d.box.h }
-    local bx, by = D.Clamp(box, scr)
-    dx, dy = dx + bx - box.x, dy + by - box.y
+    local function clamped(x, y)
+        local box = { x = d.box.x + x, y = d.box.y + y, w = d.box.w, h = d.box.h }
+        local bx, by = D.Clamp(box, scr)
+        return x + bx - box.x, y + by - box.y
+    end
+    dx, dy = clamped(dx, dy)
     local g = d.start[d.key]
     local grabbed = { x = g.x + dx, y = g.y + dy, w = g.w, h = g.h }
     local candidates = D.Near(grabbed, d.anchors, D.SNAP)
     candidates[#candidates + 1] = scr
     local sx, sy = D.Snap(grabbed, candidates)
-    dx, dy = dx + sx - grabbed.x, dy + sy - grabbed.y
+    dx, dy = clamped(dx + sx - grabbed.x, dy + sy - grabbed.y)
     for id in pairs(d.moving) do
         local r = d.start[id]
         place(d.frames[id], r.x + dx, r.y + dy)
@@ -322,12 +337,17 @@ function EditMode.EditMembers(edit)
     EditMode.Refresh()
 end
 
-driver:SetScript("OnEvent", function()
+driver:SetScript("OnEvent", function(_, event)
+    if event == "PLAYER_REGEN_ENABLED" then
+        releaseDemo()
+        return
+    end
     finish()
     EditMode.StopPanels()
     EditMode.StopMembers()
 end)
 driver:RegisterEvent("PLAYER_REGEN_DISABLED")
+driver:RegisterEvent("PLAYER_REGEN_ENABLED")
 
 ns.Slash("move", function() EditMode.TogglePanels() end)
 ns.Slash("frames", function()

@@ -6,6 +6,7 @@ ns.Docking = Docking
 Docking.GAP = 6
 Docking.SNAP = 16
 local TOUCH = 2
+local MAIN = "panel"
 
 -- Rect: { x, y, w, h }, x to the right, y DOWN from the UIParent top-left corner.
 -- WoW conversion: TOPLEFT of UIParent at (x, -y); rects and screen must share one effective scale.
@@ -153,7 +154,7 @@ function Docking.Drop(rects, moving, positions, gap)
                 side, offset = Docking.SideOf(r, rects[p.dockTo], gap)
                 if side then pos.dockTo = p.dockTo end
             end
-            if not side then
+            if not side and id ~= MAIN then
                 local bestErr
                 for _, other in ipairs(ids) do
                     if not moving[other] and not leadsIntoMoving(other) then
@@ -166,6 +167,18 @@ function Docking.Drop(rects, moving, positions, gap)
             end
             if side then pos.side, pos.offset = side, offset end
             out[id] = pos
+        end
+    end
+    local main = moving[MAIN] and rects[MAIN]
+    if not main then return out end
+    for _, id in ipairs(ids) do
+        if not moving[id] then
+            local r, p = rects[id], posOf(id)
+            local held = p and p.dockTo and rects[p.dockTo] and Docking.SideOf(r, rects[p.dockTo], gap)
+            local side, offset = Docking.SideOf(r, main, gap)
+            if side and not held and not leadsIntoMoving(id) then
+                out[id] = { x = r.x, y = r.y, dockTo = MAIN, side = side, offset = offset }
+            end
         end
     end
     return out

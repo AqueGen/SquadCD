@@ -251,6 +251,19 @@ describe("Docking", function()
             assert.are.same({ x = 100, y = 156 }, out.Kick)
         end)
 
+        it("docks a resting section to the main panel dropped flush against it", function()
+            local out = D.Drop(rects, { panel = true }, { Kick = { x = 100, y = 156 } })
+            assert.are.same({ x = 100, y = 156, dockTo = "panel", side = "Below", offset = 0 }, out.Kick)
+            assert.are.same({ x = 100, y = 100 }, out.panel)
+        end)
+
+        it("leaves a resting section on its own still-touching dock when the main panel lands beside it", function()
+            rects.Group = { x = 100, y = 202, w = 80, h = 40 }
+            local positions = { Kick = { x = 100, y = 156, dockTo = "Group", side = "Above", offset = 0 } }
+            local out = D.Drop(rects, { panel = true }, positions)
+            assert.is_nil(out.Kick)
+        end)
+
         it("never docks a moved panel to one that docks to it, even through a chain", function()
             rects.Group = { x = 206, y = 156, w = 80, h = 40 }
             local positions = {

@@ -42,6 +42,10 @@ local function newGroupShape()
     return shape("Rows", 3, "TopLeft")
 end
 
+function LayoutModel.NewGroup(types, side)
+    return group(types, side, newGroupShape())
+end
+
 local function panelLook()
     return { iconSize = 26, labels = "Glyph", background = "Default", opacity = 90, nameLetters = 5 }
 end
@@ -65,7 +69,7 @@ function LayoutModel.Defaults()
             section("Kick", { "Kick" }), section("Control", { "Control" }),
             section("External", { "External" }), section("Group", { "Group" }),
         },
-        groups = { group({ "Personal", "Burst", "Racial", "Potion" }, "Left", newGroupShape()) },
+        groups = { LayoutModel.NewGroup({ "Personal", "Burst", "Racial", "Potion" }, "Left") },
         panelShape = shape("Rows", 6, "TopLeft"),
         panelLook = panelLook(),
         memberLook = memberLook(),
@@ -124,7 +128,7 @@ function LayoutModel.SetPlace(layout, type, place)
         layout.sections[#layout.sections + 1] = section(id, { type })
     elseif place == "member" then
         if #layout.groups == 0 then
-            layout.groups[1] = group({}, "Right", newGroupShape())
+            layout.groups[1] = LayoutModel.NewGroup({}, "Right")
         end
         local types = layout.groups[1].types
         types[#types + 1] = type

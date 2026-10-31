@@ -115,13 +115,16 @@ function MemberEdit.ResetOffset(layout, gi)
     local g = groupOf(layout, gi)
     if not g then return layout end
     local x, y = stacked(layout, gi, g.side)
-    if not x then x, y = 4, 0 end
+    if not x then
+        local fresh = Model.NewGroup({}, g.side)
+        x, y = fresh.offsetX, fresh.offsetY
+    end
     setOffset(g, x, y)
     return layout
 end
 
 function MemberEdit.AddGroup(layout)
-    local g = { types = {}, side = "Right", shape = { axis = "Rows", perLine = 3, origin = "TopLeft", sort = "Fixed" }, shown = true, offsetX = 4, offsetY = 0 }
+    local g = Model.NewGroup({}, "Right")
     local x, y = stacked(layout, #layout.groups + 1, g.side)
     local first = layout.groups[1]
     if x then

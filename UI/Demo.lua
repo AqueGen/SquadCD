@@ -99,6 +99,7 @@ function Demo.Set(next)
     else
         start(mode == "Me" and 1 or #MEMBERS)
     end
+    ns.EditMode.DemoChanged()
     if ns.Window then ns.Window.Refresh() end
 end
 

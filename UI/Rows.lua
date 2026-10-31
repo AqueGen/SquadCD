@@ -9,6 +9,7 @@ local SLOT_W, PAD, ICON_GAP, RING, TAB_GAP, STACK_GAP = 60, 4, 2, 2, 2, 2
 local TAB = { None = 0, Glyph = 11, Short = 30 }
 
 local members, slots, active = {}, {}, 0
+local outlined
 
 local function holder(i, gi)
     members[i] = members[i] or {}
@@ -148,6 +149,7 @@ local function hideMember(i, keep)
 end
 
 function Rows.Build(rows)
+    outlined = nil
     local layout = ns.DB.layout
     local plan, stacked = {}, {}
     for i, row in ipairs(rows) do
@@ -207,14 +209,14 @@ function Rows.Holder(gi)
 end
 
 function Rows.Outline(gi)
+    if gi == outlined then return end
     for i = 1, active do
         for k, g in pairs(members[i] or {}) do
-            if g.look then
-                T.Backdrop(g.frame, g.look)
-                if k == gi then g.frame:SetBackdropBorderColor(unpack(T.gold)) end
-            end
+            if g.look and k == outlined then T.Backdrop(g.frame, g.look) end
+            if k == gi then g.frame:SetBackdropBorderColor(unpack(T.gold)) end
         end
     end
+    outlined = gi
 end
 
 function Rows.Hide()

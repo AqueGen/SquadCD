@@ -30,7 +30,7 @@ local function panelFrame(left, top, w, h)
 end
 
 describe("EditMode", function()
-    local ns, E, combat, printed, rebuilds, changed, demo, cursorX, cursorY, created, mouseDown, members
+    local ns, E, combat, printed, rebuilds, changed, demo, cursorX, cursorY, created, mouseDown, members, alt, containers
 
     local function scriptOf(name)
         for i = #created, 1, -1 do
@@ -44,8 +44,9 @@ describe("EditMode", function()
         ns = helpers.load(FILES, {
             InCombatLockdown = function() return combat end,
             print = function(s) printed[#printed + 1] = s end,
-            CreateFrame = function(_, name)
+            CreateFrame = function(_, name, parent)
                 local f = stub(helpers.newFrame())
+                f.parentFrame = parent
                 created[#created + 1] = f
                 if name then _G[name] = f end
                 return f
@@ -59,14 +60,20 @@ describe("EditMode", function()
             tinsert = table.insert,
             GetCursorPosition = function() return cursorX, cursorY end,
             IsMouseButtonDown = function() return mouseDown end,
-            IsAltKeyDown = function() return false end,
+            IsAltKeyDown = function() return alt end,
         })
         E = ns.EditMode
         ns.DB = ns.Defaults({})
-        local panel = panelFrame(100, 700, 200, 50)
+        alt = false
+        containers = { { key = "panel", frame = panelFrame(100, 700, 200, 50), name = "Panel" } }
         ns.Panel = {
-            Containers = function() return { { key = "panel", frame = panel, name = "Panel" } } end,
-            Positions = function() return { panel = { x = 100, y = 100 } } end,
+            Containers = function() return containers end,
+            Positions = function()
+                local out = { panel = { x = 100, y = 100 } }
+                local kick = ns.DB.layout.sections[1]
+                if containers[2] then out.Kick = kick.pos or { x = 100, y = 100, dockTo = "panel", side = "Below", offset = 0 } end
+                return out
+            end,
         }
         ns.Display = {
             Rebuild = function()
@@ -82,6 +89,7 @@ describe("EditMode", function()
             Set = function(m)
                 demo.mode = m
                 demo.calls[#demo.calls + 1] = m
+                E.DemoChanged()
             end,
         }
         ns.Widgets = { Button = function() return stub(helpers.newFrame()) end }
@@ -118,6 +126,24 @@ describe("EditMode", function()
         assert.are.same({ "Group" }, demo.calls)
         E.StopMembers()
         assert.are.same({ "Group", "Off" }, demo.calls)
+    end)
+
+    it("stops its demo when combat ends if combat cut edit mode short", function()
+        E.StartPanels()
+        combat = true
+        helpers.fire("PLAYER_REGEN_DISABLED")
+        assert.are.same({ "Group" }, demo.calls)
+        combat = false
+        helpers.fire("PLAYER_REGEN_ENABLED")
+        assert.are.same({ "Group", "Off" }, demo.calls)
+    end)
+
+    it("leaves a demo the user switched while editing", function()
+        E.StartPanels()
+        ns.Demo.Set("Me")
+        ns.Demo.Set("Group")
+        E.StopPanels()
+        assert.are.same({ "Group", "Me", "Group" }, demo.calls)
     end)
 
     it("leaves a live group alone", function()
@@ -166,6 +192,65 @@ describe("EditMode", function()
         ns.DB.layout.sections[1].pos = { x = 5, y = 5 }
         E.ResetArrangement()
         assert.is_nil(ns.DB.layout.sections[1].pos)
+    end)
+
+    it("Reset arrangement is refused in combat", function()
+        ns.DB.layout.sections[1].pos = { x = 5, y = 5 }
+        combat = true
+        E.ResetArrangement()
+        assert.are.same({ x = 5, y = 5 }, ns.DB.layout.sections[1].pos)
+        assert.truthy(printed[1]:find("out of combat"))
+    end)
+
+    describe("with the Kick window docked below the panel", function()
+        local function kickPos()
+            return ns.DB.layout.sections[1].pos
+        end
+
+        local function drop(key, dx, dy)
+            E.StartPanels()
+            local frame
+            for _, c in ipairs(containers) do
+                if c.key == key then frame = c.frame end
+            end
+            for _, f in ipairs(created) do
+                if f.parentFrame == frame and f.scripts.OnMouseDown then f.scripts.OnMouseDown(f, "LeftButton") end
+            end
+            cursorX, cursorY = cursorX + dx, cursorY - dy
+            local driver, update = scriptOf("OnUpdate")
+            update(driver, 0.01)
+            mouseDown = false
+            update(driver, 0.01)
+        end
+
+        before_each(function()
+            containers[2] = { key = "Kick", frame = panelFrame(100, 644, 100, 40), name = "Kick" }
+        end)
+
+        it("a drag moves the docked pair and keeps the dock", function()
+            drop("panel", 60, 30)
+            assert.are.same({ "TOPLEFT", 160, -130 }, ns.DB.layout.panel.point)
+            assert.are.same({ x = 160, y = 186, dockTo = "panel", side = "Below", offset = 0 }, kickPos())
+        end)
+
+        it("an Alt-drag of the panel leaves Kick undocked where it was", function()
+            alt = true
+            drop("panel", 300, 0)
+            assert.are.same({ "TOPLEFT", 400, -100 }, ns.DB.layout.panel.point)
+            assert.are.same({ x = 100, y = 156 }, kickPos())
+        end)
+
+        it("snaps a window flush to the right of the panel and docks it", function()
+            alt = true
+            drop("Kick", 210, -53)
+            assert.are.same({ x = 306, y = 100, dockTo = "panel", side = "Right", offset = 0 }, kickPos())
+        end)
+
+        it("keeps the moved pair on screen", function()
+            drop("panel", -500, 0)
+            assert.are.same({ "TOPLEFT", 0, -100 }, ns.DB.layout.panel.point)
+            assert.are.same({ x = 0, y = 156, dockTo = "panel", side = "Below", offset = 0 }, kickPos())
+        end)
     end)
 
     describe("member edits", function()
