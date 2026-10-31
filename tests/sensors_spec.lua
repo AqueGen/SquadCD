@@ -29,7 +29,10 @@ local function world(opts)
             if w.secret then return SECRET end
             return w.buffs[container.unit] and w.buffs[container.unit][id] or false
         end
-        function s:IsShown() return value(w.shown) end
+        function s:IsShown()
+            w.reads = (w.reads or 0) + 1
+            return value(w.shown)
+        end
         function s:IsMouseOver() return value(w.over) end
         return s
     end
@@ -86,7 +89,7 @@ local function world(opts)
         end,
         C_Timer = {
             After = function(delay, fn) timer(delay, fn, 1) end,
-            NewTicker = function(delay, fn, n) return timer(delay, fn, n) end,
+            NewTicker = function(delay, fn, n) return timer(delay, fn, n or math.huge) end,
         },
         C_UnitAuras = {
             GetAuraDataByIndex = function(unit, index)
@@ -106,7 +109,8 @@ local function world(opts)
             w.timers = {}
             for _, t in ipairs(list) do
                 for _ = 1, t.n do
-                    if not t.cancelled then t.fn() end
+                    if t.cancelled then break end
+                    t.fn()
                 end
             end
         end
@@ -128,7 +132,7 @@ local function start(opts)
     w.flush()
     local calls = {}
     ns.tracker.Used = function(_, guid, spell, certain) calls[#calls + 1] = { "Used", guid, spell, certain } end
-    ns.tracker.External = function(_, spell, target) calls[#calls + 1] = { "External", spell, target } end
+    ns.tracker.External = function(_, spell, target, exclude) calls[#calls + 1] = { "External", spell, target, exclude } end
     w.calls = calls
     return ns, w
 end
@@ -201,7 +205,62 @@ describe("Sensors", function()
     it("target buff calls External", function()
         local _, w = start({ mode = "party" })
         aura(w, "party1", PAIN_BUFF, true)
-        assert.are.same({ { "External", PAIN_SUPPRESSION, "A" } }, w.calls)
+        assert.are.same({ { "External", PAIN_SUPPRESSION, "A", "P" } }, w.calls)
+    end)
+
+    it("external landing on the player calls External", function()
+        local _, w = start({ mode = "party" })
+        aura(w, "player", PAIN_BUFF, true)
+        assert.are.same({ { "External", PAIN_SUPPRESSION, "P", "P" } }, w.calls)
+    end)
+
+    it("player sensor keeps the self-test slots in the same container", function()
+        local ns, w = start({ mode = "party" })
+        local player
+        for _, c in ipairs(w.containers) do
+            if c.unit == "player" then player = c end
+        end
+        assert.is_true(player.enabled["b17"])
+        assert.is_true(player.enabled["b" .. PAIN_BUFF])
+        assert.is_nil(player.enabled["b" .. SHIELD_WALL])
+        w.secret = true
+        w.combat = true
+        helpers.fire("PLAYER_REGEN_DISABLED")
+        assert.are.equal("secret", (ns.Sensors.Mode()))
+    end)
+
+    it("external right after the player's own cast is skipped", function()
+        local ns, w = start({ mode = "party" })
+        ns.tracker.UsedWithin = function(_, guid, spell) return guid == "P" and spell == PAIN_SUPPRESSION end
+        aura(w, "party1", PAIN_BUFF, true)
+        assert.are.same({}, w.calls)
+    end)
+
+    it("unit that now holds another member is not read", function()
+        local _, w = start({ mode = "party" })
+        w.units.party1.guid = "Z"
+        aura(w, "party1", SHIELD_WALL, true)
+        assert.are.same({}, w.calls)
+    end)
+
+    it("id read as secret is not read again", function()
+        local _, w = start({ mode = "party" })
+        w.shown = SECRET
+        aura(w, "party1", SHIELD_WALL, true)
+        local reads = w.reads
+        assert.is_true(reads > 0)
+        aura(w, "party1", SHIELD_WALL, false)
+        assert.are.equal(reads, w.reads)
+    end)
+
+    it("repeated aura events extend one poll ticker", function()
+        local _, w = start({ mode = "party" })
+        helpers.fire("UNIT_AURA", "party1")
+        local first = #w.timers
+        assert.is_true(first > 0)
+        helpers.fire("UNIT_AURA", "party1")
+        helpers.fire("UNIT_AURA", "party1")
+        assert.are.equal(first, #w.timers)
     end)
 
     it("potion buff calls Used with the potion pseudo-spell", function()

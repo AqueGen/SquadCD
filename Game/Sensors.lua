@@ -6,6 +6,7 @@ ns.Sensors = Sensors
 local POLL_STEP, POLL_STEPS = 0.1, 5
 local SELF_TEST_DELAY = 0.5
 local INSET = 1e5
+local OWN_CAST_WINDOW = 3
 
 local mode, reason = "unavailable", "self-test has not run"
 local needTest, running, judgeLater, rechecked = true, false, false, false
@@ -16,6 +17,7 @@ local active = {}
 local pending = false
 local selfTest
 local stats, seen = {}, {}
+local roster = {}
 
 local Sensor = {}
 Sensor.__index = Sensor
@@ -191,7 +193,7 @@ local function runSelfTest()
     end)
 end
 
-local function buffMap(member)
+local function buffMap(member, own)
     local map = {}
     local function add(id, spell, external)
         map[id] = map[id] or {}
@@ -199,10 +201,11 @@ local function buffMap(member)
         list[#list + 1] = { spell = spell, external = external }
     end
     for spellId, s in pairs(ns.Spells) do
-        if s.buffs and (s.track == "target" or (s.track == "buff" and ns.Cooldowns.Has(spellId, member.class, member.spec, member.talents, member.race))) then
+        if s.buffs and (s.track == "target" or (not own and s.track == "buff" and ns.Cooldowns.Has(spellId, member.class, member.spec, member.talents, member.race))) then
             for _, id in ipairs(s.buffs) do add(id, spellId, s.track == "target") end
         end
     end
+    if own then return map end
     local potions = {}
     for _, p in ipairs(ns.Potions) do
         if not potions[p.buff] then
@@ -213,10 +216,19 @@ local function buffMap(member)
     return map
 end
 
+local function playerGuid()
+    for _, m in ipairs(roster) do
+        if m.unit == "player" then return m.guid end
+    end
+end
+
 local function fire(w, entries)
+    local own = playerGuid()
     for _, e in ipairs(entries) do
         if e.external then
-            ns.tracker:External(e.spell, w.guid)
+            if not (own and ns.tracker:UsedWithin(own, e.spell, OWN_CAST_WINDOW)) then
+                ns.tracker:External(e.spell, w.guid, own)
+            end
         else
             ns.tracker:Used(w.guid, e.spell, true)
         end
@@ -230,11 +242,17 @@ end
 
 local function scan(w)
     if active[w.unit] ~= w then return end
+    local guid = UnitGUID(w.unit)
+    if issecretvalue(guid) or guid ~= w.guid then return end
     local s = stats[w.unit]
     for id, entries in pairs(w.map) do
-        local v, why = w.sensor:Read(id)
+        local v, why = nil, "secret"
+        if not w.secret[id] then
+            v, why = w.sensor:Read(id)
+            count(s.hit, w.sensor:HitTest(id))
+        end
         count(s.read, v, why)
-        count(s.hit, w.sensor:HitTest(id))
+        if why == "secret" then w.secret[id] = true end
         if v ~= nil then
             if v then seen[id] = true end
             if v and w.last[id] ~= true then s.last = entries[1].spell end
@@ -245,11 +263,18 @@ local function scan(w)
 end
 
 local function poll(w)
-    if w.ticker then w.ticker:Cancel() end
-    w.ticker = C_Timer.NewTicker(POLL_STEP, function() scan(w) end, POLL_STEPS)
+    w.left = POLL_STEPS
+    if w.ticker then return end
+    w.ticker = C_Timer.NewTicker(POLL_STEP, function()
+        w.left = w.left - 1
+        if w.left <= 0 then
+            w.ticker:Cancel()
+            w.ticker = nil
+        end
+        scan(w)
+    end)
 end
 
-local roster = {}
 local regen = CreateFrame("Frame")
 local playerWatch = CreateFrame("Frame")
 
@@ -295,30 +320,34 @@ function rebuild(fromSelfTest)
     local used = {}
     if mode == "plain" then
         for _, m in ipairs(roster) do
-            if m.unit ~= "player" then
-                local map = buffMap(m)
-                local ids = {}
-                for id in pairs(map) do ids[#ids + 1] = id end
-                table.sort(ids)
-                local sensor = Sensors.Build(m.unit, ids)
-                if sensor then
-                    local w = { unit = m.unit, guid = m.guid, map = map, sensor = sensor, last = {} }
-                    active[m.unit] = w
-                    used[m.unit] = true
-                    local old = stats[m.unit]
-                    stats[m.unit] = old and old.guid == m.guid and old or {
-                        guid = m.guid,
-                        read = { ["true"] = 0, ["false"] = 0, secret = 0, error = 0 },
-                        hit = { ["true"] = 0, ["false"] = 0, secret = 0, error = 0 },
-                    }
-                    watchFrame(m.unit):RegisterUnitEvent("UNIT_AURA", m.unit)
-                    poll(w)
-                end
+            local own = m.unit == "player"
+            local map = buffMap(m, own)
+            local ids, wanted = {}, {}
+            for id in pairs(map) do wanted[id] = true end
+            if own and selfTest then
+                wanted[selfTest.id] = true
+                if selfTest.control then wanted[selfTest.control] = true end
+            end
+            for id in pairs(wanted) do ids[#ids + 1] = id end
+            table.sort(ids)
+            local sensor = Sensors.Build(m.unit, ids)
+            if sensor then
+                local w = { unit = m.unit, guid = m.guid, map = map, sensor = sensor, last = {}, secret = {} }
+                active[m.unit] = w
+                used[m.unit] = true
+                local old = stats[m.unit]
+                stats[m.unit] = old and old.guid == m.guid and old or {
+                    guid = m.guid,
+                    read = { ["true"] = 0, ["false"] = 0, secret = 0, error = 0 },
+                    hit = { ["true"] = 0, ["false"] = 0, secret = 0, error = 0 },
+                }
+                watchFrame(m.unit):RegisterUnitEvent("UNIT_AURA", m.unit)
+                poll(w)
             end
         end
     end
-    for unit in pairs(containers) do
-        if unit ~= "player" and not used[unit] and containers[unit].filter ~= "HARMFUL" then setEnabled(unit, false) end
+    for unit, c in pairs(containers) do
+        if not used[unit] and c.filter ~= "HARMFUL" and not (unit == "player" and selfTest) then setEnabled(unit, false) end
     end
 end
 

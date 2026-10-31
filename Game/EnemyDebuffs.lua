@@ -71,24 +71,35 @@ local function scan(e)
     if byUnit[e.unit] ~= e then return end
     local settling = GetTime() - e.attachedAt < SETTLE
     for id, spells in pairs(map) do
-        local v, why = e.sensor:Read(id)
-        if why == "secret" then secretIds[id] = true end
-        if v ~= nil then
-            if v and e.last[id] == false and not settling then fire(spells) end
-            e.last[id] = v
+        if not secretIds[id] then
+            local v, why = e.sensor:Read(id)
+            if why == "secret" then secretIds[id] = true end
+            if v ~= nil then
+                if v and e.last[id] == false and not settling then fire(spells) end
+                e.last[id] = v
+            end
         end
     end
 end
 
 local function poll(e)
-    if e.ticker then e.ticker:Cancel() end
-    e.ticker = C_Timer.NewTicker(POLL_STEP, function() scan(e) end, POLL_STEPS)
+    e.left = POLL_STEPS
+    if e.ticker then return end
+    e.ticker = C_Timer.NewTicker(POLL_STEP, function()
+        e.left = e.left - 1
+        if e.left <= 0 then
+            e.ticker:Cancel()
+            e.ticker = nil
+        end
+        scan(e)
+    end)
 end
 
 local attach
 
 local function release(e)
     if e.ticker then e.ticker:Cancel() end
+    e.ticker = nil
     e.frame:UnregisterAllEvents()
     byUnit[e.unit] = nil
     e.unit = nil

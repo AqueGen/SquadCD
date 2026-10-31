@@ -21,6 +21,7 @@ local function world(opts)
     local function slotFrame(container, id)
         local s = {}
         function s:IsShown()
+            w.reads = (w.reads or 0) + 1
             if w.secret then return SECRET end
             return w.debuffs[container.unit] and w.debuffs[container.unit][id] or false
         end
@@ -80,7 +81,7 @@ local function world(opts)
         end,
         C_Timer = {
             After = function(delay, fn) timer(delay, fn, 1) end,
-            NewTicker = function(delay, fn, n) return timer(delay, fn, n) end,
+            NewTicker = function(delay, fn, n) return timer(delay, fn, n or math.huge) end,
         },
         C_UnitAuras = { GetAuraDataByIndex = function() end },
         C_SpecializationInfo = {
@@ -96,7 +97,8 @@ local function world(opts)
             w.timers = {}
             for _, t in ipairs(list) do
                 for _ = 1, t.n do
-                    if not t.cancelled then t.fn() end
+                    if t.cancelled then break end
+                    t.fn()
                 end
             end
         end
@@ -167,6 +169,26 @@ describe("EnemyDebuffs", function()
         for _, e in ipairs(ns.EnemyDebuffs.Status().secret) do listed[e.id] = true end
         assert.is_true(listed[KIDNEY_SHOT])
         assert.is_true(ns.tracker:State("A", KIDNEY_SHOT).ready)
+    end)
+
+    it("secret debuff id is not read again", function()
+        local _, w = start({ mode = "party" })
+        w.secret = true
+        add(w, "nameplate1")
+        local reads = w.reads
+        assert.is_true(reads > 0)
+        plate(w, "nameplate1", KIDNEY_SHOT, true)
+        assert.are.equal(reads, w.reads)
+    end)
+
+    it("repeated aura events extend one poll ticker", function()
+        local _, w = start({ mode = "party" })
+        w.exist.nameplate1 = true
+        helpers.fire("NAME_PLATE_UNIT_ADDED", "nameplate1")
+        local first = #w.timers
+        helpers.fire("UNIT_AURA", "nameplate1")
+        helpers.fire("UNIT_AURA", "nameplate1")
+        assert.are.equal(first, #w.timers)
     end)
 
     it("debuff already on the plate when it appears does not fire", function()
