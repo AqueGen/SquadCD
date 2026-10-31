@@ -68,6 +68,50 @@ describe("LayoutRules", function()
         assert.are.same({ "ready", "readyMaybe", "cool", "coolMaybe" }, keys)
     end)
 
+    it("ready unknown after ready known, before cooling", function()
+        local states = {
+            { key = "cool", ready = false, remaining = 3 },
+            { key = "unknown", ready = true, remaining = 0, unknown = true },
+            { key = "ready", ready = true, remaining = 0 },
+        }
+        local keys = {}
+        for _, s in ipairs(R.Order(states)) do keys[#keys + 1] = s.key end
+        assert.are.same({ "ready", "unknown", "cool" }, keys)
+    end)
+
+    describe("Unknown", function()
+        local SHIELD_WALL, PAIN_SUPPRESSION, LAY_ON_HANDS, KIDNEY_SHOT, RING_OF_PEACE, KICK = 871, 33206, 471195, 408, 116844, 6552
+        local none = {}
+
+        it("own icons are never unknown", function()
+            assert.is_false(R.Unknown(SHIELD_WALL, true, false, none))
+            assert.is_false(R.Unknown(RING_OF_PEACE, true, true, none))
+        end)
+
+        it("party buff, target and potion icons are unknown unless sensors are plain", function()
+            assert.is_true(R.Unknown(SHIELD_WALL, false, false, none))
+            assert.is_true(R.Unknown(PAIN_SUPPRESSION, false, false, none))
+            assert.is_true(R.Unknown("potion", false, false, none))
+            assert.is_false(R.Unknown(SHIELD_WALL, false, true, none))
+            assert.is_false(R.Unknown(PAIN_SUPPRESSION, false, true, none))
+            assert.is_false(R.Unknown("potion", false, true, none))
+        end)
+
+        it("target spell with no buff id is unknown even in plain mode", function()
+            assert.is_true(R.Unknown(LAY_ON_HANDS, false, true, none))
+        end)
+
+        it("stun or CC is unknown with no debuff id or a secret readout", function()
+            assert.is_false(R.Unknown(KIDNEY_SHOT, false, false, none))
+            assert.is_true(R.Unknown(KIDNEY_SHOT, false, true, { [408] = true }))
+            assert.is_true(R.Unknown(RING_OF_PEACE, false, true, none))
+        end)
+
+        it("kicks are not affected", function()
+            assert.is_false(R.Unknown(KICK, false, false, none))
+        end)
+    end)
+
     it("order ties keep input order", function()
         local states = {}
         for i = 1, 12 do states[i] = { key = i, ready = true, remaining = 0, maybe = false } end

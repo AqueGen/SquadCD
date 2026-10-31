@@ -80,7 +80,7 @@ function Rows.Build(entries)
         local anchor = e.anchor or stackSlots[e.member.guid]
         local dir = e.anchor and side or SIDES.RIGHT
         local n = math.min(#e.spells, cfg.max)
-        r.guid, r.count = e.member.guid, n
+        r.guid, r.count, r.own = e.member.guid, n, e.own
         r.frame:ClearAllPoints()
         r.frame:SetSize(math.max(1, n * step - spacing), size)
         r.frame:SetPoint(dir[1], anchor, dir[2], dir[3] * (spacing + 1), dir[4] * (spacing + 1))
@@ -97,12 +97,16 @@ function Rows.Build(entries)
     end
 end
 
-function Rows.Update(tracker, now)
+function Rows.Update(tracker, now, sight)
     for i = 1, active do
         local r = rows[i]
         for k = 1, r.count do
             local icon = r.icons[k]
-            icon:Update(tracker:State(r.guid, icon.spell.id, icon.buf), now)
+            local state = tracker:State(r.guid, icon.spell.id, icon.buf)
+            if state then
+                state.unknown = state.ready and ns.LayoutRules.Unknown(icon.spell.id, r.own, sight.plain, sight.secret)
+            end
+            icon:Update(state, now)
         end
     end
 end

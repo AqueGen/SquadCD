@@ -73,10 +73,27 @@ function LayoutRules.Split(spells, placement)
     return row, panel
 end
 
+local POTION = { track = "buff", buffs = {} }
+
+function LayoutRules.Unknown(spellId, own, plain, secret)
+    if own then return false end
+    local s = spellId == "potion" and POTION or ns.Spells[spellId]
+    if not s then return false end
+    if s.track == "buff" or s.track == "target" then return not plain or not s.buffs end
+    if s.track == "debuff" then
+        for _, id in ipairs(s.debuffs or {}) do
+            if not secret[id] then return false end
+        end
+        return true
+    end
+    return false
+end
+
 local index = {}
 
 local function before(x, y)
     if x.ready ~= y.ready then return x.ready end
+    if (x.unknown or false) ~= (y.unknown or false) then return not x.unknown end
     if (x.maybe or false) ~= (y.maybe or false) then return not x.maybe end
     if x.remaining ~= y.remaining then return x.remaining < y.remaining end
     return index[x] < index[y]

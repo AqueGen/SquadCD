@@ -90,13 +90,14 @@ local function fallback(buf)
     return buf
 end
 
-function Panel.Update(tracker, now)
+function Panel.Update(tracker, now, sight)
     local size = ns.DB.panel.size
     for i = 1, active do
         local l = lines[i]
         for k, e in ipairs(l.entries) do
             local buf = l.icons[k].buf
             if not tracker:State(e.member.guid, e.spell.id, buf) then fallback(buf) end
+            buf.unknown = buf.ready and ns.LayoutRules.Unknown(e.spell.id, e.own, sight.plain, sight.secret)
         end
         for k, buf in ipairs(ns.LayoutRules.Order(l.states, l.sorted)) do
             local icon = buf.icon

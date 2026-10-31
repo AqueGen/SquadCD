@@ -195,6 +195,10 @@ local function named(spellId)
     return { id = spellId, name = ns.Spells[spellId].name }
 end
 
+function EnemyDebuffs.SecretIds()
+    return secretIds
+end
+
 function EnemyDebuffs.Status()
     local secret, missing = {}, {}
     for id in pairs(secretIds) do

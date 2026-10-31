@@ -12,13 +12,19 @@ local pending = false
 local driver = CreateFrame("Frame")
 local elapsed = 0
 
+local NONE = {}
+local sight = {}
+
 local function tick()
     local tracker = source.tracker or ns.tracker
     if not tracker then return end
-    if source == live then tracker:Tick() end
+    local isLive = source == live
+    if isLive then tracker:Tick() end
+    sight.plain = not isLive or ns.Sensors.Mode() == "plain"
+    sight.secret = isLive and ns.EnemyDebuffs.SecretIds() or NONE
     local now = GetTime()
-    ns.Rows.Update(tracker, now)
-    ns.Panel.Update(tracker, now)
+    ns.Rows.Update(tracker, now, sight)
+    ns.Panel.Update(tracker, now, sight)
 end
 
 local function named(m)
@@ -34,13 +40,14 @@ local function collect(members)
     if issecretvalue(own) then own = nil end
     for _, raw in ipairs(members) do
         local m = named(raw)
-        local spells = ns.LayoutRules.SpellsFor(m, m.guid == own or m.own, ns.DB.spells)
+        local isOwn = m.guid == own or m.own or false
+        local spells = ns.LayoutRules.SpellsFor(m, isOwn, ns.DB.spells)
         local row, panel = ns.LayoutRules.Split(spells, ns.DB.placement)
-        rows[#rows + 1] = { member = m, spells = row }
+        rows[#rows + 1] = { member = m, spells = row, own = isOwn }
         for t, list in pairs(panel) do
             byType[t] = byType[t] or {}
             for _, spell in ipairs(list) do
-                table.insert(byType[t], { member = m, spell = spell })
+                table.insert(byType[t], { member = m, spell = spell, own = isOwn })
             end
         end
     end

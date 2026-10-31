@@ -56,6 +56,8 @@ function Icon.New(parent)
 
     local time = over:CreateFontString(nil, "OVERLAY")
     time:SetPoint("CENTER", 0, 0)
+    local mark = over:CreateFontString(nil, "OVERLAY")
+    mark:SetPoint("CENTER", 0, 0)
     local count = over:CreateFontString(nil, "OVERLAY")
     count:SetPoint("BOTTOMRIGHT", -1, 1)
     local dot = over:CreateTexture(nil, "OVERLAY")
@@ -64,16 +66,17 @@ function Icon.New(parent)
     local label = f:CreateFontString(nil, "OVERLAY")
     label:SetPoint("TOP", f, "BOTTOM", 0, -1)
 
-    return setmetatable({ frame = f, tex = tex, cd = cd, time = time, count = count, dot = dot, label = label, buf = {} }, Icon)
+    return setmetatable({ frame = f, tex = tex, cd = cd, time = time, mark = mark, count = count, dot = dot, label = label, buf = {} }, Icon)
 end
 
 function Icon:SetSpell(spell, member, size)
     self.spell, self.member = spell, member
     self.duration, self.maxCharges = resolve(spell, member)
-    self.start, self.text, self.charges, self.cooling, self.maybe, self.unread = nil, nil, nil, nil, nil, nil
+    self.start, self.text, self.charges, self.look, self.maybe, self.unread = nil, nil, nil, nil, nil, nil
     self.frame:SetSize(size, size)
     self.tex:SetTexture(texture(spell))
     self.time:SetFont(T.FONT, math.max(8, math.floor(size * 0.42)), "OUTLINE")
+    self.mark:SetFont(T.FONT, math.max(8, math.floor(size * 0.55)), "OUTLINE")
     self.count:SetFont(T.FONT, math.max(7, math.floor(size * 0.32)), "OUTLINE")
     self.label:SetFont(T.FONT, 9, "OUTLINE")
     self.dot:SetSize(math.max(3, math.floor(size / 6)), math.max(3, math.floor(size / 6)))
@@ -89,7 +92,8 @@ end
 function Icon:Update(state, now)
     if not state then return end
     local cooling = not state.ready
-    local timer = cooling and state.remaining or state.recharge or 0
+    local unknown = not cooling and state.unknown or false
+    local timer = unknown and 0 or cooling and state.remaining or state.recharge or 0
     if timer > 0 then
         local start = now - (self.duration - timer)
         if not self.start or math.abs(start - self.start) > SWIPE_EPSILON then
@@ -110,10 +114,12 @@ function Icon:Update(state, now)
         self.charges = count
         self.count:SetText(count)
     end
-    if cooling ~= self.cooling then
-        self.cooling = cooling
-        self.tex:SetDesaturated(cooling)
-        self.tex:SetAlpha(cooling and 0.55 or 1)
+    local look = cooling and "cooling" or unknown and "unknown" or "ready"
+    if look ~= self.look then
+        self.look = look
+        self.tex:SetDesaturated(look ~= "ready")
+        self.tex:SetAlpha(look == "cooling" and 0.55 or 1)
+        self.mark:SetText(unknown and "?" or "")
     end
     local maybe = state.maybe or false
     if maybe ~= self.maybe then
