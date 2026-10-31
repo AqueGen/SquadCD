@@ -222,8 +222,9 @@ def render(catalog, effects, overrides, potions):
     for entry, talent in sorted(catalog["talentEntries"].items(), key=lambda kv: int(kv[0])):
         out.append("ns.TalentEntries[%s]=%d" % (entry, talent))
     for spec_id, spec in sorted(catalog["specs"].items(), key=lambda kv: int(kv[0])):
-        out.append("ns.Specs[%s]={class=%s,role=%s,name=%s}" % (
-            spec_id, lua_str(tokens[spec["classId"]]), lua_str(spec["role"]), lua_str(spec["name"])))
+        out.append("ns.Specs[%s]={class=%s,role=%s,name=%s%s}" % (
+            spec_id, lua_str(tokens[spec["classId"]]), lua_str(spec["role"]), lua_str(spec["name"]),
+            ",ranged=true" if spec.get("ranged") else ""))
     for class_id, token in sorted(tokens.items()):
         out.append("ns.Classes[%d]=%s" % (class_id, lua_str(token)))
     out.append("ns.Potions={" + ",".join(

@@ -2,7 +2,7 @@ local here = debug.getinfo(1, "S").source:match("^@(.*)[/\\][^/\\]*$") or "tests
 local helpers = dofile(here .. "/helpers.lua")
 
 describe("LayoutRules", function()
-    local ns = helpers.load({ "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/LayoutRules.lua" })
+    local ns = helpers.load({ "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/LayoutGrid.lua", "Logic/LayoutRules.lua" })
     local R = ns.LayoutRules
     local placement = ns.DEFAULTS.placement
 

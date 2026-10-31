@@ -89,26 +89,10 @@ function LayoutRules.Unknown(spellId, own, plain, secret)
     return false
 end
 
-local index = {}
-
-local function before(x, y)
-    if x.ready ~= y.ready then return x.ready end
-    if (x.unknown or false) ~= (y.unknown or false) then return not x.unknown end
-    if (x.maybe or false) ~= (y.maybe or false) then return not x.maybe end
-    if x.remaining ~= y.remaining then return x.remaining < y.remaining end
-    return index[x] < index[y]
-end
+local READY_FIRST = { sort = "ReadyFirst" }
 
 function LayoutRules.Order(states, out)
-    out = out or {}
-    for i = #states + 1, #out do out[i] = nil end
-    for i, s in ipairs(states) do
-        out[i] = s
-        index[s] = i
-    end
-    table.sort(out, before)
-    for _, s in ipairs(states) do index[s] = nil end
-    return out
+    return ns.LayoutGrid.Sort(states, READY_FIRST, nil, out)
 end
 
 function LayoutRules.FormatRemaining(remaining)
