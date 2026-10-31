@@ -1,3 +1,4 @@
+-- Copyright (c) 2026 AqueGen. All rights reserved. See LICENSE.
 local here = debug.getinfo(1, "S").source:match("^@(.*)[/\][^/\]*$") or "tests"
 local helpers = dofile(here .. "/helpers.lua")
 
