@@ -70,7 +70,9 @@ def same_name_buffs(spell_id, buffs, effects, names, class_sets):
 
 
 SPELLMOD_COOLDOWN = "11"
-AURA_FLAT_MOD, AURA_PCT_MOD = 107, 108
+MASK_AURAS = {107: "flat", 108: "pct"}
+LABEL_AURAS = {219: "flat", 218: "pct"}
+CATEGORY_AURAS = {453: "flat", 454: "pct", 341: "flat"}
 
 
 def load_class_options(path):
@@ -83,35 +85,67 @@ def load_cd_modifiers(effect_path, options):
     mods = []
     with open(effect_path, encoding="utf8", newline="") as f:
         for r in csv.DictReader(f):
-            aura = int(r["EffectAura"])
-            if r["Effect"] != "6" or aura not in (AURA_FLAT_MOD, AURA_PCT_MOD) or r["EffectMiscValue_0"] != SPELLMOD_COOLDOWN:
+            if r["Effect"] != "6":
                 continue
-            sid = int(r["SpellID"])
+            sid, aura, misc = int(r["SpellID"]), int(r["EffectAura"]), r["EffectMiscValue_0"]
             if sid not in options:
                 continue
-            mask = tuple(int(r["EffectSpellClassMask_%d" % i]) for i in range(4))
-            mods.append((sid, aura, int(float(r["EffectBasePointsF"])), options[sid][0], mask))
+            if aura in MASK_AURAS and misc == SPELLMOD_COOLDOWN:
+                kind, match = MASK_AURAS[aura], ("mask", tuple(int(r["EffectSpellClassMask_%d" % i]) for i in range(4)))
+            elif aura in LABEL_AURAS and misc == SPELLMOD_COOLDOWN:
+                kind, match = LABEL_AURAS[aura], ("label", int(r["EffectMiscValue_1"]))
+            elif aura in CATEGORY_AURAS:
+                kind, match = CATEGORY_AURAS[aura], ("cat", int(misc))
+            else:
+                continue
+            mods.append((sid, kind, int(float(r["EffectBasePointsF"])), options[sid][0], match))
     return mods
 
 
-def talent_cd_mods(spell_id, options, mods, talents):
+def load_spell_categories(path):
+    cats = {}
+    with open(path, encoding="utf8", newline="") as f:
+        for r in csv.DictReader(f):
+            if r["DifficultyID"] != "0":
+                continue
+            for col in ("Category", "ChargeCategory"):
+                if r[col] != "0":
+                    cats.setdefault(int(r["SpellID"]), set()).add(int(r[col]))
+    return cats
+
+
+def load_spell_labels(path):
+    labels = {}
+    with open(path, encoding="utf8", newline="") as f:
+        for r in csv.DictReader(f):
+            labels.setdefault(int(r["SpellID"]), set()).add(int(r["LabelID"]))
+    return labels
+
+
+def talent_cd_mods(spell_id, options, mods, talents, categories, labels):
     own = options.get(spell_id)
     flat, pct = {}, {}
-    if not own or not own[0]:
-        return flat, pct
-    for sid, aura, points, class_set, mask in mods:
-        if sid in talents and class_set == own[0] and any(a & b for a, b in zip(own[1], mask)):
-            (flat if aura == AURA_FLAT_MOD else pct)[sid] = points
+    cats, labs = categories.get(spell_id, set()), labels.get(spell_id, set())
+    for sid, kind, points, class_set, (how, value) in mods:
+        if sid not in talents:
+            continue
+        if how == "mask":
+            hit = own and own[0] and class_set == own[0] and any(a & b for a, b in zip(own[1], value))
+        elif how == "cat":
+            hit = value in cats
+        else:
+            hit = value in labs
+        if hit:
+            (flat if kind == "flat" else pct)[sid] = points
     return flat, pct
 
 
 def merge_cd_mods(spell, flat, pct):
-    if spell["chargeMs"]:
-        return
+    mods, pcts = ("chargeMods", "chargePct") if spell["chargeMs"] else ("cdMods", "cdPct")
     for sid, ms in flat.items():
-        spell["cdMods"].setdefault(str(sid), ms)
+        spell[mods].setdefault(str(sid), ms)
     for sid, p in pct.items():
-        spell["cdPct"].setdefault(str(sid), p)
+        spell[pcts].setdefault(str(sid), p)
 
 
 def load_talent_entries(node_entry_path, definition_path):
@@ -304,7 +338,7 @@ def spell_line(spell, token, buffs, debuffs=(), tokens=None, durations=None):
 
 
 def render(catalog, effects, overrides, potions, durations=None, names=None, class_sets=None, options=None, cd_mods=None,
-           talent_entries=None):
+           talent_entries=None, categories=None, labels=None):
     check_overrides(catalog, overrides)
     tokens = {int(k): v["token"] for k, v in catalog["classes"].items()}
     buff_overrides = overrides.get("buffs", {})
@@ -316,10 +350,12 @@ def render(catalog, effects, overrides, potions, durations=None, names=None, cla
     for spell in sorted(catalog["spells"], key=lambda s: s["id"]):
         token = tokens.get(spell["classId"])
         if options and cd_mods:
-            spell = dict(spell, cdMods=dict(spell["cdMods"]), cdPct=dict(spell["cdPct"]))
-            flat, pct = talent_cd_mods(spell["id"], options, cd_mods, talent_spells)
+            spell = dict(spell, cdMods=dict(spell["cdMods"]), cdPct=dict(spell["cdPct"]),
+                         chargeMods=dict(spell["chargeMods"]), chargePct=dict(spell["chargePct"]))
+            flat, pct = talent_cd_mods(spell["id"], options, cd_mods, talent_spells, categories or {}, labels or {})
             merge_cd_mods(spell, flat, pct)
-            used.update(int(k) for k in list(spell["cdMods"]) + list(spell["cdPct"]))
+            for key in ("cdMods", "cdPct", "chargeMods", "chargePct"):
+                used.update(int(k) for k in spell[key])
         buffs = buff_ids(spell["id"], effects, buff_overrides)
         if names and str(spell["id"]) not in buff_overrides:
             buffs = same_name_buffs(spell["id"], buffs, effects, names, class_sets or {})
@@ -374,8 +410,10 @@ def main():
     options = load_class_options(options_path)
     cd_mods = load_cd_modifiers(fetch_table("SpellEffect", args.cache), options)
     talent_entries = load_talent_entries(fetch_table("TraitNodeEntry", args.cache), fetch_table("TraitDefinition", args.cache))
+    categories = load_spell_categories(fetch_table("SpellCategories", args.cache))
+    labels = load_spell_labels(fetch_table("SpellLabel", args.cache))
     text = render(catalog, effects, overrides, load_potions(args.cache, effects), durations, names, class_sets,
-                  options, cd_mods, talent_entries)
+                  options, cd_mods, talent_entries, categories, labels)
     with open(args.out, "w", encoding="utf8", newline="\n") as f:
         f.write(text)
 

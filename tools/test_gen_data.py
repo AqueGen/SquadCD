@@ -77,16 +77,57 @@ class GenDataTests(unittest.TestCase):
     def test_talent_cd_mods_from_spell_masks(self):
         options = {48707: (15, (131072, 0, 0, 0)), 871: (4, (1, 0, 0, 0))}
         mods = [
-            (410320, 107, -10000, 15, (131072, 0, 0, 0)),
-            (205727, 107, -20000, 15, (131072, 0, 0, 0)),
-            (106227, 108, -50, 15, (131072, 0, 0, 0)),
-            (999, 107, -5000, 4, (131072, 0, 0, 0)),
-            (114154, 108, -30, 15, (131072, 0, 0, 0)),
+            (410320, "flat", -10000, 15, ("mask", (131072, 0, 0, 0))),
+            (205727, "flat", -20000, 15, ("mask", (131072, 0, 0, 0))),
+            (106227, "pct", -50, 15, ("mask", (131072, 0, 0, 0))),
+            (999, "flat", -5000, 4, ("mask", (131072, 0, 0, 0))),
+            (114154, "pct", -30, 15, ("mask", (131072, 0, 0, 0))),
         ]
         talents = {410320, 205727, 999, 114154}
-        flat, pct = gen_data.talent_cd_mods(48707, options, mods, talents)
+        flat, pct = gen_data.talent_cd_mods(48707, options, mods, talents, {}, {})
         self.assertEqual({410320: -10000, 205727: -20000}, flat)
         self.assertEqual({114154: -30}, pct)
+
+    def test_talent_cd_mods_by_category_and_label(self):
+        options = {45438: (3, (0, 128, 8, 0))}
+        mods = [
+            (382424, "flat", -30000, 3, ("cat", 1560)),
+            (342249, "flat", -5000, 3, ("label", 892)),
+            (777, "flat", -1000, 3, ("cat", 9999)),
+        ]
+        flat, _ = gen_data.talent_cd_mods(45438, options, mods, {382424, 342249, 777}, {45438: {1560}}, {45438: {892}})
+        self.assertEqual({382424: -30000, 342249: -5000}, flat)
+
+    def test_load_cd_modifiers_reads_mask_category_and_label_kinds(self):
+        import tempfile
+        d = tempfile.mkdtemp()
+        path = os.path.join(d, "e.csv")
+        cols = "SpellID,Effect,EffectAura,EffectMiscValue_0,EffectMiscValue_1,EffectBasePointsF," + \
+               ",".join("EffectSpellClassMask_%d" % i for i in range(4))
+        with open(path, "w", encoding="utf8") as f:
+            f.write(cols + "\n")
+            f.write("205727,6,107,11,0,-20000,131072,0,0,0\n")
+            f.write("382424,6,453,1560,0,-30000,0,0,0,0\n")
+            f.write("342249,6,219,11,892,-5000,0,0,0,0\n")
+            f.write("238100,6,341,671,0,-20000,0,0,0,0\n")
+            f.write("412713,6,454,1948,0,-10,0,0,0,0\n")
+            f.write("1,6,107,1,0,5,1,0,0,0\n")
+        options = {205727: (15, ()), 382424: (3, ()), 342249: (3, ()), 238100: (6, ()), 412713: (224, ()), 1: (1, ())}
+        got = {m[0]: (m[1], m[4]) for m in gen_data.load_cd_modifiers(path, options)}
+        self.assertEqual({
+            205727: ("flat", ("mask", (131072, 0, 0, 0))),
+            382424: ("flat", ("cat", 1560)),
+            342249: ("flat", ("label", 892)),
+            238100: ("flat", ("cat", 671)),
+            412713: ("pct", ("cat", 1948)),
+        }, got)
+
+    def test_merge_routes_charge_spells_to_charge_mods(self):
+        spell = {"chargeMs": 25000, "cdMods": {}, "cdPct": {}, "chargeMods": {}, "chargePct": {}}
+        gen_data.merge_cd_mods(spell, {384909: -60000}, {378425: -15})
+        self.assertEqual({"384909": -60000}, spell["chargeMods"])
+        self.assertEqual({"378425": -15}, spell["chargePct"])
+        self.assertEqual({}, spell["cdMods"])
 
     def test_spell_line_merges_derived_cd_mods(self):
         spell = {"id": 48707, "name": "X", "icon": "i", "type": "Personal", "classId": 6, "specs": [],
@@ -113,7 +154,7 @@ class GenDataTests(unittest.TestCase):
                                "chargeAdds": {}, "replaces": [], "races": [], "aoe": False}],
                    "talentEntries": {}, "specs": {}, "classes": {"6": {"token": "DEATHKNIGHT"}}}
         options = {48707: (15, (131072, 0, 0, 0))}
-        mods = [(410320, 107, -10000, 15, (131072, 0, 0, 0))]
+        mods = [(410320, "flat", -10000, 15, ("mask", (131072, 0, 0, 0)))]
         text = gen_data.render(catalog, {}, {}, [], None, None, None, options, mods, {410320: [500]})
         self.assertIn("cdMods={[410320]=-10}", text)
         self.assertIn("ns.TalentEntries[500]=410320", text)
