@@ -61,7 +61,17 @@ local function container(unit)
     return c
 end
 
-function Sensors.Build(unit, buffIds)
+function Sensor:SetUnit(unit)
+    self.unit = unit
+    pcall(self.c.frame.SetUnit, self.c.frame, unit)
+end
+
+function Sensor:SetEnabled(on)
+    pcall(self.c.frame.SetEnabled, self.c.frame, on)
+end
+
+function Sensors.Build(unit, buffIds, filter)
+    filter = filter or "HELPFUL"
     local c, why = container(unit)
     if not c then return nil, why end
     if c.broken then return nil, c.broken end
@@ -76,7 +86,7 @@ function Sensors.Build(unit, buffIds)
             if slot then
                 f:SetAuraSlotEnabled(key, true)
             else
-                slot = f:AddAuraSlot(key, "HELPFUL", { candidateFilters = { includeSpellIDs = { [id] = true } } })
+                slot = f:AddAuraSlot(key, filter, { candidateFilters = { includeSpellIDs = { [id] = true } } })
                 c.keys[key] = true
             end
             slots[id] = slot
@@ -89,7 +99,8 @@ function Sensors.Build(unit, buffIds)
         c.broken = "aura slot setup failed: " .. tostring(err)
         return nil, c.broken
     end
-    return setmetatable({ unit = unit, slots = slots }, Sensor)
+    c.filter = filter
+    return setmetatable({ unit = unit, slots = slots, c = c }, Sensor)
 end
 
 local function setEnabled(unit, on)
@@ -304,7 +315,7 @@ function rebuild(fromSelfTest)
         end
     end
     for unit in pairs(containers) do
-        if unit ~= "player" and not used[unit] then setEnabled(unit, false) end
+        if unit ~= "player" and not used[unit] and containers[unit].filter ~= "HARMFUL" then setEnabled(unit, false) end
     end
 end
 
