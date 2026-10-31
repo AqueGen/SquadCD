@@ -31,8 +31,12 @@ end
 helpers.newFrame = newFrame
 
 helpers.VELVET = {}
-for _, name in ipairs({ "LibStub", "Core", "Tokens", "Button", "Group", "Nav", "Segments", "Slider", "Checkbox", "Preview", "End" }) do
-    helpers.VELVET[#helpers.VELVET + 1] = "Libs/LibVelvet-1.0/" .. name .. ".lua"
+do
+    local xml = assert(io.open(root .. "/Libs/LibVelvet-1.0/lib.xml", "rb"))
+    for name in xml:read("*a"):gmatch('<Script file="([^"]+)"/>') do
+        helpers.VELVET[#helpers.VELVET + 1] = "Libs/LibVelvet-1.0/" .. name
+    end
+    xml:close()
 end
 
 function helpers.load(files, stubs)

@@ -12,7 +12,7 @@ local DEFAULT_W, DEFAULT_H = 1000, 560
 local MIN_W, MIN_H = 820, 420
 local TITLE_H, MENU_W, ENTRY_H, GAP, PAD = 28, 150, 20, 4, 8
 local SCROLLBAR, BOTTOM = 30, 20
-local COLUMN_MIN, ZONE_MIN, ZONE_MAX, BAND_H = 520, 260, 380, 150
+local COLUMN_MIN, ZONE_MIN, ZONE_MAX, BAND_H = 500, 260, 380, 150
 local PAGES = {
     { key = "about", label = "What SquadCD does" },
     { key = "presets", label = "Presets and types" },
@@ -22,7 +22,8 @@ local PAGES = {
     { key = "status", label = "Status" },
 }
 
-local frame, menu, scroll, host, demo, unlock, pane
+local frame, menu, scroll, host, demo, unlock, pane, handle
+local zoneW, dragFrom
 local pages, builders, entries, previews = {}, {}, {}, {}
 local current
 
@@ -69,10 +70,13 @@ local function Layout()
     if previews[current] ~= "panel" then
         scroll:SetPoint("TOPLEFT", menu, "TOPRIGHT", PAD, -PAD)
         pane:Hide()
+        handle:Hide()
         return
     end
-    local slots = UI.PreviewLayout(frame:GetWidth() - MENU_W - 2 * PAD - SCROLLBAR, COLUMN_MIN, ZONE_MIN, ZONE_MAX)
+    local slots = UI.PreviewLayout(frame:GetWidth() - MENU_W - 2 * PAD - SCROLLBAR, COLUMN_MIN, ZONE_MIN, ZONE_MAX, Saved().zoneW)
+    zoneW = slots.zoneW
     pane:ClearAllPoints()
+    handle:SetShown(slots.mode == "side")
     if slots.mode == "side" then
         scroll:SetPoint("TOPLEFT", menu, "TOPRIGHT", PAD, -PAD)
         scroll:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -(PAD + slots.zoneW + UI.GAP + SCROLLBAR), BOTTOM)
@@ -164,6 +168,17 @@ local function Build()
 
     pane = UI.PreviewPane(frame)
     pane:Hide()
+    handle = UI.Splitter(frame, function(dx)
+        dragFrom = dragFrom or zoneW
+        Saved().zoneW = dragFrom - dx
+        Layout()
+    end, function()
+        dragFrom = nil
+        Saved().zoneW = zoneW
+    end)
+    handle:SetPoint("TOPRIGHT", pane, "TOPLEFT", 0, 0)
+    handle:SetPoint("BOTTOMRIGHT", pane, "BOTTOMLEFT", 0, 0)
+    handle:Hide()
     ns.PanelPreview.Attach(pane)
     frame:HookScript("OnSizeChanged", function()
         if current then Layout() end

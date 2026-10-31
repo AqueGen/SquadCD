@@ -19,7 +19,7 @@ local function stub(f)
 end
 
 describe("Settings window preview zone", function()
-    local ns, pane, refreshed, settings
+    local ns, pane, refreshed, settings, made, cursor
     local strings = {}
 
     local function point(f, name)
@@ -29,7 +29,7 @@ describe("Settings window preview zone", function()
     end
 
     before_each(function()
-        pane, refreshed, settings = nil, 0, nil
+        pane, refreshed, settings, made, cursor = nil, 0, nil, {}, 500
         ns = helpers.load(FILES, {
             CreateFrame = function(_, name, parent)
                 local f = stub(helpers.newFrame())
@@ -44,6 +44,7 @@ describe("Settings window preview zone", function()
                 end
                 function f:SetWidth(w) self.width = w end
                 function f:SetHeight(h) self.height = h end
+                made[#made + 1] = f
                 function f:HookScript(event, fn)
                     local prev = self.scripts[event]
                     self.scripts[event] = function(...)
@@ -61,7 +62,8 @@ describe("Settings window preview zone", function()
                 return f
             end,
             InCombatLockdown = function() return false end,
-            UIParent = stub({}),
+            UIParent = stub({ GetEffectiveScale = function() return 1 end }),
+            GetCursorPosition = function() return cursor, 0 end,
             UISpecialFrames = {},
             tinsert = table.insert,
             GameTooltip_Hide = function() end,
@@ -111,6 +113,23 @@ describe("Settings window preview zone", function()
             if s.text == "Side note" then note = s end
         end
         assert.are.equal(group.frame, point(note, "RIGHT")[2])
+    end)
+
+    it("widens the preview when its handle is dragged left and keeps the width", function()
+        ns.Window.Show("panels")
+        settings:SetSize(1200, 560)
+        settings.scripts.OnSizeChanged(settings, 1200, 560)
+        local before = pane.width
+        local bar
+        for _, f in ipairs(made) do
+            if f.line and f.scripts.OnMouseDown then bar = f end
+        end
+        bar.scripts.OnMouseDown(bar)
+        cursor = 440
+        bar.scripts.OnUpdate(bar, 0.02)
+        bar.scripts.OnMouseUp(bar)
+        assert.are.equal(before + 60, pane.width)
+        assert.are.equal(before + 60, ns.DB.window.zoneW)
     end)
 
     it("opens wide enough for the side zone by default", function()
