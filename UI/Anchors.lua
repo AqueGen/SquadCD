@@ -97,7 +97,7 @@ end
 function Anchors.Stack()
     if not stack then
         stack = CreateFrame("Frame", "HuddleStack", UIParent, "BackdropTemplate")
-        ns.Theme.MakeMovable(stack, function() return ns.DB.layout.panel.locked end, function(point)
+        ns.Theme.MakeMovable(stack, function() return not ns.EditMode.Panels() end, function(point)
             ns.DB.row.point = point
             Anchors.PlaceStack()
         end)

@@ -41,7 +41,7 @@ local function Paint()
         entry.bar:SetShown(on)
     end
     demo:SetText(ns.Demo.Running() and "Stop demo" or "Demo")
-    unlock:SetText(ns.DB.layout.panel.locked and "Unlock panel" or "Lock panel")
+    unlock:SetText(ns.EditMode.Panels() and "Done" or "Move the panels")
 end
 
 local function BuildMenu()
@@ -118,9 +118,7 @@ local function Build()
     name:SetText("Huddle")
 
     local close = TitleButton(title, "X", 22, title, function() frame:Hide() end)
-    unlock = TitleButton(title, "Unlock panel", 100, close, function()
-        ns.Panel.SetLocked(not ns.DB.layout.panel.locked)
-    end)
+    unlock = TitleButton(title, "Move the panels", 110, close, ns.EditMode.TogglePanels)
     demo = TitleButton(title, "Demo", 80, unlock, ns.Demo.Toggle)
 
     menu = CreateFrame("Frame", nil, frame, "BackdropTemplate")

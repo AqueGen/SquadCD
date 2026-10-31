@@ -14,6 +14,7 @@ local main
 local windows = {}
 local shown = {}
 local roleOrder = {}
+local containers, positions = {}, {}
 
 local function newContainer(name)
     local f = CreateFrame("Frame", name, UIParent, "BackdropTemplate")
@@ -25,10 +26,6 @@ end
 local function mainContainer()
     if main then return main end
     main = newContainer("HuddlePanel")
-    T.MakeMovable(main.frame, function() return ns.DB.layout.panel.locked end, function(point)
-        ns.DB.layout.panel.point = point
-        ns.Display.Rebuild()
-    end)
     return main
 end
 
@@ -157,6 +154,12 @@ local function fill(c, key, list, layout)
     return w + 2 * PAD, h + 2 * PAD
 end
 
+local function nameOf(section)
+    local names = {}
+    for i, t in ipairs(section.types) do names[i] = ns.LayoutRules.LABELS[t] or t end
+    return table.concat(names, ", ")
+end
+
 local function screen()
     return { x = 0, y = 0, w = UIParent:GetWidth(), h = UIParent:GetHeight() }
 end
@@ -197,7 +200,7 @@ function Panel.Build(list)
         if key ~= "panel" and not sectionOf[key].pos then loose[#loose + 1] = sizes[key] end
     end
     local _, blockW, blockH = Grid.PlaceSections(loose, layout.panelShape, ns.Docking.GAP)
-    local positions = { panel = ns.Docking.FromPoint(layout.panel.point, sizes.panel or { w = blockW, h = blockH }, scr) }
+    positions = { panel = ns.Docking.FromPoint(layout.panel.point, sizes.panel or { w = blockW, h = blockH }, scr) }
     local chain = layout.panelShape.axis == "Columns" and "Right" or "Below"
     local previous = sizes.panel and "panel" or nil
     for _, key in ipairs(order) do
@@ -208,18 +211,28 @@ function Panel.Build(list)
         end
     end
     local rects = ns.Docking.Resolve(positions, sizes, scr)
-    local unlocked = not layout.panel.locked
-    for key, c in pairs(frames) do
+    wipe(containers)
+    for _, key in ipairs(order) do
+        local c = frames[key]
         local r = rects[key]
         local f = c.frame
         local look = key == "panel" and layout.panelLook or Model.LookOf(layout, sectionOf[key])
-        T.Backdrop(f, look, unlocked)
-        f:EnableMouse(key == "panel" and unlocked)
+        T.Backdrop(f, look)
+        f:EnableMouse(false)
         f:SetSize(r.w, r.h)
         f:ClearAllPoints()
         f:SetPoint("TOPLEFT", UIParent, "TOPLEFT", r.x, -r.y)
         f:Show()
+        containers[#containers + 1] = { key = key, frame = f, name = key == "panel" and "Panel" or nameOf(sectionOf[key]) }
     end
+end
+
+function Panel.Containers()
+    return containers
+end
+
+function Panel.Positions()
+    return positions
 end
 
 local function fallback(buf)
@@ -272,17 +285,9 @@ function Panel.Update(tracker, now, sight)
     end
 end
 
-function Panel.SetLocked(locked)
-    if InCombatLockdown() then
-        print("Huddle: the panel can be locked or unlocked out of combat only.")
-        return
-    end
-    ns.DB.layout.panel.locked = locked
-    ns.Display.Rebuild()
-end
-
 function Panel.Hide()
     if main then main.frame:Hide() end
     for _, c in ipairs(windows) do c.frame:Hide() end
     wipe(shown)
+    wipe(containers)
 end

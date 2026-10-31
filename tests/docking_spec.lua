@@ -203,4 +203,64 @@ describe("Docking", function()
             assert.are.same({ x = 450, y = 380 }, D.FromPoint({ "CENTER" }, size, screen))
         end)
     end)
+
+    describe("Near", function()
+        it("keeps rects within the snap distance, nearest first", function()
+            local rect = { x = 100, y = 100, w = 50, h = 50 }
+            local far = { id = "far", x = 400, y = 100, w = 50, h = 50 }
+            local close = { id = "close", x = 152, y = 100, w = 50, h = 50 }
+            local edge = { id = "edge", x = 100, y = 160, w = 50, h = 50 }
+            local ids = {}
+            for i, r in ipairs(D.Near(rect, { far, edge, close }, 16)) do ids[i] = r.id end
+            assert.are.same({ "close", "edge" }, ids)
+        end)
+    end)
+
+    describe("Drop", function()
+        local rects
+
+        before_each(function()
+            rects = {
+                panel = { x = 100, y = 100, w = 200, h = 50 },
+                Kick = { x = 100, y = 156, w = 100, h = 40 },
+                Group = { x = 600, y = 600, w = 80, h = 40 },
+            }
+        end)
+
+        it("writes x, y and a dock to the touching panel for a moved section", function()
+            local out = D.Drop(rects, { Kick = true }, {})
+            assert.are.same({ x = 100, y = 156, dockTo = "panel", side = "Below", offset = 0 }, out.Kick)
+        end)
+
+        it("writes only x, y when the moved section touches nothing", function()
+            local out = D.Drop(rects, { Group = true }, { Group = { x = 1, y = 1, dockTo = "panel", side = "Right", offset = 0 } })
+            assert.are.same({ x = 600, y = 600 }, out.Group)
+        end)
+
+        it("keeps a dock inside the moved cluster", function()
+            rects.panel = { x = 300, y = 300, w = 200, h = 50 }
+            rects.Kick = { x = 300, y = 356, w = 100, h = 40 }
+            local out = D.Drop(rects, { panel = true, Kick = true }, { Kick = { x = 100, y = 156, dockTo = "panel", side = "Below", offset = 0 } })
+            assert.are.same({ x = 300, y = 356, dockTo = "panel", side = "Below", offset = 0 }, out.Kick)
+            assert.are.same({ x = 300, y = 300 }, out.panel)
+        end)
+
+        it("undocks a panel left behind by an Alt-drag of its target", function()
+            rects.panel = { x = 400, y = 100, w = 200, h = 50 }
+            local out = D.Drop(rects, { panel = true }, { Kick = { x = 100, y = 156, dockTo = "panel", side = "Below", offset = 0 } })
+            assert.are.same({ x = 100, y = 156 }, out.Kick)
+        end)
+
+        it("never docks a moved panel to one that docks to it, even through a chain", function()
+            rects.Group = { x = 206, y = 156, w = 80, h = 40 }
+            local positions = {
+                Kick = { x = 100, y = 156, dockTo = "panel", side = "Below", offset = 0 },
+                Group = { x = 206, y = 156, dockTo = "Kick", side = "Right", offset = 0 },
+            }
+            local out = D.Drop(rects, { panel = true }, positions)
+            assert.is_nil(out.Kick)
+            assert.is_nil(out.Group)
+            assert.are.same({ x = 100, y = 100 }, out.panel)
+        end)
+    end)
 end)

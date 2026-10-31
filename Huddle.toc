@@ -16,6 +16,7 @@ Logic/Tracker.lua
 Logic/LayoutGrid.lua
 Logic/LayoutRules.lua
 Logic/Docking.lua
+Logic/MemberEdit.lua
 Logic/Persist.lua
 Game/Inspect.lua
 Game/Group.lua
@@ -35,6 +36,8 @@ UI/Demo.lua
 UI/WidgetRules.lua
 UI/Widgets.lua
 UI/Picture.lua
+UI/EditMode.lua
+UI/MemberChip.lua
 UI/Window.lua
 Pages/About.lua
 Pages/Layout.lua

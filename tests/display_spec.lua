@@ -22,6 +22,7 @@ describe("Display combat end", function()
         ns.Rows = { Build = function() builds = builds + 1 end, Update = function() end, Hide = function() end }
         ns.Panel = { Build = function() end, Update = function() end, Hide = function() end }
         ns.Anchors = { Scan = function() return changed end }
+        ns.EditMode = { Refresh = function() end }
         local tracker = ns.Tracker.New(function() return 100 end)
         ns.Display.SetSource({ members = { { guid = "P", unit = "player", class = "PALADIN", spec = 66 } }, tracker = tracker })
         builds = 0

@@ -42,7 +42,9 @@ local function layoutStack(stacked)
         return byGuid
     end
     T.Panel(stack)
-    stack:EnableMouse(not ns.DB.layout.panel.locked)
+    local editing = ns.EditMode.Panels()
+    if editing then stack:SetBackdropBorderColor(unpack(T.gold)) end
+    stack:EnableMouse(editing)
     local y = PAD
     for i, s in ipairs(stacked) do
         local f = slot(stack, i)
@@ -92,7 +94,8 @@ end
 local function draw(i, m, row, anchor, away)
     local holderOf = holder(i, m.gi)
     local f = holderOf.frame
-    T.Backdrop(f, m.look, false)
+    holderOf.look = m.look
+    T.Backdrop(f, m.look)
     f:SetSize(m.w, m.h)
     f:ClearAllPoints()
     local beside = m.side == "Left" or m.side == "Right"
@@ -193,6 +196,22 @@ function Rows.Update(tracker, now, sight)
                     state.unknown = state.ready and ns.LayoutRules.Unknown(icon.spell.id, icon.own, sight.plain, sight.secret)
                 end
                 icon:Update(state, now, sight.timers)
+            end
+        end
+    end
+end
+
+function Rows.Holder(gi)
+    local g = members[1] and members[1][gi]
+    if g and g.frame:IsShown() then return g.frame end
+end
+
+function Rows.Outline(gi)
+    for i = 1, active do
+        for k, g in pairs(members[i] or {}) do
+            if g.look then
+                T.Backdrop(g.frame, g.look)
+                if k == gi then g.frame:SetBackdropBorderColor(unpack(T.gold)) end
             end
         end
     end

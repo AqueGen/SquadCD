@@ -31,7 +31,7 @@ Theme.TYPES = {
 }
 Theme.BACKGROUNDS = { Default = { 0.078, 0.086, 0.106 }, Black = { 0, 0, 0 }, Slate = { 0.165, 0.192, 0.251 } }
 
-function Theme.Backdrop(frame, look, unlocked)
+function Theme.Backdrop(frame, look)
     frame:SetBackdrop(Theme.FLAT)
     local rgb = Theme.BACKGROUNDS[look.background]
     if rgb then
@@ -39,9 +39,7 @@ function Theme.Backdrop(frame, look, unlocked)
     else
         frame:SetBackdropColor(0, 0, 0, 0)
     end
-    if unlocked then
-        frame:SetBackdropBorderColor(unpack(Theme.gold))
-    elseif rgb then
+    if rgb then
         frame:SetBackdropBorderColor(unpack(Theme.border))
     else
         frame:SetBackdropBorderColor(0, 0, 0, 0)

@@ -68,6 +68,7 @@ function Display.Rebuild(late)
     if #members == 0 then
         ns.Rows.Hide()
         ns.Panel.Hide()
+        ns.EditMode.Refresh()
         driver:SetScript("OnUpdate", nil)
         return
     end
@@ -75,6 +76,7 @@ function Display.Rebuild(late)
     local lines, rows = collect(members)
     ns.Rows.Build(rows)
     ns.Panel.Build(lines)
+    ns.EditMode.Refresh()
     tick()
     driver:SetScript("OnUpdate", onUpdate)
     if late then return end
@@ -93,6 +95,10 @@ end
 function Display.SetSource(src)
     source = src or live
     Display.Rebuild()
+end
+
+function Display.HasMembers()
+    return #live.members > 0
 end
 
 function Display.IsLive()

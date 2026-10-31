@@ -97,6 +97,80 @@ function Docking.Group(panels, gap)
     return clusters
 end
 
+local function apart(r, a)
+    return math.max(0, a.x - right(r), r.x - right(a)) + math.max(0, a.y - bottom(r), r.y - bottom(a))
+end
+
+function Docking.Near(rect, others, dist)
+    dist = dist or Docking.SNAP
+    local out = {}
+    for _, a in ipairs(others) do
+        if rect.x - dist < right(a) and right(rect) + dist > a.x and rect.y - dist < bottom(a) and bottom(rect) + dist > a.y then
+            out[#out + 1] = a
+        end
+    end
+    table.sort(out, function(p, q) return apart(rect, p) < apart(rect, q) end)
+    return out
+end
+
+local function sortedKeys(t)
+    local keys = {}
+    for k in pairs(t) do keys[#keys + 1] = k end
+    table.sort(keys)
+    return keys
+end
+
+function Docking.Drop(rects, moving, positions, gap)
+    gap = gap or Docking.GAP
+    local out = {}
+    local function posOf(id)
+        return out[id] or positions[id]
+    end
+    for _, id in ipairs(sortedKeys(positions)) do
+        local p, r = positions[id], rects[id]
+        if not moving[id] and r and p.dockTo and moving[p.dockTo] then
+            local target = rects[p.dockTo]
+            if not (target and Docking.SideOf(r, target, gap)) then out[id] = { x = r.x, y = r.y } end
+        end
+    end
+    local function leadsIntoMoving(id)
+        local steps = 0
+        while id and steps <= 64 do
+            if moving[id] then return true end
+            local p = posOf(id)
+            id = p and p.dockTo
+            steps = steps + 1
+        end
+        return false
+    end
+    local ids = sortedKeys(rects)
+    for _, id in ipairs(ids) do
+        if moving[id] then
+            local r, p = rects[id], positions[id]
+            local pos = { x = r.x, y = r.y }
+            local side, offset
+            if p and p.dockTo and moving[p.dockTo] and rects[p.dockTo] then
+                side, offset = Docking.SideOf(r, rects[p.dockTo], gap)
+                if side then pos.dockTo = p.dockTo end
+            end
+            if not side then
+                local bestErr
+                for _, other in ipairs(ids) do
+                    if not moving[other] and not leadsIntoMoving(other) then
+                        local s, o, err = Docking.SideOf(r, rects[other], gap)
+                        if s and (not bestErr or err < bestErr) then
+                            pos.dockTo, side, offset, bestErr = other, s, o, err
+                        end
+                    end
+                end
+            end
+            if side then pos.side, pos.offset = side, offset end
+            out[id] = pos
+        end
+    end
+    return out
+end
+
 function Docking.Clamp(rect, screen)
     local x = math.min(rect.x, right(screen) - rect.w)
     x = math.max(x, screen.x)
