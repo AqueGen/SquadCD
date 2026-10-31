@@ -84,6 +84,17 @@ function Icon:SetSpell(spell, member, size)
     self.label:SetText("")
     self.cd:Clear()
     self:BindSecret(spell, member, size)
+    self:BindActive(spell, member, size)
+end
+
+function Icon:BindActive(spell, member, size)
+    local list = not self.secret and ns.SecretTracks and ns.SecretTracks.WatchFor and ns.SecretTracks.WatchFor(member, spell.id) or {}
+    if #list == 0 and not self.overlay then return end
+    xpcall(function()
+        self.overlay = self.overlay or ns.ActiveOverlay.New(self.frame, self.frame:GetFrameLevel() + 8)
+        self.overlay:SetLook(texture(spell), size)
+        self.overlay:Watch(list)
+    end, geterrorhandler())
 end
 
 function Icon:BindSecret(spell, member, size)
@@ -143,6 +154,7 @@ function Icon:Update(state, now, timers)
         return
     end
     if not state then return end
+    if self.overlay then self.overlay:SetTimers(timers ~= false) end
     local cooling = not state.ready
     local unknown = not cooling and state.unknown or false
     local timer = unknown and 0 or cooling and state.remaining or state.recharge or 0

@@ -135,7 +135,7 @@ function SecretTracks.Rebuild(list)
     if next(tracks) and status.on then startTicker() else stopTicker() end
 end
 
-local function write(t, now, active, idle)
+local function write(t, now, idle)
     local base = t.base
     for s = 1, 2 do
         local slot = base.slots[s]
@@ -147,7 +147,7 @@ local function write(t, now, active, idle)
         v.gateLo, v.gateHi = T.Gate(now, slot.epoch, base.U, t.cd)
         for layer in pairs(t.layers) do layer:Write(s, v) end
     end
-    for layer in pairs(t.layers) do layer:SetPhase(active, idle) end
+    for layer in pairs(t.layers) do layer:SetPhase(idle) end
 end
 
 function SecretTracks.Tick(now)
@@ -168,21 +168,31 @@ function SecretTracks.Tick(now)
         local masked = playerGuid and ns.tracker and ns.tracker:UsedWithin(playerGuid, t.spell, OWN_WINDOW)
         local w = t.base.write
         local code = T.Code(now, t.base.slots[w].epoch, t.base.U)
-        local active, idle = 0, 1
+        local idle = 1
         for _, s in ipairs(t.senses) do
             if s.ready then
                 if not masked then
                     t.stamps[w] = evalBool(s.cur, evalBool(s.prev, t.stamps[w], code), t.stamps[w])
                 end
-                active = evalBool(s.cur, 1, active)
                 idle = evalBool(s.cur, 0, idle)
             end
         end
-        if next(t.layers) then write(t, now, active, idle) end
+        if next(t.layers) then write(t, now, idle) end
     end
     for _, s in pairs(senses) do
         if s.used then s.prev, s.primed = s.cur, s.read end
     end
+end
+
+-- The own row stays on the plain tracker; only its active aura comes from the engine display.
+function SecretTracks.WatchFor(member, spell)
+    local s = spell == "potion" and { track = "buff" } or ns.Spells[spell]
+    local ids = spell == "potion" and potionIds() or s and s.buffs
+    if not member.unit or not ids or #ids == 0 or not (s.track == "buff" or s.track == "target") then return {} end
+    if s.track == "buff" then return { { unit = member.unit, ids = ids } } end
+    local list = {}
+    for _, o in ipairs(roster) do list[#list + 1] = { unit = o.unit, ids = ids } end
+    return list
 end
 
 function SecretTracks.Track(guid, spell)

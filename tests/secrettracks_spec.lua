@@ -28,7 +28,7 @@ describe("SecretTracks", function()
         function l:Configure(cd) self.config = { cd } end
         function l:Watch(list) self.watch = list end
         function l:Write(slot, v) self.writes[slot] = { stamp = v.stamp, coolLo = v.coolLo, coolHi = v.coolHi, gateLo = v.gateLo } end
-        function l:SetPhase(a, i) self.phases[#self.phases + 1] = { a, i } end
+        function l:SetPhase(i) self.phases[#self.phases + 1] = i end
         return l
     end
 
@@ -161,7 +161,18 @@ describe("SecretTracks", function()
         assert.equal(lo, layer.writes[1].coolLo)
         assert.equal(hi, layer.writes[1].coolHi)
         assert.equal(t.stamps[1], layer.writes[1].stamp)
-        assert.same({ 1, 0 }, layer.phases[#layer.phases])
+        assert.equal(0, layer.phases[#layer.phases])
+    end)
+
+    it("tells the plain own row where its active auras show up", function()
+        local me = roster()[1]
+        local list = ns.SecretTracks.WatchFor(me, 498)
+        assert.same({ { unit = "player", ids = ns.Spells[498].buffs } }, list)
+        local units = {}
+        for _, x in ipairs(ns.SecretTracks.WatchFor(me, 6940)) do units[#units + 1] = x.unit end
+        assert.same({ "player", "party1", "party2" }, units)
+        assert.same({}, ns.SecretTracks.WatchFor(me, 853))
+        assert.same({}, ns.SecretTracks.WatchFor({ guid = "X" }, 498))
     end)
 
     it("passes the self-test with a faithful curve", function()

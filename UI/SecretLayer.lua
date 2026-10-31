@@ -8,7 +8,6 @@ ns.SecretLayer = Layer
 local T = ns.Theme
 local WHITE = "Interface\\Buttons\\WHITE8X8"
 local SPACING = 1
-local BORDER = 2
 
 local function holder(parent, level)
     local f = CreateFrame("Frame", nil, parent)
@@ -29,17 +28,9 @@ end
 function Layer.New(icon)
     local f = icon.frame
     local level = f:GetFrameLevel() + 4
-    local self = setmetatable({ icon = icon, slots = {}, displays = {} }, Layer)
+    local self = setmetatable({ icon = icon, slots = {} }, Layer)
     self.root = holder(f, level)
     self.grey = holder(self.root, level + 1)
-    self.border = CreateFrame("Frame", nil, self.root, "BackdropTemplate")
-    self.border:SetPoint("TOPLEFT", f, "TOPLEFT", -BORDER, BORDER)
-    self.border:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", BORDER, -BORDER)
-    self.border:SetFrameLevel(level + 2)
-    self.border:SetBackdrop({ edgeFile = WHITE, edgeSize = BORDER })
-    self.border:SetBackdropBorderColor(T.gold[1], T.gold[2], T.gold[3], 1)
-    self.border:SetAlpha(0)
-    self.active = holder(self.root, level + 3)
     self.window = CreateFrame("Frame", nil, self.root)
     self.window:SetPoint("CENTER", f, "CENTER")
     self.window:SetClipsChildren(true)
@@ -61,6 +52,7 @@ function Layer.New(icon)
         slot.coolText:SetSpacing(SPACING)
         self.slots[s] = slot
     end
+    self.overlay = ns.ActiveOverlay.New(self.root, level + 5)
     self.root:Hide()
     return self
 end
@@ -95,6 +87,7 @@ function Layer:SetLook(texture, size)
     end
     self.line = linePitch(fontSize(size))
     self.window:SetSize(size, self.line)
+    self.overlay:SetLook(texture, size)
 end
 
 function Layer:Configure(cd)
@@ -107,41 +100,8 @@ function Layer:Configure(cd)
     end
 end
 
--- The engine writes the aura's real remaining time (talents included) into a string that must belong to the aura button.
 function Layer:Watch(list)
-    local size = self.size or 1
-    for i, w in ipairs(list) do
-        local d = self.displays[i]
-        local set, sig = {}, table.concat(w.ids, ",")
-        for _, id in ipairs(w.ids) do set[id] = true end
-        if d and d.sig ~= sig then
-            d:SetAuraGroupCandidateFilters("a", { includeSpellIDs = set })
-            d.sig = sig
-        end
-        if not d then
-            d = CreateFrame("AuraContainer", nil, self.active, "CustomAuraContainerTemplate")
-            d:SetPoint("TOPLEFT", self.icon.frame, "TOPLEFT")
-            d:EnableMouse(false)
-            d.sig = sig
-            d:AddAuraGroup("a", "HELPFUL", {
-                maxFrameCount = 1,
-                candidateFilters = { includeSpellIDs = set },
-                initializeFrame = function(b)
-                    pcall(b.SetMouseClickEnabled, b, false)
-                    pcall(b.SetMouseMotionEnabled, b, false)
-                    local text = b:CreateFontString(nil, "OVERLAY")
-                    text:SetFont(T.FONT, fontSize(size), "OUTLINE")
-                    text:SetPoint("CENTER")
-                    b:SetDurationText(text)
-                end,
-                layout = { elementWidth = size, elementHeight = size },
-            })
-            self.displays[i] = d
-        end
-        d:SetUnit(w.unit)
-        d:SetEnabled(true)
-    end
-    for i = #list + 1, #self.displays do self.displays[i]:SetEnabled(false) end
+    self.overlay:Watch(list)
 end
 
 function Layer:Write(s, v)
@@ -152,16 +112,14 @@ function Layer:Write(s, v)
     slot.cool:SetValue(v.stamp)
 end
 
-function Layer:SetPhase(active, idle)
-    self.border:SetAlpha(active)
-    self.active:SetAlpha(active)
+function Layer:SetPhase(idle)
     self.cooling:SetAlpha(idle)
     self.grey:SetAlpha(idle)
 end
 
 function Layer:SetTimers(on)
     self.window:SetShown(on)
-    self.active:SetShown(on)
+    self.overlay:SetTimers(on)
 end
 
 function Layer:Show(on)

@@ -24,7 +24,7 @@ local function stub(kind, made)
     end })
 end
 
-local FILES = { "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/LayoutRules.lua", "UI/Theme.lua", "UI/Icon.lua", "UI/SecretLayer.lua" }
+local FILES = { "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/LayoutRules.lua", "UI/Theme.lua", "UI/ActiveOverlay.lua", "UI/Icon.lua", "UI/SecretLayer.lua" }
 
 describe("SecretLayer", function()
     local ns, made, layer
@@ -63,41 +63,16 @@ describe("SecretLayer", function()
         assert.same({ 0.05, 0.06 }, s.gate.calls.SetMinMaxValues)
     end)
 
-    local function containers()
-        local out = {}
-        for _, o in ipairs(made) do
-            if o.kind == "AuraContainer" then out[#out + 1] = o end
-        end
-        return out
-    end
-
-    it("lets the engine write the active time for each watched unit", function()
-        layer:Watch({ { unit = "party1", ids = { 48707, 410358 } } })
-        local c = containers()
-        assert.equal(1, #c)
-        assert.same({ "party1" }, c[1].calls.SetUnit)
-        local key, filter, options = unpack(c[1].calls.AddAuraGroup)
-        assert.equal("HELPFUL", filter)
-        assert.same({ [48707] = true, [410358] = true }, options.candidateFilters.includeSpellIDs)
-        local button = stub("Button", made)
-        options.initializeFrame(button)
-        assert.equal("CreateFontString", made[#made].kind)
-        assert.equal(made[#made], button.calls.SetDurationText[1])
-    end)
-
-    it("re-points watched displays instead of building new ones", function()
+    it("hands the watched units to the active overlay", function()
+        local seen
+        layer.overlay.Watch = function(_, list) seen = list end
         layer:Watch({ { unit = "party1", ids = { 48707 } } })
-        layer:Watch({ { unit = "party2", ids = { 48707 } } })
-        local c = containers()
-        assert.equal(1, #c)
-        assert.same({ "party2" }, c[1].calls.SetUnit)
+        assert.same({ { unit = "party1", ids = { 48707 } } }, seen)
     end)
 
-    it("sets phase alphas", function()
-        layer:SetPhase(1, 0)
-        assert.same({ 1 }, layer.border.calls.SetAlpha)
+    it("sets the idle alphas", function()
+        layer:SetPhase(0)
         assert.same({ 0 }, layer.grey.calls.SetAlpha)
-        assert.same({ 1 }, layer.active.calls.SetAlpha)
         assert.same({ 0 }, layer.cooling.calls.SetAlpha)
     end)
 
@@ -127,6 +102,27 @@ describe("Icon with a secret track", function()
         icon:Update({ ready = true, unknown = true }, 100, true)
         assert.same({ "" }, icon.mark.calls.SetText)
         assert.is_not_true((icon.tex.calls.SetDesaturated or {})[1])
+    end)
+
+    it("shows the own active aura on the plain icon through the engine display", function()
+        local made = {}
+        local ns = helpers.load(FILES, {
+            CreateFrame = function(kind) return stub(kind, made) end,
+            C_Spell = { GetSpellTexture = function() return "tex" end },
+        })
+        local asked
+        ns.SecretTracks = {
+            Bind = function() return false end, Unbind = function() end, Track = function() return nil end,
+            WatchFor = function(member, spell) asked = { member.unit, spell } return { { unit = "player", ids = { 498 } } } end,
+        }
+        local icon = ns.Icon.New(stub("Frame", made))
+        icon:SetSpell({ id = 498 }, { guid = "P", unit = "player", spec = 65 }, 30)
+        assert.same({ "player", 498 }, asked)
+        local units = {}
+        for _, o in ipairs(made) do
+            if o.kind == "AuraContainer" then units[#units + 1] = o.calls.SetUnit[1] end
+        end
+        assert.same({ "player" }, units)
     end)
 
     it("falls back to the plain icon when the layer fails", function()

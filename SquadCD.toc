@@ -33,6 +33,7 @@ Game/SecretTracks.lua
 Game/AuraFlags.lua
 Game/Probe.lua
 UI/Theme.lua
+UI/ActiveOverlay.lua
 UI/Icon.lua
 UI/SecretLayer.lua
 UI/KickBars.lua
