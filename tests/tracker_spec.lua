@@ -2,7 +2,7 @@ local here = debug.getinfo(1, "S").source:match("^@(.*)[/\\][^/\\]*$") or "tests
 local helpers = dofile(here .. "/helpers.lua")
 
 describe("Tracker", function()
-    local ns = helpers.load({ "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua" })
+    local ns = helpers.load({ "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua" })
     local now, t
     local PS, PURIFY, SEF = 33206, 527, 137639
 

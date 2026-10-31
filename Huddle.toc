@@ -8,6 +8,7 @@
 ## IconTexture: Interface\AddOns\Huddle\Media\icon
 ## AddonCompartmentFunc: Huddle_OnCompartmentClick
 
+Logic/LayoutModel.lua
 Core.lua
 Data.lua
 Logic/Cooldowns.lua

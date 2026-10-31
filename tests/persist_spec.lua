@@ -24,7 +24,7 @@ describe("Persistence", function()
 
     before_each(function()
         server, clock = 1000000, 100
-        ns = helpers.load({ "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/Persist.lua" }, {
+        ns = helpers.load({ "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/Persist.lua" }, {
             GetServerTime = function() return server end,
             GetTime = function() return clock end,
         })

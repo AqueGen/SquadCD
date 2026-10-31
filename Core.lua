@@ -1,7 +1,8 @@
 local addonName, ns = ...
 
 ns.DEFAULTS = {
-    version = 1,
+    version = 2,
+    layout = ns.LayoutModel.Defaults(),
     placement = {
         Personal = "Row", Burst = "Row", Racial = "Row", Potion = "Row",
         External = "Panel", Kick = "Panel", Stun = "Panel", CC = "Panel", Group = "Panel",
@@ -36,7 +37,12 @@ local function fill(db, defaults)
 end
 
 function ns.Defaults(db)
-    fill(db, ns.DEFAULTS)
+    ns.LayoutModel.Migrate(db)
+    local defaults = {}
+    for k, v in pairs(ns.DEFAULTS) do
+        if k ~= "layout" then defaults[k] = v end
+    end
+    fill(db, defaults)
     return db
 end
 

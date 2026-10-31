@@ -2,14 +2,15 @@ local here = debug.getinfo(1, "S").source:match("^@(.*)[/\\][^/\\]*$") or "tests
 local helpers = dofile(here .. "/helpers.lua")
 
 local function loadCore(stubs)
-    return helpers.load({ "Core.lua" }, stubs)
+    return helpers.load({ "Logic/LayoutModel.lua", "Core.lua" }, stubs)
 end
 
 describe("Core", function()
     it("Defaults fills missing keys", function()
         local ns = loadCore()
         local db = ns.Defaults({})
-        assert.are.equal(1, db.version)
+        assert.are.equal(2, db.version)
+        assert.are.same(ns.LayoutModel.Defaults(), db.layout)
         assert.are.equal("Row", db.placement.Personal)
         assert.are.equal("Panel", db.placement.Kick)
         assert.are.equal("Off", db.placement.Movement)
@@ -31,6 +32,16 @@ describe("Core", function()
         assert.are.equal("Row", db.placement.Burst)
         assert.are.equal(40, db.row.size)
         assert.are.equal(2, db.row.spacing)
+    end)
+
+    it("Defaults migrates a v1 db and never refills a saved layout", function()
+        local ns = loadCore()
+        local db = ns.Defaults({ placement = { Kick = "Off" }, timers = { a = 5 } })
+        assert.are.equal("off", (ns.LayoutModel.PlaceOf(db.layout, "Kick")))
+        assert.are.same({ a = 5 }, db.timers)
+        db.layout.sections = { db.layout.sections[1] }
+        ns.Defaults(db)
+        assert.are.equal(1, #db.layout.sections)
     end)
 
     it("Defaults does not share tables with DEFAULTS", function()

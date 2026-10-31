@@ -2,7 +2,7 @@ local here = debug.getinfo(1, "S").source:match("^@(.*)[/\][^/\]*$") or "tests"
 local helpers = dofile(here .. "/helpers.lua")
 
 local FILES = {
-    "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/LayoutRules.lua", "Logic/Persist.lua",
+    "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/LayoutRules.lua", "Logic/Persist.lua",
     "Game/Inspect.lua", "Game/Group.lua", "Game/Sensors.lua", "Game/EnemyDebuffs.lua", "Game/Probe.lua",
 }
 
