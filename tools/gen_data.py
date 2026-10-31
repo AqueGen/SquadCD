@@ -14,10 +14,8 @@ COMBAT_POTION_CATEGORY = 4
 ITEM_CLASS_CONSUMABLE = "0"
 ITEM_SUBCLASS_POTION = "1"
 FRIENDLY_TARGETS = {1, 5, 21, 25, 29, 30, 31, 57}
-HOSTILE_TARGETS = {6, 15, 16, 24, 104}
-TRIGGER_DEPTH = 2
 COPYRIGHT = "-- Copyright (c) 2026 AqueGen. All rights reserved. See LICENSE."
-TRACK_BY_TYPE ={"External": "target", "Kick": "kick", "Stun": "debuff", "CC": "debuff"}
+TRACK_BY_TYPE = {"External": "target", "Kick": "kick", "Stun": "debuff", "CC": "debuff"}
 
 
 def load_effects(path):
@@ -42,153 +40,13 @@ def applies_friendly_aura(spell_id, effects):
     return False
 
 
-def buff_ids(spell_id, effects, buff_overrides):
-    if str(spell_id) in buff_overrides:
-        return list(buff_overrides[str(spell_id)])
+def buff_ids(spell_id, effects):
     ids = []
     if applies_friendly_aura(spell_id, effects):
         ids.append(spell_id)
     for effect, _, _, trigger in effects.get(spell_id, []):
         if effect == EFFECT_TRIGGER_SPELL and trigger and trigger not in ids and applies_friendly_aura(trigger, effects):
             ids.append(trigger)
-    return ids
-
-
-def load_names(path):
-    with open(path, encoding="utf8", newline="") as f:
-        return {int(r["ID"]): r["Name_lang"] for r in csv.DictReader(f)}
-
-
-# Talents and hero trees re-cast the same spell under other ids (Anti-Magic Shell lands as one of them in 12.1.5).
-def same_name_buffs(spell_id, buffs, effects, names, class_sets):
-    name, own = names.get(spell_id), class_sets.get(spell_id)
-    if not buffs or not name or not own:
-        return buffs
-    extra = sorted(i for i, n in names.items()
-                   if n == name and i not in buffs and class_sets.get(i) == own and applies_friendly_aura(i, effects))
-    return list(buffs) + extra
-
-
-SPELLMOD_COOLDOWN = "11"
-MASK_AURAS = {107: "flat", 108: "pct"}
-LABEL_AURAS = {219: "flat", 218: "pct"}
-CATEGORY_AURAS = {453: "flat", 454: "pct", 341: "flat"}
-
-
-def load_class_options(path):
-    with open(path, encoding="utf8", newline="") as f:
-        return {int(r["SpellID"]): (int(r["SpellClassSet"]), tuple(int(r["SpellClassMask_%d" % i]) for i in range(4)))
-                for r in csv.DictReader(f)}
-
-
-def load_cd_modifiers(effect_path, options):
-    mods = []
-    with open(effect_path, encoding="utf8", newline="") as f:
-        for r in csv.DictReader(f):
-            if r["Effect"] != "6":
-                continue
-            sid, aura, misc = int(r["SpellID"]), int(r["EffectAura"]), r["EffectMiscValue_0"]
-            if sid not in options:
-                continue
-            if aura in MASK_AURAS and misc == SPELLMOD_COOLDOWN:
-                kind, match = MASK_AURAS[aura], ("mask", tuple(int(r["EffectSpellClassMask_%d" % i]) for i in range(4)))
-            elif aura in LABEL_AURAS and misc == SPELLMOD_COOLDOWN:
-                kind, match = LABEL_AURAS[aura], ("label", int(r["EffectMiscValue_1"]))
-            elif aura in CATEGORY_AURAS:
-                kind, match = CATEGORY_AURAS[aura], ("cat", int(misc))
-            else:
-                continue
-            mods.append((sid, kind, int(float(r["EffectBasePointsF"])), options[sid][0], match))
-    return mods
-
-
-def load_spell_categories(path):
-    cats = {}
-    with open(path, encoding="utf8", newline="") as f:
-        for r in csv.DictReader(f):
-            if r["DifficultyID"] != "0":
-                continue
-            for col in ("Category", "ChargeCategory"):
-                if r[col] != "0":
-                    cats.setdefault(int(r["SpellID"]), set()).add(int(r[col]))
-    return cats
-
-
-def load_spell_labels(path):
-    labels = {}
-    with open(path, encoding="utf8", newline="") as f:
-        for r in csv.DictReader(f):
-            labels.setdefault(int(r["SpellID"]), set()).add(int(r["LabelID"]))
-    return labels
-
-
-def talent_cd_mods(spell_id, options, mods, talents, categories, labels):
-    own = options.get(spell_id)
-    flat, pct = {}, {}
-    cats, labs = categories.get(spell_id, set()), labels.get(spell_id, set())
-    for sid, kind, points, class_set, (how, value) in mods:
-        if sid not in talents:
-            continue
-        if how == "mask":
-            hit = own and own[0] and class_set == own[0] and any(a & b for a, b in zip(own[1], value))
-        elif how == "cat":
-            hit = value in cats
-        else:
-            hit = value in labs
-        if hit:
-            (flat if kind == "flat" else pct)[sid] = points
-    return flat, pct
-
-
-def merge_cd_mods(spell, flat, pct):
-    mods, pcts = ("chargeMods", "chargePct") if spell["chargeMs"] else ("cdMods", "cdPct")
-    listed = set(spell["cdMods"]) | set(spell["cdPct"]) | set(spell["chargeMods"]) | set(spell["chargePct"])
-    for sid, ms in flat.items():
-        if str(sid) not in listed:
-            spell[mods][str(sid)] = ms
-    for sid, p in pct.items():
-        if str(sid) not in listed:
-            spell[pcts][str(sid)] = p
-
-
-def load_talent_entries(node_entry_path, definition_path):
-    with open(definition_path, encoding="utf8", newline="") as f:
-        spell_of = {int(r["ID"]): int(r["SpellID"]) for r in csv.DictReader(f)}
-    entries = {}
-    with open(node_entry_path, encoding="utf8", newline="") as f:
-        for r in csv.DictReader(f):
-            spell = spell_of.get(int(r["TraitDefinitionID"]))
-            if spell:
-                entries.setdefault(spell, []).append(int(r["ID"]))
-    return entries
-
-
-def load_class_sets(path):
-    with open(path, encoding="utf8", newline="") as f:
-        return {int(r["SpellID"]): int(r["SpellClassSet"]) for r in csv.DictReader(f)}
-
-
-def applies_hostile_aura(spell_id, effects):
-    for effect, t0, t1, _ in effects.get(spell_id, []):
-        if effect == EFFECT_APPLY_AURA and (t0 in HOSTILE_TARGETS or t1 in HOSTILE_TARGETS):
-            return True
-    return False
-
-
-def debuff_ids(spell_id, effects, debuff_overrides):
-    if str(spell_id) in debuff_overrides:
-        return list(debuff_overrides[str(spell_id)])
-    ids = []
-    level = [spell_id]
-    for _ in range(TRIGGER_DEPTH + 1):
-        nxt = []
-        for sid in level:
-            if sid not in ids and applies_hostile_aura(sid, effects):
-                ids.append(sid)
-            for effect, _, _, trigger in effects.get(sid, []):
-                if trigger:
-                    nxt.append(trigger)
-        level = nxt
     return ids
 
 
@@ -207,7 +65,7 @@ def derive_potions(items, item_effects, spell_categories, spell_cooldowns, effec
                 continue
             if COMBAT_POTION_CATEGORY not in (eff["SpellCategoryID"], spell_categories.get(spell)):
                 continue
-            buffs = buff_ids(spell, effects, {})
+            buffs = buff_ids(spell, effects)
             if not buffs:
                 continue
             if eff["SpellCategoryID"] == COMBAT_POTION_CATEGORY:
@@ -249,14 +107,6 @@ def load_potions(cache_dir, effects):
     return derive_potions(items, item_effects, categories, cooldowns, effects)
 
 
-def check_overrides(catalog, overrides):
-    known = {str(s["id"]) for s in catalog["spells"]}
-    for field in ("buffs", "debuffs"):
-        for key in overrides.get(field, {}):
-            if key not in known:
-                raise ValueError("%s override %s matches no catalog spell" % (field, key))
-
-
 def lua_str(s):
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
@@ -277,21 +127,8 @@ def lua_map(mapping, conv):
     return "{" + ",".join("[%s]=%s" % (k, conv(v)) for k, v in sorted(mapping.items(), key=lambda kv: int(kv[0]))) + "}"
 
 
-def load_durations(misc_path, duration_path):
-    with open(duration_path, encoding="utf8", newline="") as f:
-        by_index = {int(r["ID"]): int(r["Duration"]) for r in csv.DictReader(f)}
-    durations = {}
-    with open(misc_path, encoding="utf8", newline="") as f:
-        for r in csv.DictReader(f):
-            if r["DifficultyID"] != "0":
-                continue
-            ms = by_index.get(int(r["DurationIndex"]), 0)
-            if ms > 0:
-                durations[int(r["SpellID"])] = ms
-    return durations
-
-
-def spell_line(spell, token, buffs, debuffs=(), tokens=None, durations=None):
+def spell_line(spell, token, tokens=None):
+    buffs, debuffs = spell.get("buffs") or [], spell.get("debuffs") or []
     fields = [
         "name=" + lua_str(spell["name"]),
         "icon=" + lua_str(spell["icon"]),
@@ -332,44 +169,21 @@ def spell_line(spell, token, buffs, debuffs=(), tokens=None, durations=None):
     if buffs:
         fields.append("buffs=" + lua_list(str(b) for b in buffs))
     track = track_kind(spell["type"], buffs)
-    if buffs and track in ("buff", "target") and (durations or {}).get(buffs[0]):
-        fields.append("dur=" + seconds(durations[buffs[0]]))
+    if buffs and track in ("buff", "target") and spell.get("durMs"):
+        fields.append("dur=" + seconds(spell["durMs"]))
     if debuffs and track == "debuff":
         fields.append("debuffs=" + lua_list(str(d) for d in debuffs))
     fields.append("track=" + lua_str(track))
     return "ns.Spells[%d]={%s}" % (spell["id"], ",".join(fields))
 
 
-def render(catalog, effects, overrides, potions, durations=None, names=None, class_sets=None, options=None, cd_mods=None,
-           talent_entries=None, categories=None, labels=None):
-    check_overrides(catalog, overrides)
+def render(catalog, potions):
     tokens = {int(k): v["token"] for k, v in catalog["classes"].items()}
-    buff_overrides = overrides.get("buffs", {})
-    debuff_overrides = overrides.get("debuffs", {})
-    entries = {int(k): v for k, v in catalog["talentEntries"].items()}
-    talent_spells = set(entries.values()) | set(talent_entries or {})
-    used = set()
     out = [COPYRIGHT, "local _, ns = ...", "ns.Spells = {}", "ns.TalentEntries = {}", "ns.Specs = {}", "ns.Classes = {}"]
     for spell in sorted(catalog["spells"], key=lambda s: s["id"]):
-        token = tokens.get(spell["classId"])
-        if options and cd_mods:
-            spell = dict(spell, cdMods=dict(spell["cdMods"]), cdPct=dict(spell["cdPct"]),
-                         chargeMods=dict(spell["chargeMods"]), chargePct=dict(spell["chargePct"]))
-            flat, pct = talent_cd_mods(spell["id"], options, cd_mods, talent_spells, categories or {}, labels or {})
-            merge_cd_mods(spell, flat, pct)
-            for key in ("cdMods", "cdPct", "chargeMods", "chargePct"):
-                used.update(int(k) for k in spell[key])
-        buffs = buff_ids(spell["id"], effects, buff_overrides)
-        if names and str(spell["id"]) not in buff_overrides:
-            buffs = same_name_buffs(spell["id"], buffs, effects, names, class_sets or {})
-        out.append(spell_line(spell, token, buffs,
-                              debuff_ids(spell["id"], effects, debuff_overrides), tokens, durations))
-    known = set(entries.values())
-    for spell_id in used - known:
-        for entry in (talent_entries or {}).get(spell_id, []):
-            entries.setdefault(entry, spell_id)
-    for entry, talent in sorted(entries.items()):
-        out.append("ns.TalentEntries[%d]=%d" % (entry, talent))
+        out.append(spell_line(spell, tokens.get(spell["classId"]), tokens))
+    for entry, talent in sorted(catalog["talentEntries"].items(), key=lambda kv: int(kv[0])):
+        out.append("ns.TalentEntries[%s]=%d" % (entry, talent))
     for spec_id, spec in sorted(catalog["specs"].items(), key=lambda kv: int(kv[0])):
         out.append("ns.Specs[%s]={class=%s,role=%s,name=%s%s}" % (
             spec_id, lua_str(tokens[spec["classId"]]), lua_str(spec["role"]), lua_str(spec["name"]),
@@ -394,29 +208,15 @@ def fetch_table(name, cache_dir):
 
 
 def main():
-    here = os.path.dirname(os.path.abspath(__file__))
     ap = argparse.ArgumentParser()
     ap.add_argument("--catalog", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--cache", default="F:/claude-data/squadcd-docs/cache")
-    ap.add_argument("--overrides", default=os.path.join(here, "overrides.json"))
     args = ap.parse_args()
     with open(args.catalog, encoding="utf8") as f:
         catalog = json.load(f)
-    with open(args.overrides, encoding="utf8") as f:
-        overrides = json.load(f)
     effects = load_effects(fetch_table("SpellEffect", args.cache))
-    durations = load_durations(fetch_table("SpellMisc", args.cache), fetch_table("SpellDuration", args.cache))
-    names = load_names(fetch_table("SpellName", args.cache))
-    options_path = fetch_table("SpellClassOptions", args.cache)
-    class_sets = load_class_sets(options_path)
-    options = load_class_options(options_path)
-    cd_mods = load_cd_modifiers(fetch_table("SpellEffect", args.cache), options)
-    talent_entries = load_talent_entries(fetch_table("TraitNodeEntry", args.cache), fetch_table("TraitDefinition", args.cache))
-    categories = load_spell_categories(fetch_table("SpellCategories", args.cache))
-    labels = load_spell_labels(fetch_table("SpellLabel", args.cache))
-    text = render(catalog, effects, overrides, load_potions(args.cache, effects), durations, names, class_sets,
-                  options, cd_mods, talent_entries, categories, labels)
+    text = render(catalog, load_potions(args.cache, effects))
     with open(args.out, "w", encoding="utf8", newline="\n") as f:
         f.write(text)
 
