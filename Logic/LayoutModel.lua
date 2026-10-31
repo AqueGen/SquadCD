@@ -319,6 +319,16 @@ local function cleanShape(s, fallback, known)
     return out
 end
 
+local function cleanPos(p)
+    if type(p) ~= "table" or type(p.x) ~= "number" or type(p.y) ~= "number" or p.x ~= p.x or p.y ~= p.y then return nil end
+    local out = { x = p.x, y = p.y }
+    if type(p.dockTo) == "string" and p.dockTo ~= "" and type(p.offset) == "number" and p.offset == p.offset
+        and oneOf(p.side, SIDES, nil) then
+        out.dockTo, out.side, out.offset = p.dockTo, p.side, p.offset
+    end
+    return out
+end
+
 function LayoutModel.Normalize(layout)
     local d = LayoutModel.Defaults()
     if type(layout) ~= "table" then return d end
@@ -377,8 +387,15 @@ function LayoutModel.Normalize(layout)
                     id = id, types = types, shown = bool(s.shown, true), ownWindow = bool(s.ownWindow, false),
                     shape = cleanShape(s.shape, nil, known),
                     look = cleanLook(s.look, layout.panelLook, 20),
+                    pos = cleanPos(s.pos),
                 }
             end
+        end
+    end
+    for _, s in ipairs(sections) do
+        local p = s.pos
+        if p and p.dockTo and (p.dockTo == s.id or not (ids[p.dockTo] or p.dockTo == "panel")) then
+            p.dockTo, p.side, p.offset = nil, nil, nil
         end
     end
     layout.sections = sections

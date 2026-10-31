@@ -597,4 +597,28 @@ describe("LayoutModel fix round 1", function()
         L.Normalize(d)
         assertOnePlaceEach(L, d)
     end)
+
+    it("Normalize keeps a section window position and its dock", function()
+        local L = load()
+        local d = L.Defaults()
+        d.sections[1].pos = { x = 10, y = 20, dockTo = "panel", side = "Below", offset = 4, junk = 1 }
+        d.sections[2].pos = { x = 30, y = 40, dockTo = "Kick", side = "Right", offset = -3 }
+        L.Normalize(d)
+        assert.are.same({ x = 10, y = 20, dockTo = "panel", side = "Below", offset = 4 }, d.sections[1].pos)
+        assert.are.same({ x = 30, y = 40, dockTo = "Kick", side = "Right", offset = -3 }, d.sections[2].pos)
+    end)
+
+    it("Normalize drops broken positions and docks to self or unknown windows", function()
+        local L = load()
+        local d = L.Defaults()
+        d.sections[1].pos = { x = "a", y = 1 }
+        d.sections[2].pos = { x = 5, y = 6, dockTo = "Control", side = "Right", offset = 0 }
+        d.sections[3].pos = { x = 5, y = 6, dockTo = "gone", side = "Right", offset = 0 }
+        d.sections[4].pos = { x = 5, y = 6, dockTo = "Kick", side = "Diagonal", offset = 0 }
+        L.Normalize(d)
+        assert.is_nil(d.sections[1].pos)
+        assert.are.same({ x = 5, y = 6 }, d.sections[2].pos)
+        assert.are.same({ x = 5, y = 6 }, d.sections[3].pos)
+        assert.are.same({ x = 5, y = 6 }, d.sections[4].pos)
+    end)
 end)
