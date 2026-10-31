@@ -107,6 +107,67 @@ describe("Panel Next marker", function()
     end)
 end)
 
+describe("Panel instances", function()
+    local ns, parent
+
+    local function entries(type)
+        local spell = { id = 999001, type = type }
+        return {
+            { spell = spell, member = { guid = "A", class = "PRIEST", spec = 256, name = "A" } },
+            { spell = spell, member = { guid = "B", class = "MAGE", spec = 64, name = "B" } },
+        }
+    end
+
+    local function external()
+        return { section = ns.DB.layout.sections[3], type = "External", entries = entries("External") }
+    end
+
+    before_each(function()
+        ns = load({ "UI/Panel.lua" })
+        parent = frameStub()
+    end)
+
+    it("draws a preview on its parent and leaves the live panel alone", function()
+        local preview = ns.Panel.New({ parent = parent })
+        local w, h = preview.Build({ external() })
+        assert.is_true(w > 0 and h > 0)
+        local c = preview.Containers()[1]
+        assert.are.equal(parent, c.frame.points[1][2])
+        assert.are.same({ "TOPLEFT", "TOPLEFT", 0, 0 }, { c.frame.points[1][1], c.frame.points[1][3], c.frame.points[1][4], c.frame.points[1][5] })
+        assert.are.equal(0, #ns.Panel.Containers())
+    end)
+
+    it("keeps the live panel's positions when a preview builds", function()
+        ns.Panel.Build({ external() })
+        local before = ns.Panel.Positions().panel
+        ns.Panel.New({ parent = parent }).Build({ external() })
+        assert.are.equal(before, ns.Panel.Positions().panel)
+        assert.are.equal(1, #ns.Panel.Containers())
+    end)
+
+    it("returns an empty size for no lines", function()
+        local w, h = ns.Panel.New({ parent = parent }).Build({})
+        assert.are.same({ 0, 0 }, { w, h })
+    end)
+
+    it("chains a freely placed section window next to the panel", function()
+        local layout = ns.DB.layout
+        layout.kickStyle = "Icons"
+        local kick = layout.sections[1]
+        kick.ownWindow, kick.pos = true, { x = 900, y = 700 }
+        local preview = ns.Panel.New({ parent = parent })
+        preview.Build({ external(), { section = kick, type = "Kick", entries = entries("Kick") } })
+        local panel, window
+        for _, c in ipairs(preview.Containers()) do
+            if c.key == "panel" then panel = c.frame else window = c.frame end
+        end
+        local at = window.points[1]
+        local right = at[4] == panel.width + ns.Docking.GAP and at[5] == 0
+        local below = at[4] == 0 and at[5] == -(panel.height + ns.Docking.GAP)
+        assert.is_true(right or below)
+    end)
+end)
+
 describe("Rows spacing", function()
     it("places party frame icons with the group gap", function()
         local ns = load({ "UI/Rows.lua" })
