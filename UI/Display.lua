@@ -90,7 +90,16 @@ function Display.Rebuild(late)
     end)
 end
 
+function Display.Lines(members)
+    return (collect(members))
+end
+
 local warned = false
+local listeners = {}
+
+function Display.OnChanged(fn)
+    listeners[#listeners + 1] = fn
+end
 
 function Display.Changed()
     if InCombatLockdown() and not warned then
@@ -98,6 +107,7 @@ function Display.Changed()
         print("SquadCD: the change applies when combat ends.")
     end
     Display.Rebuild()
+    for _, fn in ipairs(listeners) do fn() end
 end
 
 function Display.Flush()

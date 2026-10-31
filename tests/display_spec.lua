@@ -86,4 +86,47 @@ describe("Display combat end", function()
         ns.Display.Changed()
         assert.are.equal(2, #printed)
     end)
+
+    it("tells listeners about a change, in combat too, without a combat rebuild", function()
+        local heard = 0
+        ns.Display.OnChanged(function() heard = heard + 1 end)
+        ns.Display.Changed()
+        assert.are.equal(1, heard)
+        assert.are.equal(1, builds)
+        combat = true
+        ns.Display.Changed()
+        assert.are.equal(2, heard)
+        assert.are.equal(1, builds)
+    end)
+
+    it("routes members into panel lines", function()
+        local lines = ns.Display.Lines({ { guid = "P", unit = "player", class = "PALADIN", spec = 66 } })
+        assert.is_true(#lines > 0)
+        assert.is_not_nil(lines[1].section)
+    end)
+end)
+
+describe("Demo source", function()
+    it("gives five demo members and a tracker with the DH personal on cooldown", function()
+        local list = {}
+        for _, f in ipairs(FILES) do list[#list + 1] = f end
+        list[#list + 1] = "UI/Demo.lua"
+        local ns = helpers.load(list, {
+            IsInRaid = function() return false end,
+            IsInGroup = function() return false end,
+            InCombatLockdown = function() return false end,
+            GetTime = function() return 100 end,
+            C_Timer = { After = function() end },
+        })
+        ns.DB = ns.Defaults({})
+        local src = ns.Demo.Source(5)
+        assert.are.equal(5, #src.members)
+        local dh = src.members[1]
+        local waiting = 0
+        for _, s in ipairs(ns.LayoutRules.SpellsFor(dh, true, {})) do
+            local buf = {}
+            if s.type == "Personal" and src.tracker:State(dh.guid, s.id, buf) and not buf.ready then waiting = waiting + 1 end
+        end
+        assert.is_true(waiting > 0)
+    end)
 end)
