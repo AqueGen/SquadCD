@@ -322,7 +322,7 @@ end
 local function cleanPos(p)
     if type(p) ~= "table" or type(p.x) ~= "number" or type(p.y) ~= "number" or p.x ~= p.x or p.y ~= p.y then return nil end
     local out = { x = p.x, y = p.y }
-    if type(p.dockTo) == "string" and p.dockTo ~= "" and type(p.offset) == "number" and p.offset == p.offset
+    if type(p.dockTo) == "string" and p.dockTo ~= "" and type(p.offset) == "number" and p.offset == p.offset and math.abs(p.offset) ~= math.huge
         and oneOf(p.side, SIDES, nil) then
         out.dockTo, out.side, out.offset = p.dockTo, p.side, p.offset
     end
@@ -392,10 +392,24 @@ function LayoutModel.Normalize(layout)
             end
         end
     end
+    local byId = {}
+    for _, s in ipairs(sections) do byId[s.id] = s end
+    local function undock(p)
+        p.dockTo, p.side, p.offset = nil, nil, nil
+    end
     for _, s in ipairs(sections) do
         local p = s.pos
-        if p and p.dockTo and (p.dockTo == s.id or not (ids[p.dockTo] or p.dockTo == "panel")) then
-            p.dockTo, p.side, p.offset = nil, nil, nil
+        if p and p.dockTo and (p.dockTo == s.id or not (byId[p.dockTo] or p.dockTo == "panel")) then undock(p) end
+    end
+    for _, s in ipairs(sections) do
+        local at, steps = s, 0
+        while at and at.pos and at.pos.dockTo and steps <= #sections do
+            at = byId[at.pos.dockTo]
+            steps = steps + 1
+            if at == s then
+                undock(s.pos)
+                break
+            end
         end
     end
     layout.sections = sections

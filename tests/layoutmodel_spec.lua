@@ -621,4 +621,24 @@ describe("LayoutModel fix round 1", function()
         assert.are.same({ x = 5, y = 6 }, d.sections[3].pos)
         assert.are.same({ x = 5, y = 6 }, d.sections[4].pos)
     end)
+
+    it("Normalize breaks a dock cycle at the first section in array order", function()
+        local L = load()
+        local d = L.Defaults()
+        d.sections[1].pos = { x = 1, y = 2, dockTo = "Control", side = "Right", offset = 0 }
+        d.sections[2].pos = { x = 3, y = 4, dockTo = "Kick", side = "Below", offset = 5 }
+        d.sections[3].pos = { x = 7, y = 8, dockTo = "Control", side = "Left", offset = 9 }
+        L.Normalize(d)
+        assert.are.same({ x = 1, y = 2 }, d.sections[1].pos)
+        assert.are.same({ x = 3, y = 4, dockTo = "Kick", side = "Below", offset = 5 }, d.sections[2].pos)
+        assert.are.same({ x = 7, y = 8, dockTo = "Control", side = "Left", offset = 9 }, d.sections[3].pos)
+    end)
+
+    it("Normalize drops an infinite dock offset", function()
+        local L = load()
+        local d = L.Defaults()
+        d.sections[1].pos = { x = 1, y = 2, dockTo = "panel", side = "Right", offset = math.huge }
+        L.Normalize(d)
+        assert.are.same({ x = 1, y = 2 }, d.sections[1].pos)
+    end)
 end)

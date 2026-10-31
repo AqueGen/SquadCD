@@ -40,6 +40,15 @@ describe("Docking", function()
             assert.is_nil(id)
         end)
 
+        it("docks to the nearest touching rect, not the first in the list", function()
+            local far = { id = "far", x = 100, y = 156, w = 100, h = 10 }
+            local near = { id = "near", x = 100, y = 158, w = 100, h = 10 }
+            local _, _, id = D.Snap({ x = 100, y = 98, w = 100, h = 50 }, { far, near })
+            assert.are.equal("far", id)
+            local _, _, id2 = D.Snap({ x = 100, y = 98, w = 100, h = 50 }, { near, far })
+            assert.are.equal("far", id2)
+        end)
+
         it("keeps a custom gap and distance", function()
             local x, y = D.Snap({ x = 100, y = 170, w = 50, h = 20 }, { anchor }, 10, 30)
             assert.are.same({ 100, 160 }, { x, y })
@@ -47,9 +56,16 @@ describe("Docking", function()
     end)
 
     describe("SideOf", function()
+        local function sideOf(...)
+            local side, offset = D.SideOf(...)
+            return { side, offset }
+        end
+
         it("reports the side and offset of a docked rect", function()
-            assert.are.same({ "Right", 4 }, { D.SideOf({ x = 306, y = 104, w = 80, h = 50 }, anchor) })
-            assert.are.same({ "Below", 20 }, { D.SideOf({ x = 120, y = 156, w = 100, h = 40 }, anchor) })
+            assert.are.same({ "Right", 4 }, sideOf({ x = 306, y = 104, w = 80, h = 50 }, anchor))
+            assert.are.same({ "Below", 20 }, sideOf({ x = 120, y = 156, w = 100, h = 40 }, anchor))
+            assert.are.same({ "Left", 4 }, sideOf({ x = 14, y = 104, w = 80, h = 50 }, anchor))
+            assert.are.same({ "Above", 20 }, sideOf({ x = 120, y = 44, w = 100, h = 50 }, anchor))
             assert.is_nil(D.SideOf({ x = 330, y = 100, w = 80, h = 50 }, anchor))
         end)
     end)

@@ -8,6 +8,7 @@ Docking.SNAP = 16
 local TOUCH = 2
 
 -- Rect: { x, y, w, h }, x to the right, y DOWN from the UIParent top-left corner.
+-- WoW conversion: TOPLEFT of UIParent at (x, -y); rects and screen must share one effective scale.
 -- Stored position of a section window (section.pos): { x, y } absolute, plus
 -- { dockTo = id, side = "Right"|"Left"|"Above"|"Below", offset = n } when docked.
 -- side is the side of the target the window sits on; offset is the distance of its
@@ -31,12 +32,16 @@ end
 function Docking.SideOf(rect, target, gap)
     gap = gap or Docking.GAP
     if rect.y < bottom(target) and target.y < bottom(rect) then
-        if near(right(target) + gap, rect.x) then return "Right", rect.y - target.y end
-        if near(right(rect) + gap, target.x) then return "Left", rect.y - target.y end
+        local e = math.abs(rect.x - right(target) - gap)
+        if e <= TOUCH then return "Right", rect.y - target.y, e end
+        e = math.abs(right(rect) + gap - target.x)
+        if e <= TOUCH then return "Left", rect.y - target.y, e end
     end
     if rect.x < right(target) and target.x < right(rect) then
-        if near(bottom(target) + gap, rect.y) then return "Below", rect.x - target.x end
-        if near(bottom(rect) + gap, target.y) then return "Above", rect.x - target.x end
+        local e = math.abs(rect.y - bottom(target) - gap)
+        if e <= TOUCH then return "Below", rect.x - target.x, e end
+        e = math.abs(bottom(rect) + gap - target.y)
+        if e <= TOUCH then return "Above", rect.x - target.x, e end
     end
 end
 
@@ -58,11 +63,15 @@ function Docking.Snap(rect, others, gap, dist)
     end
     local x, y = rect.x + (dx or 0), rect.y + (dy or 0)
     local snapped = { x = x, y = y, w = rect.w, h = rect.h }
+    local best, bestErr, bestSide, bestOffset
     for _, a in ipairs(others) do
-        local side, offset = Docking.SideOf(snapped, a, gap)
-        if side and a.id ~= nil then return x, y, a.id, side, offset end
+        local side, offset, err = Docking.SideOf(snapped, a, gap)
+        if side and a.id ~= nil and (not bestErr or err < bestErr) then
+            best, bestErr, bestSide, bestOffset = a.id, err, side, offset
+        end
     end
-    return x, y
+    if best == nil then return x, y end
+    return x, y, best, bestSide, bestOffset
 end
 
 function Docking.Group(panels, gap)
