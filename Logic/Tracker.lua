@@ -64,6 +64,7 @@ end
 
 function Tracker:Used(guid, spellId, certain)
     local m = self.members[guid]
+    if m then spellId = ns.Cooldowns.Canonical(spellId, m) end
     local r = m and resolve(m, spellId)
     if not r then return end
     local now = self.clock()
@@ -109,6 +110,8 @@ function Tracker:Used(guid, spellId, certain)
 end
 
 function Tracker:UsedWithin(guid, spellId, window)
+    local m = self.members[guid]
+    if m then spellId = ns.Cooldowns.Canonical(spellId, m) end
     local byGuid = self.entries[guid]
     local e = byGuid and byGuid[spellId]
     return e ~= nil and e.spent > 0 and not e.maybe and e.useAt ~= nil and self.clock() - e.useAt <= window

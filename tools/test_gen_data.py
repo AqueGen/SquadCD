@@ -92,6 +92,16 @@ class GenDataTests(unittest.TestCase):
         self.assertEqual("buff", gen_data.track_kind("Personal", [1]))
         self.assertEqual("none", gen_data.track_kind("Personal", []))
 
+    def test_spell_line_emits_racial_classes_as_tokens(self):
+        spell = {"id": 33702, "name": "Blood Fury", "icon": "i", "type": "Racial", "classId": None, "specs": [],
+                 "cdMs": 120000, "maxCharges": 0, "chargeMs": 0, "recoveryMs": 0, "talentGated": False,
+                 "cdMods": {}, "cdPct": {}, "chargeMods": {}, "chargePct": {}, "specMods": {},
+                 "chargeAdds": {}, "replaces": [], "races": [2], "classes": [8, 9], "aoe": False}
+        line = gen_data.spell_line(spell, None, [], (), {8: "MAGE", 9: "WARLOCK"})
+        self.assertIn('races={2},classes={"MAGE","WARLOCK"}', line)
+        del spell["classes"]
+        self.assertNotIn("classes=", gen_data.spell_line(spell, None, [], (), {8: "MAGE"}))
+
     def test_spell_line_emits_charge_and_spec_modifiers(self):
         spell = {"id": 871, "name": "X", "icon": "i", "type": "Personal", "classId": 1, "specs": [],
                  "cdMs": 180000, "maxCharges": 1, "chargeMs": 180000, "recoveryMs": 8000,

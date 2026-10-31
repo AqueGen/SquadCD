@@ -56,6 +56,19 @@ local function contains(list, v)
     return false
 end
 
+function Cooldowns.Canonical(spellId, member)
+    local s = ns.Spells[spellId]
+    if not s or not s.races then return spellId end
+    local best
+    for id, v in pairs(ns.Spells) do
+        if v.races and v.name == s.name and (not best or id < best)
+            and Cooldowns.Has(id, member.class, member.spec, member.talents, member.race) then
+            best = id
+        end
+    end
+    return best or spellId
+end
+
 function Cooldowns.Has(spellId, classToken, specId, talents, race)
     local s = ns.Spells[spellId]
     if not s then return false end

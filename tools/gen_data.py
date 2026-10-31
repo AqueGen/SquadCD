@@ -162,7 +162,7 @@ def lua_map(mapping, conv):
     return "{" + ",".join("[%s]=%s" % (k, conv(v)) for k, v in sorted(mapping.items(), key=lambda kv: int(kv[0]))) + "}"
 
 
-def spell_line(spell, token, buffs, debuffs=()):
+def spell_line(spell, token, buffs, debuffs=(), tokens=None):
     fields = [
         "name=" + lua_str(spell["name"]),
         "icon=" + lua_str(spell["icon"]),
@@ -196,6 +196,8 @@ def spell_line(spell, token, buffs, debuffs=()):
         fields.append("replaces=" + lua_list(str(s) for s in spell["replaces"]))
     if spell["races"]:
         fields.append("races=" + lua_list(str(s) for s in spell["races"]))
+    if spell.get("classes") and tokens:
+        fields.append("classes=" + lua_list(lua_str(tokens[c]) for c in spell["classes"]))
     if spell["aoe"]:
         fields.append("aoe=true")
     if buffs:
@@ -216,7 +218,7 @@ def render(catalog, effects, overrides, potions):
     for spell in sorted(catalog["spells"], key=lambda s: s["id"]):
         token = tokens.get(spell["classId"])
         out.append(spell_line(spell, token, buff_ids(spell["id"], effects, buff_overrides),
-                              debuff_ids(spell["id"], effects, debuff_overrides)))
+                              debuff_ids(spell["id"], effects, debuff_overrides), tokens))
     for entry, talent in sorted(catalog["talentEntries"].items(), key=lambda kv: int(kv[0])):
         out.append("ns.TalentEntries[%s]=%d" % (entry, talent))
     for spec_id, spec in sorted(catalog["specs"].items(), key=lambda kv: int(kv[0])):

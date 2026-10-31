@@ -2,7 +2,7 @@ local here = debug.getinfo(1, "S").source:match("^@(.*)[/\\][^/\\]*$") or "tests
 local helpers = dofile(here .. "/helpers.lua")
 
 describe("LayoutRules", function()
-    local ns = helpers.load({ "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/LayoutRules.lua" })
+    local ns = helpers.load({ "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/LayoutRules.lua" })
     local R = ns.LayoutRules
     local placement = ns.DEFAULTS.placement
 
@@ -103,7 +103,7 @@ describe("LayoutRules", function()
             local list = R.SpellsFor(orcPriest, false, {})
             local pot = has(list, "potion")
             assert.are.equal("Potion", pot.type)
-            assert.is_not_nil(has(list, 20572))
+            assert.is_not_nil(has(list, 33702))
             for _, s in ipairs(list) do
                 if s.id ~= "potion" then
                     local spell = ns.Spells[s.id]
@@ -130,11 +130,37 @@ describe("LayoutRules", function()
             local o = racials(orc)
             assert.are.equal(1, #o)
             assert.are.equal("Blood Fury", o[1].name)
-            assert.are.equal(20572, o[1].id)
+            assert.are.equal(33702, o[1].id)
             local e = racials(elf)
             assert.are.equal(1, #e)
             assert.are.equal("Arcane Torrent", e[1].name)
             assert.are.equal(0, #racials(priest))
+        end)
+
+        it("cast of a racial variant lands on the shown icon", function()
+            local orc = { guid = "O", unit = "party2", class = "MAGE", spec = 64, race = 2 }
+            local t = ns.Tracker.New(function() return 100 end)
+            t:SetMembers({ orc })
+            local shown = has(R.SpellsFor(orc, false, {}), 33702)
+            assert.is_not_nil(shown)
+            t:Used("O", 33702, true)
+            assert.is_false(t:State("O", shown.id).ready)
+        end)
+
+        it("non-lowest variant without a class list maps to the lowest", function()
+            ns.Spells[-3] = { name = "Test Racial", type = "Racial", specs = {}, cd = 60, races = { 2 }, track = "buff" }
+            ns.Spells[-2] = { name = "Test Racial", type = "Racial", specs = {}, cd = 60, races = { 2 }, track = "buff" }
+            local orc = { guid = "O", unit = "party2", class = "MAGE", spec = 64, race = 2 }
+            local list = R.SpellsFor(orc, false, {})
+            assert.is_not_nil(has(list, -3))
+            assert.is_nil(has(list, -2))
+            assert.are.equal(-3, ns.Cooldowns.Canonical(-2, orc))
+            local t = ns.Tracker.New(function() return 100 end)
+            t:SetMembers({ orc })
+            t:Used("O", -2, true)
+            assert.is_false(t:State("O", -3).ready)
+            assert.is_true(t:UsedWithin("O", -2, 1))
+            ns.Spells[-3], ns.Spells[-2] = nil, nil
         end)
 
         it("drops disabled spells", function()

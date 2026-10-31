@@ -15,20 +15,14 @@ function LayoutRules.TypeRank(t)
 end
 
 function LayoutRules.SpellsFor(member, own, enabled)
-    local list, racial = {}, {}
+    local list = {}
     for id, s in pairs(ns.Spells) do
         if enabled[id] ~= false and (own or s.track ~= "none")
-            and ns.Cooldowns.Has(id, member.class, member.spec, member.talents, member.race) then
-            local entry = { id = id, type = s.type, name = s.name, icon = s.icon }
-            if s.races then
-                local seen = racial[s.name]
-                if not seen or id < seen.id then racial[s.name] = entry end
-            else
-                list[#list + 1] = entry
-            end
+            and ns.Cooldowns.Has(id, member.class, member.spec, member.talents, member.race)
+            and ns.Cooldowns.Canonical(id, member) == id then
+            list[#list + 1] = { id = id, type = s.type, name = s.name, icon = s.icon }
         end
     end
-    for _, entry in pairs(racial) do list[#list + 1] = entry end
     if enabled.potion ~= false then
         list[#list + 1] = { id = "potion", type = "Potion", name = "Potion" }
     end

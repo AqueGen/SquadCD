@@ -6,6 +6,7 @@ ns.Icon = Icon
 
 local T = ns.Theme
 local SWIPE_EPSILON = 0.05
+local WHITE = { 1, 1, 1 }
 
 local QUESTION = "Interface\\Icons\\INV_Misc_QuestionMark"
 
@@ -118,7 +119,7 @@ function Icon:Update(state, now)
     if maybe ~= self.maybe then
         self.maybe = maybe
         self.frame:SetBackdropBorderColor(unpack(maybe and T.maybe or T.border))
-        self.time:SetTextColor(unpack(maybe and T.maybe or T.text))
+        self.time:SetTextColor(unpack(maybe and T.maybe or WHITE))
     end
     local unread = state.talentsKnown == false
     if unread ~= self.unread then
