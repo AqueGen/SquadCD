@@ -175,14 +175,13 @@ describe("SecretTracks", function()
         assert.is_false(ns.SecretTracks.Bind(fakeLayer(), "A", IBF))
     end)
 
-    it("steps the timer windows by whole time units", function()
+    it("steps the timer windows by whole seconds", function()
         local layer = fakeLayer()
         ns.SecretTracks.Bind(layer, "A", IBF)
         local t = track("A", IBF)
-        w.now = t.base.slots[1].epoch + 2 * t.base.U + 0.7 * t.base.U
+        w.now = t.base.slots[1].epoch + 5.7
         ns.SecretTracks.Tick(w.now)
-        local hi = layer.writes[1].coolHi * 255
-        assert.is_true(math.abs(hi - math.floor(hi + 0.5)) < 1e-9)
+        assert.is_true(math.abs(layer.writes[1].coolHi * 255 * t.base.U - 5) < 1e-9)
     end)
 
     it("does not bind guids outside the live roster", function()

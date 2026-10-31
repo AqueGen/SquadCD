@@ -101,23 +101,22 @@ function Layer:SetLook(texture, size)
     self.window:SetSize(size, self.line)
 end
 
-local function strip(b, text, span, U, line, width)
+local function strip(b, text, span, line, width)
     if not span then
         text:SetText("")
         b:SetSize(width, line)
         return
     end
-    local n = math.ceil(span / U)
     local labels = {}
-    for k = 1, n do labels[k] = ns.LayoutRules.FormatRemaining(k * U) end
+    for k = 1, math.ceil(span) do labels[k] = ns.LayoutRules.FormatRemaining(k) end
     text:SetText(table.concat(labels, "\n"))
-    b:SetSize(width, span / U * line)
+    b:SetSize(width, span * line)
 end
 
-function Layer:Configure(cd, dur, U)
+function Layer:Configure(cd, dur)
     for _, slot in ipairs(self.slots) do
-        strip(slot.cool, slot.coolText, cd, U, self.line or 1, self.size or 1)
-        strip(slot.act, slot.actText, dur, U, self.line or 1, self.size or 1)
+        strip(slot.cool, slot.coolText, cd, self.line or 1, self.size or 1)
+        strip(slot.act, slot.actText, dur, self.line or 1, self.size or 1)
     end
 end
 

@@ -133,7 +133,7 @@ local function write(t, now, active, idle)
         local slot = base.slots[s]
         t.out = t.out or { {}, {} }
         local v = t.out[s]
-        local step = slot.epoch + math.floor((now - slot.epoch) / base.U) * base.U
+        local step = slot.epoch + math.floor(now - slot.epoch)
         v.stamp = t.stamps[s]
         v.coolLo, v.coolHi = T.Window(step, slot.epoch, base.U, t.cd)
         if t.dur then
