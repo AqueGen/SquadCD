@@ -62,7 +62,7 @@ jobs:
           cat RELEASE_NOTES.md
 
       - name: Package and Release
-        uses: BigWigsMods/packager@v2
+        uses: BigWigsMods/packager@e50a250f8705041e40f2fa1ddcb280a686d65aa0 # v2
         with:
           args: ${{ inputs.dry_run && '-d' || '' }}
         env:
