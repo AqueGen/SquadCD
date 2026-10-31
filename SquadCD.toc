@@ -13,6 +13,7 @@ Logic/LayoutModel.lua
 Core.lua
 Data.lua
 Logic/Cooldowns.lua
+Logic/SecretTime.lua
 Logic/Tracker.lua
 Logic/LayoutGrid.lua
 Logic/LayoutRules.lua
