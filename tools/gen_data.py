@@ -249,7 +249,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--catalog", required=True)
     ap.add_argument("--out", required=True)
-    ap.add_argument("--cache", default="F:/claude-data/huddle-docs/cache")
+    ap.add_argument("--cache", default="F:/claude-data/squadcd-docs/cache")
     ap.add_argument("--overrides", default=os.path.join(here, "overrides.json"))
     args = ap.parse_args()
     with open(args.catalog, encoding="utf8") as f:
