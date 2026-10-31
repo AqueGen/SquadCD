@@ -39,6 +39,12 @@ describe("Tracker", function()
         assert.are.equal(2, calls)
     end)
 
+    it("use of a replaced base lands on the shown replacer", function()
+        t:SetMembers({ { guid = "H", unit = "party1", class = "PALADIN", spec = 65, talents = { [633] = 1 } } })
+        t:Used("H", 633, true)
+        assert.is_false(t:State("H", 471195).ready)
+    end)
+
     it("used starts cooldown", function()
         t:Used("A", PS, true)
         local s = t:State("A", PS)

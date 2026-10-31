@@ -142,6 +142,29 @@ describe("LayoutRules", function()
             end
         end
 
+        it("Lay on Hands shows once, as the replacer, with talents known or unknown", function()
+            for _, talents in ipairs({ { [633] = 1 }, false }) do
+                local paladin = { guid = "H", unit = "party1", class = "PALADIN", spec = 65, talents = talents or nil }
+                local list = R.SpellsFor(paladin, false, {})
+                assert.is_not_nil(has(list, 471195))
+                assert.is_nil(has(list, 633))
+            end
+        end)
+
+        it("talent-gated replacer shows only when the member has it", function()
+            local base, replacer = 207684, 202137
+            local function dh(talents) return { guid = "D", unit = "party1", class = "DEMONHUNTER", spec = 581, talents = talents } end
+            local list = R.SpellsFor(dh({ [replacer] = 1 }), false, {})
+            assert.is_not_nil(has(list, replacer))
+            assert.is_nil(has(list, base))
+            list = R.SpellsFor(dh({ [base] = 1 }), false, {})
+            assert.is_not_nil(has(list, base))
+            assert.is_nil(has(list, replacer))
+            list = R.SpellsFor(dh(nil), false, {})
+            assert.is_not_nil(has(list, base))
+            assert.is_nil(has(list, replacer))
+        end)
+
         it("lists class and race spells with their type and the potion", function()
             local orcPriest = { guid = "Q", unit = "party1", class = "PRIEST", spec = 258, race = 2 }
             local list = R.SpellsFor(orcPriest, false, {})

@@ -56,9 +56,33 @@ local function contains(list, v)
     return false
 end
 
+local replacedBy = {}
+for id, s in pairs(ns.Spells) do
+    for _, base in ipairs(s.replaces or {}) do
+        replacedBy[base] = replacedBy[base] or {}
+        table.insert(replacedBy[base], id)
+    end
+end
+for _, list in pairs(replacedBy) do table.sort(list) end
+
+local function replacement(spellId, s, member)
+    local function has(id) return Cooldowns.Has(id, member.class, member.spec, member.talents, member.race) end
+    local known = member.talents ~= nil
+    for _, r in ipairs(replacedBy[spellId] or {}) do
+        if has(r) and (known or not ns.Spells[r].talentGated) then return r end
+    end
+    if not known and s.talentGated then
+        for _, base in ipairs(s.replaces or {}) do
+            if has(base) then return base end
+        end
+    end
+    return spellId
+end
+
 function Cooldowns.Canonical(spellId, member)
     local s = ns.Spells[spellId]
-    if not s or not s.races then return spellId end
+    if not s then return spellId end
+    if not s.races then return replacement(spellId, s, member) end
     local best
     for id, v in pairs(ns.Spells) do
         if v.races and v.name == s.name and (not best or id < best)
