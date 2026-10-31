@@ -61,6 +61,10 @@ function Probe.Flags()
     local live = F.Live()
     print(("SquadCD flags: party auras seen - instance id plain %d, secret %d; keys: %s"):format(
         live.ids.plain, live.ids.secret, counts(live.keys)))
+    print("SquadCD flags: party aura events skipped: " .. counts(live.drops))
+    for _, s in ipairs(F.Snapshot()) do
+        print(("SquadCD flags: %s now - helpful %s, big defensive %s; keys: %s"):format(s.unit, s.helpful, s.big, counts(s.keys)))
+    end
     local learned = ns.DB.probe and ns.DB.probe.auraKeys or {}
     local n = 0
     for _ in pairs(learned) do n = n + 1 end

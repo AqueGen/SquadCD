@@ -103,6 +103,7 @@ local function world(opts)
             IsExternalDefensive = function(id) return id == PAIN_BUFF end,
             IsSpellImportant = function() return false end,
         },
+        UnitExists = function(unit) return w.units[unit] ~= nil end,
         C_Secrets = {
             ShouldAurasBeSecret = function() return false end,
             HasSecretRestrictions = function() return true end,

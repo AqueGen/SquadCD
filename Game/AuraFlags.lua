@@ -14,7 +14,7 @@ local PARTY = { party1 = true, party2 = true, party3 = true, party4 = true }
 AuraFlags.SATED = { 57723, 57724, 80354, 95809, 160455, 264689, 390435 }
 
 local frame = CreateFrame("Frame")
-local live = { keys = {}, ids = { plain = 0, secret = 0 } }
+local live = { keys = {}, ids = { plain = 0, secret = 0 }, drops = {} }
 
 local function plain(v)
     return v ~= nil and not issecretvalue(v)
@@ -129,12 +129,46 @@ local function record(unit, aura)
     end
 end
 
+local function drop(why)
+    live.drops[why] = (live.drops[why] or 0) + 1
+end
+
 frame:SetScript("OnEvent", function(_, _, unit, info)
-    if not PARTY[unit] or not plain(info) or not plain(info.addedAuras) then return end
+    if not PARTY[unit] then return end
+    if not plain(info) then return drop(info == nil and "no info" or "secret info") end
+    if issecretvalue(info.isFullUpdate) then drop("secret full update") elseif info.isFullUpdate then drop("full update") end
+    if info.addedAuras == nil then return drop("no added") end
+    if not plain(info.addedAuras) then return drop("secret added") end
     for _, aura in ipairs(info.addedAuras) do
-        if plain(aura) then record(unit, aura) end
+        if plain(aura) then record(unit, aura) else drop("secret aura") end
     end
 end)
+
+local function ids(unit, filter)
+    local ok, list = pcall(C_UnitAuras.GetUnitAuraInstanceIDs, unit, filter)
+    if not ok then return nil, "error" end
+    if not plain(list) then return nil, "secret" end
+    return list
+end
+
+function AuraFlags.Snapshot()
+    local out = {}
+    for _, unit in ipairs({ "party1", "party2", "party3", "party4" }) do
+        if UnitExists(unit) then
+            local s = { unit = unit, keys = {} }
+            local list, why = ids(unit, "HELPFUL")
+            s.helpful = list and #list or why
+            for _, id in ipairs(list or {}) do
+                local key = plain(id) and AuraFlags.Key(unit, id) or "secret id"
+                s.keys[key] = (s.keys[key] or 0) + 1
+            end
+            local big, bigWhy = ids(unit, "HELPFUL|BIG_DEFENSIVE")
+            s.big = big and #big or bigWhy
+            out[#out + 1] = s
+        end
+    end
+    return out
+end
 
 function AuraFlags:Enable()
     frame:RegisterEvent("UNIT_AURA")
