@@ -108,11 +108,17 @@ function Tracker:Used(guid, spellId, certain)
     self:Notify(changes)
 end
 
-function Tracker:External(spellId, targetGuid)
+function Tracker:UsedWithin(guid, spellId, window)
+    local byGuid = self.entries[guid]
+    local e = byGuid and byGuid[spellId]
+    return e ~= nil and e.spent > 0 and not e.maybe and e.useAt ~= nil and self.clock() - e.useAt <= window
+end
+
+function Tracker:External(spellId, targetGuid, excludeGuid)
     local candidates = {}
     for _, guid in ipairs(self.order) do
         local m = self.members[guid]
-        if ns.Cooldowns.Has(spellId, m.class, m.spec, m.talents) then
+        if guid ~= excludeGuid and ns.Cooldowns.Has(spellId, m.class, m.spec, m.talents) then
             candidates[#candidates + 1] = guid
         end
     end

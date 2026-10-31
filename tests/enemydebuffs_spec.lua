@@ -11,7 +11,7 @@ local KIDNEY_SHOT, HAMMER = 408, 853
 
 local function world(opts)
     opts = opts or {}
-    local w = { debuffs = {}, containers = {}, timers = {}, combat = false, filters = {}, setUnitCombat = 0 }
+    local w = { debuffs = {}, containers = {}, timers = {}, combat = false, filters = {}, setUnitCombat = 0, exist = {} }
     w.units = opts.units or {
         player = { guid = "P", class = "PRIEST", role = "HEALER" },
         party1 = { guid = "A", class = "ROGUE", role = "DAMAGER" },
@@ -66,7 +66,7 @@ local function world(opts)
         UnitGUID = function(u) return w.units[u] and w.units[u].guid end,
         UnitClass = function(u) if w.units[u] then return "x", w.units[u].class, 0 end end,
         UnitGroupRolesAssigned = function(u) return w.units[u] and w.units[u].role or "NONE" end,
-        UnitExists = function() return false end,
+        UnitExists = function(u) return w.exist[u] == true end,
         UnitCanAttack = function() return not w.friendly end,
         GetTime = function() return w.now or 100 end,
         GetServerTime = function() return 1000000 end,
@@ -121,8 +121,15 @@ local function plate(w, unit, id, on)
 end
 
 local function add(w, unit)
+    w.exist[unit] = true
     helpers.fire("NAME_PLATE_UNIT_ADDED", unit)
     w.flush()
+    w.now = (w.now or 100) + 1
+end
+
+local function remove(w, unit)
+    w.exist[unit] = false
+    helpers.fire("NAME_PLATE_UNIT_REMOVED", unit)
 end
 
 describe("EnemyDebuffs", function()
@@ -187,12 +194,69 @@ describe("EnemyDebuffs", function()
         assert.are.equal(20, before)
         for i = 1, 25 do add(w, "nameplate" .. i) end
         assert.are.equal(before, #w.containers)
-        helpers.fire("NAME_PLATE_UNIT_REMOVED", "nameplate1")
-        add(w, "nameplate30")
-        w.debuffs.nameplate30 = { [KIDNEY_SHOT] = false }
-        plate(w, "nameplate30", KIDNEY_SHOT, true)
-        assert.is_false(ns.tracker:State("A", KIDNEY_SHOT).ready)
         assert.are.equal(before, #w.containers)
+        assert.is_true(ns.tracker:State("A", KIDNEY_SHOT).ready)
+    end)
+
+    it("overflow plate attaches when a pool slot frees", function()
+        local ns, w = start({ mode = "party" })
+        for i = 1, 21 do add(w, "nameplate" .. i) end
+        remove(w, "nameplate1")
+        w.now = w.now + 1
+        plate(w, "nameplate21", KIDNEY_SHOT, false)
+        plate(w, "nameplate21", KIDNEY_SHOT, true)
+        assert.is_false(ns.tracker:State("A", KIDNEY_SHOT).ready)
+    end)
+
+    it("edge inside the settle window after attach is a baseline", function()
+        local ns, w = start({ mode = "party" })
+        w.exist.nameplate1 = true
+        helpers.fire("NAME_PLATE_UNIT_ADDED", "nameplate1")
+        w.flush()
+        w.now = 100.2
+        plate(w, "nameplate1", KIDNEY_SHOT, true)
+        assert.is_true(ns.tracker:State("A", KIDNEY_SHOT).ready)
+        w.now = 101
+        plate(w, "nameplate1", KIDNEY_SHOT, false)
+        plate(w, "nameplate1", KIDNEY_SHOT, true)
+        assert.is_false(ns.tracker:State("A", KIDNEY_SHOT).ready)
+    end)
+
+    it("own cast is not double counted", function()
+        local ns, w = start({ mode = "party", units = {
+            player = { guid = "P", class = "PALADIN", role = "TANK" },
+            party1 = { guid = "A", class = "PALADIN", role = "DAMAGER" },
+        } })
+        add(w, "nameplate1")
+        ns.tracker:Used("P", HAMMER, true)
+        plate(w, "nameplate1", HAMMER, true)
+        assert.is_true(ns.tracker:State("A", HAMMER).ready)
+    end)
+
+    it("debuff edge without an own cast skips the player", function()
+        local ns, w = start({ mode = "party", units = {
+            player = { guid = "P", class = "PALADIN", role = "TANK" },
+            party1 = { guid = "A", class = "PALADIN", role = "DAMAGER" },
+        } })
+        add(w, "nameplate1")
+        plate(w, "nameplate1", HAMMER, true)
+        local state = ns.tracker:State("A", HAMMER)
+        assert.is_false(state.ready)
+        assert.is_false(state.maybe)
+        assert.is_true(ns.tracker:State("P", HAMMER).ready)
+    end)
+
+    it("spell without a verified debuff id is listed and has no slot", function()
+        local ns, w = start({ mode = "party", units = {
+            player = { guid = "P", class = "PRIEST", role = "HEALER" },
+            party1 = { guid = "A", class = "MONK", role = "DAMAGER" },
+        } })
+        local listed = {}
+        for _, e in ipairs(ns.EnemyDebuffs.Status().noId) do listed[e.id] = true end
+        assert.is_true(listed[116844])
+        add(w, "nameplate1")
+        plate(w, "nameplate1", 116844, true)
+        assert.is_true(ns.tracker:State("A", 116844).ready)
     end)
 
     it("plate added in combat reuses a pooled container without building", function()

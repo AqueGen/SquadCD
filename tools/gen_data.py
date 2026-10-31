@@ -14,6 +14,8 @@ COMBAT_POTION_CATEGORY = 4
 ITEM_CLASS_CONSUMABLE = "0"
 ITEM_SUBCLASS_POTION = "1"
 FRIENDLY_TARGETS = {1, 5, 21, 25, 29, 30, 31, 57}
+HOSTILE_TARGETS = {6, 15, 16, 24, 104}
+TRIGGER_DEPTH = 2
 TRACK_BY_TYPE = {"External": "target", "Kick": "kick", "Stun": "debuff", "CC": "debuff"}
 
 
@@ -48,6 +50,30 @@ def buff_ids(spell_id, effects, buff_overrides):
     for effect, _, _, trigger in effects.get(spell_id, []):
         if effect == EFFECT_TRIGGER_SPELL and trigger and trigger not in ids and applies_friendly_aura(trigger, effects):
             ids.append(trigger)
+    return ids
+
+
+def applies_hostile_aura(spell_id, effects):
+    for effect, t0, t1, _ in effects.get(spell_id, []):
+        if effect == EFFECT_APPLY_AURA and (t0 in HOSTILE_TARGETS or t1 in HOSTILE_TARGETS):
+            return True
+    return False
+
+
+def debuff_ids(spell_id, effects, debuff_overrides):
+    if str(spell_id) in debuff_overrides:
+        return list(debuff_overrides[str(spell_id)])
+    ids = []
+    level = [spell_id]
+    for _ in range(TRIGGER_DEPTH + 1):
+        nxt = []
+        for sid in level:
+            if sid not in ids and applies_hostile_aura(sid, effects):
+                ids.append(sid)
+            for effect, _, _, trigger in effects.get(sid, []):
+                if trigger:
+                    nxt.append(trigger)
+        level = nxt
     return ids
 
 
@@ -110,9 +136,10 @@ def load_potions(cache_dir, effects):
 
 def check_overrides(catalog, overrides):
     known = {str(s["id"]) for s in catalog["spells"]}
-    for key in overrides.get("buffs", {}):
-        if key not in known:
-            raise ValueError("buffs override %s matches no catalog spell" % key)
+    for field in ("buffs", "debuffs"):
+        for key in overrides.get(field, {}):
+            if key not in known:
+                raise ValueError("%s override %s matches no catalog spell" % (field, key))
 
 
 def lua_str(s):
@@ -135,7 +162,7 @@ def lua_map(mapping, conv):
     return "{" + ",".join("[%s]=%s" % (k, conv(v)) for k, v in sorted(mapping.items(), key=lambda kv: int(kv[0]))) + "}"
 
 
-def spell_line(spell, token, buffs):
+def spell_line(spell, token, buffs, debuffs=()):
     fields = [
         "name=" + lua_str(spell["name"]),
         "icon=" + lua_str(spell["icon"]),
@@ -173,7 +200,10 @@ def spell_line(spell, token, buffs):
         fields.append("aoe=true")
     if buffs:
         fields.append("buffs=" + lua_list(str(b) for b in buffs))
-    fields.append("track=" + lua_str(track_kind(spell["type"], buffs)))
+    track = track_kind(spell["type"], buffs)
+    if debuffs and track == "debuff":
+        fields.append("debuffs=" + lua_list(str(d) for d in debuffs))
+    fields.append("track=" + lua_str(track))
     return "ns.Spells[%d]={%s}" % (spell["id"], ",".join(fields))
 
 
@@ -181,10 +211,12 @@ def render(catalog, effects, overrides, potions):
     check_overrides(catalog, overrides)
     tokens = {int(k): v["token"] for k, v in catalog["classes"].items()}
     buff_overrides = overrides.get("buffs", {})
+    debuff_overrides = overrides.get("debuffs", {})
     out = ["local _, ns = ...", "ns.Spells = {}", "ns.TalentEntries = {}", "ns.Specs = {}", "ns.Classes = {}"]
     for spell in sorted(catalog["spells"], key=lambda s: s["id"]):
         token = tokens.get(spell["classId"])
-        out.append(spell_line(spell, token, buff_ids(spell["id"], effects, buff_overrides)))
+        out.append(spell_line(spell, token, buff_ids(spell["id"], effects, buff_overrides),
+                              debuff_ids(spell["id"], effects, debuff_overrides)))
     for entry, talent in sorted(catalog["talentEntries"].items(), key=lambda kv: int(kv[0])):
         out.append("ns.TalentEntries[%s]=%d" % (entry, talent))
     for spec_id, spec in sorted(catalog["specs"].items(), key=lambda kv: int(kv[0])):

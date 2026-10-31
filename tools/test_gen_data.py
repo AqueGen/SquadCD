@@ -24,6 +24,35 @@ class GenDataTests(unittest.TestCase):
     def test_buff_ids_area_aura_party(self):
         self.assertEqual([740], gen_data.buff_ids(740, {740: [row(35, t0=29)]}, {}))
 
+    def test_debuff_ids_hostile_aura_on_the_spell(self):
+        self.assertEqual([408], gen_data.debuff_ids(408, {408: [row(6, t0=6)]}, {}))
+
+    def test_debuff_ids_ignores_friendly_aura(self):
+        self.assertEqual([], gen_data.debuff_ids(5, {5: [row(6, t0=1)]}, {}))
+
+    def test_debuff_ids_through_triggers_up_to_depth_two(self):
+        effects = {1: [row(64, trigger=2, t0=0)], 2: [row(6, trigger=3, t0=1)], 3: [row(6, t0=22, t1=16)],
+                   4: [row(64, trigger=5, t0=0)], 5: [row(64, trigger=6, t0=0)], 6: [row(64, trigger=7, t0=0)],
+                   7: [row(6, t0=6)]}
+        self.assertEqual([3], gen_data.debuff_ids(1, effects, {}))
+        self.assertEqual([], gen_data.debuff_ids(4, effects, {}))
+
+    def test_debuff_override_wins(self):
+        self.assertEqual([9], gen_data.debuff_ids(408, {408: [row(6, t0=6)]}, {"408": [9]}))
+
+    def test_unknown_debuff_override_key_raises(self):
+        with self.assertRaisesRegex(ValueError, "debuffs override 999"):
+            gen_data.check_overrides({"spells": [{"id": 871}]}, {"debuffs": {"999": [1]}})
+
+    def test_spell_line_emits_debuffs_only_for_debuff_track(self):
+        spell = {"id": 408, "name": "X", "icon": "i", "type": "Stun", "classId": 1, "specs": [],
+                 "cdMs": 30000, "maxCharges": 0, "chargeMs": 0, "recoveryMs": 0, "talentGated": False,
+                 "cdMods": {}, "cdPct": {}, "chargeMods": {}, "chargePct": {}, "specMods": {},
+                 "chargeAdds": {}, "replaces": [], "races": [], "aoe": False}
+        self.assertIn("debuffs={408,9},track=\"debuff\"", gen_data.spell_line(spell, "ROGUE", [], [408, 9]))
+        spell["type"] = "Personal"
+        self.assertNotIn("debuffs=", gen_data.spell_line(spell, "ROGUE", [], [408]))
+
     def test_unknown_override_key_raises(self):
         catalog = {"spells": [{"id": 871}]}
         with self.assertRaisesRegex(ValueError, "999"):
