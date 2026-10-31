@@ -12,6 +12,7 @@ Core.lua
 Data.lua
 Logic/Cooldowns.lua
 Logic/Tracker.lua
+Logic/LayoutRules.lua
 Logic/Persist.lua
 Game/Inspect.lua
 Game/Group.lua
@@ -20,3 +21,10 @@ Game/EnemyDebuffs.lua
 Game/OwnCasts.lua
 Game/Kicks.lua
 Game/Probe.lua
+UI/Theme.lua
+UI/Icon.lua
+UI/Anchors.lua
+UI/Rows.lua
+UI/Panel.lua
+UI/Display.lua
+UI/Demo.lua
