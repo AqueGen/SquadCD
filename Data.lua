@@ -62,7 +62,7 @@ ns.Spells[31224]={name="Cloak of Shadows",icon="spell_shadow_nethercloak",type="
 ns.Spells[31661]={name="Dragon's Breath",icon="inv_misc_head_dragon_01",type="CC",class="MAGE",specs={},cd=45,talentGated=true,cdMods={[387807]=-5},cdPct={[431067]=-30},aoe=true,debuffs={31661},track="debuff"}
 ns.Spells[31821]={name="Aura Mastery",icon="spell_holy_auramastery",type="Group",class="PALADIN",specs={},cd=180,talentGated=true,cdMods={[392911]=-30},buffs={31821},dur=8,track="buff"}
 ns.Spells[31850]={name="Ardent Defender",icon="spell_holy_ardentdefender",type="Personal",class="PALADIN",specs={},cd=90,talentGated=true,cdPct={[114154]=-30},buffs={31850,425435,1310686},dur=12,track="buff"}
-ns.Spells[31884]={name="Avenging Wrath",icon="spell_holy_avenginewrath",type="Burst",class="PALADIN",specs={},cd=120,talentGated=true,cdMods={[1241511]=-30,[1258011]=-60},cdPct={[204074]=-50},specMods={[70]={1258011}},buffs={31884,231895,317872,327979,339044,384376,454351,454373,1316624},dur=20,track="buff"}
+ns.Spells[31884]={name="Avenging Wrath",icon="spell_holy_avenginewrath",type="Burst",class="PALADIN",specs={},cd=120,talentGated=true,cdMods={[1241511]=-15,[1258011]=-60},cdPct={[204074]=-50},specMods={[70]={1258011}},buffs={31884,231895,317872,327979,339044,384376,454351,454373,1316624},dur=20,track="buff"}
 ns.Spells[31935]={name="Avenger's Shield",icon="spell_holy_avengersshield",type="Kick",class="PALADIN",specs={},cd=15,talentGated=true,track="kick"}
 ns.Spells[32375]={name="Mass Dispel",icon="spell_arcane_massdispel",type="Purge",class="PRIEST",specs={},cd=120,talentGated=true,track="none"}
 ns.Spells[33206]={name="Pain Suppression",icon="spell_holy_painsupression",type="External",class="PRIEST",specs={},cd=180,charges=1,chargeCd=180,recovery=1.5,talentGated=true,chargeAdds={[373035]=1},buffs={33206},dur=8,track="target"}
@@ -196,7 +196,7 @@ ns.Spells[207684]={name="Sigil of Misery",icon="ability_demonhunter_sigilofmiser
 ns.Spells[212641]={name="Guardian of Ancient Kings",icon="spell_holy_heroism",type="Personal",class="PALADIN",specs={},cd=180,charges=1,chargeCd=180,recovery=8,chargeAdds={[1246481]=1},replaces={86659},buffs={212641,86659,337851,393108},dur=8,track="buff"}
 ns.Spells[213634]={name="Purify Disease",icon="spell_holy_nullifydisease",type="Dispel",class="PRIEST",specs={},cd=8,charges=1,chargeCd=8,recovery=8,talentGated=true,track="none"}
 ns.Spells[213644]={name="Cleanse Toxins",icon="spell_holy_renew",type="Dispel",class="PALADIN",specs={},cd=8,charges=1,chargeCd=8,recovery=8,talentGated=true,track="none"}
-ns.Spells[216331]={name="Avenging Crusader",icon="ability_paladin_veneration",type="Burst",class="PALADIN",specs={},cd=60,talentGated=true,cdMods={[1241511]=-30},replaces={31884},buffs={216331,394088},dur=15,track="buff"}
+ns.Spells[216331]={name="Avenging Crusader",icon="ability_paladin_veneration",type="Burst",class="PALADIN",specs={},cd=60,talentGated=true,cdMods={[1241511]=-7.5},replaces={31884},buffs={216331,394088},dur=15,track="buff"}
 ns.Spells[217832]={name="Imprison",icon="ability_demonhunter_imprison",type="CC",class="DEMONHUNTER",specs={},cd=45,talentGated=true,debuffs={217832},track="debuff"}
 ns.Spells[218164]={name="Detox",icon="ability_rogue_imrovedrecuperate",type="Dispel",class="MONK",specs={},cd=8,charges=1,chargeCd=8,talentGated=true,track="none"}
 ns.Spells[221562]={name="Asphyxiate",icon="ability_deathknight_asphixiate",type="Stun",class="DEATHKNIGHT",specs={},cd=45,talentGated=true,debuffs={221562},track="debuff"}
