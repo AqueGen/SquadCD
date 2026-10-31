@@ -37,7 +37,10 @@ local known = {}
 
 local function own()
     local index = C_SpecializationInfo.GetSpecialization()
-    local spec = not issecretvalue(index) and C_SpecializationInfo.GetSpecializationInfo(index)
+    local spec
+    if not issecretvalue(index) and index ~= nil then
+        spec = C_SpecializationInfo.GetSpecializationInfo(index)
+    end
     if issecretvalue(spec) or not ns.Specs[spec] then spec = nil end
     return { spec = spec, talents = ns.Inspect.ReadTalents(C_ClassTalents.GetActiveConfigID()) }
 end
@@ -65,13 +68,25 @@ function Group.Members()
 end
 
 local loaded = false
+local current, status = {}, nil
 local frame = CreateFrame("Frame")
 local PARTY_EVENTS = { "PLAYER_SPECIALIZATION_CHANGED", "TRAIT_CONFIG_UPDATED" }
+
+function Group.Status()
+    return status
+end
+
+local function publish(list)
+    ns.tracker:SetMembers(list)
+    Group.OnRoster(list)
+    Group.OnRefresh()
+end
 
 function Group.Refresh()
     local party = Group.Mode() == "party"
     local list, why = {}, nil
     if party then list, why = Group.Members() end
+    current, status = list, why
     for _, event in ipairs(PARTY_EVENTS) do
         if party then frame:RegisterEvent(event) else frame:UnregisterEvent(event) end
     end
@@ -87,20 +102,29 @@ function Group.Refresh()
     Group.OnRoster(list)
     Group.OnRefresh()
     for _, m in ipairs(list) do
-        if m.unit ~= "player" and not known[m.guid] then ns.Inspect.Queue(m.unit) end
+        local k = known[m.guid]
+        if m.unit ~= "player" and not (k and k.talents) then ns.Inspect.Queue(m.unit) end
     end
 end
 
 function ns.Inspect.OnResult(guid, spec, talents)
-    known[guid] = { spec = spec, talents = talents }
-    Group.Refresh()
+    for _, m in ipairs(current) do
+        if m.guid == guid then
+            known[guid] = { spec = spec, talents = talents }
+            m.spec, m.talents = spec, talents
+            publish(current)
+            return
+        end
+    end
 end
 
 frame:SetScript("OnEvent", function(_, event, unit)
-    if event == "PLAYER_SPECIALIZATION_CHANGED" then
-        if issecretvalue(unit) then return end
-        local guid = unit and UnitGUID(unit)
-        if guid and not issecretvalue(guid) then known[guid] = nil end
+    if event == "PLAYER_ENTERING_WORLD" then
+        ns.Inspect.Reset()
+    elseif event == "PLAYER_SPECIALIZATION_CHANGED" then
+        if issecretvalue(unit) or unit == nil then return end
+        local guid = UnitGUID(unit)
+        if not issecretvalue(guid) and guid ~= nil then known[guid] = nil end
     end
     Group.Refresh()
 end)
