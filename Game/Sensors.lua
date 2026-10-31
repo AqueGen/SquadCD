@@ -6,14 +6,10 @@ ns.Sensors = Sensors
 
 local POLL_STEP, POLL_STEPS = 0.1, 5
 local SELF_TEST_DELAY = 0.5
-local INSET = 1e5
-local STRIDE = 50000
-local PROBE_X = -11
 local OWN_CAST_WINDOW = 3
 
 local mode, reason = "unavailable", "self-test has not run"
 local needTest, running, judgeLater, rechecked = true, false, false, false
-local host
 local containers = {}
 local watches = {}
 local active = {}
@@ -32,43 +28,14 @@ local function readout(ok, v)
     return v
 end
 
--- The engine lays a present aura out as one STRIDE-wide element and resizes the probe to fit it,
--- so the probe reaches across the screen only while the aura is up; the hit-test reads that as a plain boolean.
 function Sensor:Read(buffId)
     local probe = self.probes[buffId]
     if not probe then return nil, "error" end
-    return readout(pcall(probe.IsMouseOver, probe, INSET, -INSET, 0, 0))
-end
-
-local function initElement(b)
-    pcall(b.SetSize, b, 1, 1)
-    pcall(b.SetMouseClickEnabled, b, false)
-    pcall(b.SetMouseMotionEnabled, b, false)
+    return readout(pcall(ns.Probes.Lit, probe))
 end
 
 local function newProbe(unit, filter, id)
-    if not host then
-        host = CreateFrame("Frame", nil, UIParent)
-        host:SetPoint("TOPLEFT", UIParent, "TOPLEFT", PROBE_X, 0)
-        host:SetSize(1, 1)
-        host:EnableMouse(false)
-    end
-    local ok, f = pcall(CreateFrame, "AuraContainer", nil, host, "CustomAuraContainerTemplate")
-    if not ok or not f then return nil, "AuraContainer unavailable: " .. tostring(f) end
-    local okSetup, err = pcall(function()
-        f:SetSize(1, 1)
-        f:SetPoint("TOPLEFT", UIParent, "TOPLEFT", PROBE_X, 0)
-        f:EnableMouse(false)
-        f:AddAuraGroup("a", filter, {
-            maxFrameCount = 1,
-            candidateFilters = { includeSpellIDs = { [id] = true } },
-            initializeFrame = initElement,
-            layout = { elementWidth = STRIDE, elementHeight = 1 },
-        })
-        f:SetUnit(unit)
-    end)
-    if not okSetup then return nil, "aura group setup failed: " .. tostring(err) end
-    return f
+    return ns.Probes.New(unit, filter, { id })
 end
 
 local function container(unit)
@@ -82,11 +49,11 @@ end
 
 function Sensor:SetUnit(unit)
     self.unit = unit
-    for _, f in pairs(self.probes) do pcall(f.SetUnit, f, unit) end
+    for _, f in pairs(self.probes) do ns.Probes.Point(f, unit) end
 end
 
 function Sensor:SetEnabled(on)
-    for _, f in pairs(self.probes) do pcall(f.SetEnabled, f, on) end
+    for _, f in pairs(self.probes) do ns.Probes.Enable(f, on) end
 end
 
 function Sensors.Build(unit, buffIds, filter)
@@ -147,7 +114,7 @@ function Sensors.Geometry(unit, id)
         loose[key] = f
         pcall(f.SetEnabled, f, true)
     end
-    local v, why = readout(pcall(f.IsMouseOver, f, INSET, -INSET, 0, 0))
+    local v, why = readout(pcall(ns.Probes.Lit, f))
     local okW, width = pcall(f.GetWidth, f)
     local w = not okW and "error" or issecretvalue(width) and "secret" or tostring(width)
     return ("hit %s, width %s"):format(why or tostring(v), w)

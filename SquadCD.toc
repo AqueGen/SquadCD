@@ -23,6 +23,7 @@ Logic/Preview.lua
 Logic/Persist.lua
 Game/Inspect.lua
 Game/Group.lua
+Game/Probes.lua
 Game/Sensors.lua
 Game/EnemyDebuffs.lua
 Game/OwnCasts.lua

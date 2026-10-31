@@ -4,7 +4,7 @@ local helpers = dofile(here .. "/helpers.lua")
 
 local FILES = {
     "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/Persist.lua",
-    "Game/Inspect.lua", "Game/Group.lua", "Game/Sensors.lua", "Game/AuraFlags.lua", "Game/Probe.lua",
+    "Game/Inspect.lua", "Game/Group.lua", "Game/Probes.lua", "Game/Sensors.lua", "Game/AuraFlags.lua", "Game/Probe.lua",
 }
 
 local SECRET = setmetatable({}, { __tostring = function() return "secret" end })
