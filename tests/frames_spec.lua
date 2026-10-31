@@ -168,6 +168,27 @@ describe("Panel instances", function()
     end)
 end)
 
+describe("Panel preview docking", function()
+    it("chains a window whose dock target has no lines next to the panel", function()
+        local ns = load({ "UI/Panel.lua" })
+        local layout = ns.DB.layout
+        local group = layout.sections[4]
+        group.ownWindow = true
+        group.pos = { x = 1400, y = 650, dockTo = layout.sections[1].id, side = "Below", offset = 0 }
+        local function line(section, type)
+            local spell = { id = 999001, type = type }
+            return { section = section, type = type, entries = { { spell = spell, member = { guid = "A", class = "PRIEST", spec = 256, name = "A" } } } }
+        end
+        local preview = ns.Panel.New({ parent = frameStub() })
+        local w, h = preview.Build({ line(layout.sections[3], "External"), line(group, "Group") })
+        local panel
+        for _, c in ipairs(preview.Containers()) do
+            if c.key == "panel" then panel = c.frame end
+        end
+        assert.is_true(w < panel.width * 2 + ns.Docking.GAP + 1 and h < panel.height * 2 + ns.Docking.GAP + 1)
+    end)
+end)
+
 describe("Rows spacing", function()
     it("places party frame icons with the group gap", function()
         local ns = load({ "UI/Rows.lua" })

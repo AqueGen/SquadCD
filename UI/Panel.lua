@@ -180,9 +180,9 @@ local function new(opts)
         return windows[i]
     end
 
-    local function placeOf(section)
+    local function placeOf(section, groups)
         local pos = section.pos
-        if preview and pos and not pos.dockTo then return nil end
+        if preview and pos and not (pos.dockTo and groups[pos.dockTo]) then return nil end
         return pos
     end
 
@@ -219,7 +219,7 @@ local function new(opts)
         local scr = ns.Docking.Screen()
         local loose = {}
         for _, key in ipairs(order) do
-            if key ~= "panel" and not placeOf(sectionOf[key]) then loose[#loose + 1] = sizes[key] end
+            if key ~= "panel" and not placeOf(sectionOf[key], groups) then loose[#loose + 1] = sizes[key] end
         end
         local _, blockW, blockH = Grid.PlaceSections(loose, layout.panelShape, ns.Docking.GAP)
         local start = preview and { x = 0, y = 0 } or ns.Docking.FromPoint(layout.panel.point, sizes.panel or { w = blockW, h = blockH }, scr)
@@ -228,7 +228,7 @@ local function new(opts)
         local previous = sizes.panel and "panel" or nil
         for _, key in ipairs(order) do
             if key ~= "panel" then
-                positions[key] = placeOf(sectionOf[key])
+                positions[key] = placeOf(sectionOf[key], groups)
                     or { x = positions.panel.x, y = positions.panel.y, dockTo = previous, side = previous and chain, offset = previous and 0 }
                 previous = key
             end
