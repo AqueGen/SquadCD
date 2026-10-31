@@ -217,7 +217,7 @@ describe("LayoutRules", function()
             assert.is_not_nil(has(list, base))
             assert.is_nil(has(list, replacer))
             list = R.SpellsFor(dh(nil), false, {})
-            assert.is_not_nil(has(list, base))
+            assert.is_nil(has(list, base))
             assert.is_nil(has(list, replacer))
         end)
 
@@ -294,14 +294,15 @@ describe("LayoutRules", function()
         it("untracked spells only in own row", function()
             local id
             for spellId, s in pairs(ns.Spells) do
-                if s.class == "PRIEST" and s.track == "none" and ns.Cooldowns.Has(spellId, "PRIEST", 258, nil) then
+                if s.class == "PRIEST" and s.track == "none" and ns.Cooldowns.Has(spellId, "PRIEST", 258, { [spellId] = 1 }) then
                     id = spellId
                     break
                 end
             end
             assert.is_not_nil(id)
-            assert.is_nil(has(R.SpellsFor(priest, false, {}), id))
-            assert.is_not_nil(has(R.SpellsFor(priest, true, {}), id))
+            local talented = { guid = "P", unit = "party1", class = "PRIEST", spec = 258, talents = { [id] = 1 } }
+            assert.is_nil(has(R.SpellsFor(talented, false, {}), id))
+            assert.is_not_nil(has(R.SpellsFor(talented, true, {}), id))
         end)
 
         it("orders by type then name", function()

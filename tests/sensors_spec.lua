@@ -132,6 +132,12 @@ end
 
 local function boot(w)
     local ns = helpers.load(FILES, w.stubs)
+    local talented = { [871] = 1 }
+    local specOf = { A = 73, B = 256, C = 71 }
+    ns.Inspect.Queue = function(unit)
+        local guid = UnitGUID(unit)
+        if specOf[guid] then ns.Inspect.OnResult(guid, specOf[guid], talented) end
+    end
     helpers.fire("ADDON_LOADED", "SquadCD")
     helpers.fire("PLAYER_LOGIN")
     helpers.fire("PLAYER_ENTERING_WORLD")
@@ -166,6 +172,7 @@ describe("Sensors", function()
         local w = world({ mode = "party" })
         w.secret = true
         local ns = helpers.load(FILES, w.stubs)
+        ns.Inspect.Queue = function() end
         helpers.fire("ADDON_LOADED", "SquadCD")
         helpers.fire("PLAYER_LOGIN")
         helpers.fire("PLAYER_ENTERING_WORLD")
@@ -204,6 +211,7 @@ describe("Sensors", function()
         local w = world({ mode = "party" })
         w.buffs.party1 = { [SHIELD_WALL] = true }
         local ns = helpers.load(FILES, w.stubs)
+        ns.Inspect.Queue = function() end
         helpers.fire("ADDON_LOADED", "SquadCD")
         helpers.fire("PLAYER_LOGIN")
         helpers.fire("PLAYER_ENTERING_WORLD")

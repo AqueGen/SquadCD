@@ -110,6 +110,7 @@ end
 local function start(opts)
     local w = world(opts)
     local ns = helpers.load(FILES, w.stubs)
+    ns.Inspect.Queue = function() end
     helpers.fire("ADDON_LOADED", "SquadCD")
     helpers.fire("PLAYER_LOGIN")
     helpers.fire("PLAYER_ENTERING_WORLD")
@@ -290,6 +291,8 @@ describe("EnemyDebuffs", function()
             player = { guid = "P", class = "PRIEST", role = "HEALER" },
             party1 = { guid = "A", class = "MONK", role = "DAMAGER" },
         } })
+        ns.Inspect.OnResult("A", 269, { [116844] = 1 })
+        w.flush()
         local listed = {}
         for _, e in ipairs(ns.EnemyDebuffs.Status().noId) do listed[e.id] = true end
         assert.is_true(listed[116844])

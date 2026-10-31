@@ -165,8 +165,6 @@ run = function()
 end
 
 function Inspect.Queue(unit)
-    local _, kind = IsInInstance()
-    if anySecret(kind) or kind ~= "party" then return end
     local guid = unitGuid(unit)
     if guid == nil then return end
     if Inspect.Add(state, guid, unit) then schedule(0) end
@@ -198,16 +196,13 @@ local function relocate(guid)
     state.queue[guid] = nil
 end
 
-frame:SetScript("OnEvent", function(_, _, guid)
-    if anySecret(guid) then return end
-    local now = GetTime()
-    local unit = Inspect.Ready(state, guid, now)
-    if not unit then return end
-    if unitGuid(unit) ~= guid then
-        Inspect.Fail(state, guid, now)
-        relocate(guid)
-        return schedule(SPACING)
+local function partyUnit(guid)
+    for _, unit in ipairs(PARTY) do
+        if unitGuid(unit) == guid then return unit end
     end
+end
+
+local function readResult(guid, unit)
     local spec = C_SpecializationInfo.GetInspectSpecialization(unit)
     if anySecret(spec) or not ns.Specs[spec] then spec = nil end
     local valid = C_Traits.HasValidInspectData()
@@ -215,8 +210,29 @@ frame:SetScript("OnEvent", function(_, _, guid)
     if not anySecret(valid) and valid then
         talents = Inspect.ReadTalents(Constants.TraitConsts.INSPECT_TRAIT_CONFIG_ID)
     end
-    if not inspectOpen() then ClearInspectPlayer() end
     if spec then Inspect.OnResult(guid, spec, talents) end
+    return spec, talents
+end
+
+frame:SetScript("OnEvent", function(_, _, guid)
+    if anySecret(guid) then return end
+    local now = GetTime()
+    local unit = Inspect.Ready(state, guid, now)
+    if not unit then
+        local own = inspectOpen() and partyUnit(guid)
+        if own then
+            local spec, talents = readResult(guid, own)
+            if spec and talents then state.queue[guid] = nil end
+        end
+        return
+    end
+    if unitGuid(unit) ~= guid then
+        Inspect.Fail(state, guid, now)
+        relocate(guid)
+        return schedule(SPACING)
+    end
+    local spec, talents = readResult(guid, unit)
+    if not inspectOpen() then ClearInspectPlayer() end
     if spec and talents then
         state.queue[guid] = nil
     else

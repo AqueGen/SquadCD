@@ -13,6 +13,9 @@ local function game(mode, units, extra)
         IsInRaid = function() return mode == "raid" end,
         IsInGroup = function() return mode ~= "solo" end,
         IsInInstance = function() return false, "none" end,
+        CanInspect = function() return false end,
+        UnitIsConnected = function() return true end,
+        C_Timer = { After = function() end },
         UnitGUID = function(u) return units[u] and units[u].guid end,
         UnitClass = function(u) if units[u] then return "x", units[u].class, 0 end end,
         UnitGroupRolesAssigned = function(u) return units[u] and units[u].role or "NONE" end,
@@ -314,6 +317,35 @@ describe("Inspect results", function()
         assert.is_nil(ns.Inspect.state.queue.A)
         helpers.fire("GROUP_ROSTER_UPDATE")
         assert.is_nil(ns.Inspect.state.queue.A)
+    end)
+
+    it("inspects party members outside a dungeon too", function()
+        local extra = inspectGame()
+        extra.IsInInstance = function() return false, "none" end
+        extra.C_SpecializationInfo = {
+            GetSpecialization = function() return 2 end,
+            GetSpecializationInfo = function() return 66 end,
+            GetInspectSpecialization = function() return 256 end,
+        }
+        start("party", units, extra)
+        timers[#timers]()
+        assert.are.same({ "party1" }, sent)
+    end)
+
+    it("reads talents from an inspect the player opened", function()
+        local extra = inspectGame()
+        extra.IsInInstance = function() return false, "none" end
+        extra.CanInspect = function() return false end
+        extra.InspectFrame = { IsShown = function() return true end }
+        extra.C_SpecializationInfo = {
+            GetSpecialization = function() return 2 end,
+            GetSpecializationInfo = function() return 66 end,
+            GetInspectSpecialization = function() return 256 end,
+        }
+        local _, rosters = start("party", units, extra)
+        valid = true
+        helpers.fire("INSPECT_READY", "A")
+        assert.are.same({ [394207] = 1 }, rosters[#rosters][2].talents)
     end)
 
     it("stale unit at INSPECT_READY is a failed try and re-resolves the unit", function()

@@ -53,10 +53,15 @@ describe("Cooldowns", function()
         assert.are.equal(23, after)
     end)
 
-    it("gated spell hidden when talents known and missing", function()
-        assert.is_true(C.Has(46968, "WARRIOR", 73, nil))
+    it("gated spell shows only once the talents are read and include it", function()
+        assert.is_false(C.Has(46968, "WARRIOR", 73, nil))
         assert.is_false(C.Has(46968, "WARRIOR", 73, {}))
         assert.is_true(C.Has(46968, "WARRIOR", 73, { [46968] = 1 }))
+    end)
+
+    it("an interrupt counts before the talents are read", function()
+        assert.is_true(C.Has(47528, "DEATHKNIGHT", 251, nil))
+        assert.is_false(C.Has(47528, "DEATHKNIGHT", 251, {}))
     end)
 
     it("spec match overrides gating, a gated spell otherwise needs the talent", function()

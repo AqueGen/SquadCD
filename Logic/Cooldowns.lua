@@ -107,7 +107,7 @@ function Cooldowns.Has(spellId, classToken, specId, talents, race)
     end
     if s.talentGated then
         if talents then return (talents[spellId] or 0) > 0 end
-        return #specs == 0
+        return s.type == "Kick" and #specs == 0
     end
     return #specs == 0
 end
