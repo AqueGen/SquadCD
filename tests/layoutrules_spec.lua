@@ -205,4 +205,44 @@ describe("LayoutRules", function()
         assert.are.equal("Al", R.ShortName("Al", 4))
         assert.are.equal("Óðin", R.ShortName("Óðinn", 4))
     end)
+
+    describe("Catalog", function()
+        it("class tab lists only that class, by type then name", function()
+            local list = R.Catalog("ROGUE")
+            assert.is_true(#list > 0)
+            for i, e in ipairs(list) do
+                assert.are.equal("ROGUE", ns.Spells[e.id].class)
+                if i > 1 then
+                    local a, b = list[i - 1], e
+                    local ra, rb = R.TypeRank(a.type), R.TypeRank(b.type)
+                    assert.is_true(ra < rb or (ra == rb and a.name <= b.name))
+                end
+            end
+        end)
+
+        it("all lists every spell", function()
+            local n = 0
+            for _ in pairs(ns.Spells) do n = n + 1 end
+            assert.are.equal(n, #R.Catalog(nil))
+        end)
+
+        it("flags spells nobody else can see", function()
+            local byId = {}
+            for _, e in ipairs(R.Catalog(nil)) do byId[e.id] = e end
+            assert.is_true(byId[475].untrackable)
+            assert.is_false(byId[408].untrackable)
+            assert.is_false(byId[498].untrackable)
+            assert.are.equal(30, byId[408].cd)
+        end)
+
+        it("flags a debuff spell with no debuff ids", function()
+            ns.Spells[999001] = { name = "Fake", type = "CC", class = "ROGUE", specs = {}, cd = 10, track = "debuff" }
+            local found
+            for _, e in ipairs(R.Catalog("ROGUE")) do
+                if e.id == 999001 then found = e end
+            end
+            ns.Spells[999001] = nil
+            assert.is_true(found.untrackable)
+        end)
+    end)
 end)

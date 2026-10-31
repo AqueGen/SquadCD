@@ -15,6 +15,11 @@ local PRIMARY = {
 local frame = CreateFrame("Frame")
 local CAST_EVENTS = { "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_CHANNEL_STOP" }
 local roster, baseline, credited = {}, {}, {}
+local stats = { attributed = 0 }
+
+function Kicks.Stats()
+    return stats
+end
 
 function Kicks.Deltas(before, after)
     local list = {}
@@ -71,7 +76,10 @@ local function credit(guid)
     for _, m in ipairs(roster) do
         if m.guid == guid then
             local spell = Kicks.SpellOf(m)
-            if spell then ns.tracker:Used(guid, spell, true) end
+            if spell then
+                stats.attributed = stats.attributed + 1
+                ns.tracker:Used(guid, spell, true)
+            end
             return
         end
     end

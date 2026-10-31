@@ -1,0 +1,70 @@
+local here = debug.getinfo(1, "S").source:match("^@(.*)[/\\][^/\\]*$") or "tests"
+local helpers = dofile(here .. "/helpers.lua")
+
+describe("WidgetRules", function()
+    local Rules = helpers.load({ "UI/WidgetRules.lua" }).WidgetRules
+
+    describe("Grid", function()
+        it("fills rows left to right and reports the height", function()
+            local cells, height = Rules.Grid(5, 3, 200, 18)
+            assert.same({ x = 0, y = 0 }, cells[1])
+            assert.same({ x = 400, y = 0 }, cells[3])
+            assert.same({ x = 200, y = 18 }, cells[5])
+            assert.equals(36, height)
+        end)
+
+        it("is empty with nothing to place", function()
+            local cells, height = Rules.Grid(0, 3, 200, 18)
+            assert.same({}, cells)
+            assert.equals(0, height)
+        end)
+    end)
+
+    describe("Stack", function()
+        it("stacks shown items with a gap and reports their height", function()
+            local offsets, total = Rules.Stack({ { height = 20 }, { height = 30 } }, 5)
+            assert.same({ 0, 25 }, offsets)
+            assert.equals(55, total)
+        end)
+
+        it("gives a hidden item no offset and no space", function()
+            local offsets, total = Rules.Stack({ { height = 20 }, { height = 30, shown = false }, { height = 10 } }, 5)
+            assert.same({ [1] = 0, [3] = 25 }, offsets)
+            assert.equals(35, total)
+        end)
+
+        it("reports zero height when nothing is shown", function()
+            local offsets, total = Rules.Stack({ { height = 20, shown = false } }, 5)
+            assert.same({}, offsets)
+            assert.equals(0, total)
+        end)
+    end)
+
+    describe("Size", function()
+        it("uses the default size when nothing is saved", function()
+            assert.same({ 860, 560 }, { Rules.Size(nil, nil, 800, 480, 860, 560) })
+        end)
+
+        it("keeps a saved size above the minimum", function()
+            assert.same({ 1000, 700 }, { Rules.Size(1000, 700, 800, 480, 860, 560) })
+        end)
+
+        it("raises a saved size below the minimum", function()
+            assert.same({ 800, 480 }, { Rules.Size(600, 420, 800, 480, 860, 560) })
+        end)
+    end)
+
+    describe("GripSize", function()
+        it("grows the window by the cursor's move right and down", function()
+            assert.same({ 900, 610 }, { Rules.GripSize(800, 560, 100, 50, 620, 530, 1500, 900) })
+        end)
+
+        it("stops at the minimum when dragged past it", function()
+            assert.same({ 620, 530 }, { Rules.GripSize(800, 560, -400, -300, 620, 530, 1500, 900) })
+        end)
+
+        it("stops at the screen edge when dragged past it", function()
+            assert.same({ 1000, 800 }, { Rules.GripSize(800, 560, 2000, 2000, 620, 530, 1000, 800) })
+        end)
+    end)
+end)

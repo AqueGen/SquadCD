@@ -92,6 +92,10 @@ function Demo.Stop()
     ns.Display.SetSource(nil)
 end
 
+function Demo.Running()
+    return running
+end
+
 function Demo.Toggle()
     if running then Demo.Stop() else Demo.Start() end
 end

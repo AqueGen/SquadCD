@@ -7,6 +7,12 @@ LayoutRules.TYPES = {
     "Personal", "Burst", "Racial", "Potion", "External", "Kick", "Stun", "CC", "Group", "Dispel", "Purge", "Movement",
 }
 
+LayoutRules.LABELS = {
+    Personal = "Personal", Burst = "Burst", Racial = "Racial", Potion = "Potion", External = "External",
+    Kick = "Kick", Stun = "Stun", CC = "CC", Group = "Raid defensives", Dispel = "Dispel", Purge = "Purge",
+    Movement = "Movement",
+}
+
 local rank = {}
 for i, t in ipairs(LayoutRules.TYPES) do rank[t] = i end
 
@@ -30,6 +36,25 @@ function LayoutRules.SpellsFor(member, own, enabled)
         local ra, rb = LayoutRules.TypeRank(a.type), LayoutRules.TypeRank(b.type)
         if ra ~= rb then return ra < rb end
         return a.name < b.name
+    end)
+    return list
+end
+
+function LayoutRules.Catalog(class)
+    local list = {}
+    for id, s in pairs(ns.Spells) do
+        if class == nil or s.class == class then
+            list[#list + 1] = {
+                id = id, name = s.name, type = s.type, cd = s.cd, icon = s.icon,
+                untrackable = s.track == "none" or (s.track == "debuff" and not s.debuffs),
+            }
+        end
+    end
+    table.sort(list, function(a, b)
+        local ra, rb = LayoutRules.TypeRank(a.type), LayoutRules.TypeRank(b.type)
+        if ra ~= rb then return ra < rb end
+        if a.name ~= b.name then return a.name < b.name end
+        return a.id < b.id
     end)
     return list
 end

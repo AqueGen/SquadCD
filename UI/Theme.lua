@@ -28,6 +28,10 @@ function Theme.ClassColor(class)
     return unpack(Theme.text)
 end
 
+function Theme.ClassName(class)
+    return LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[class] or class
+end
+
 function Theme.MakeMovable(frame, isLocked, save)
     frame:SetMovable(true)
     frame:SetClampedToScreen(true)

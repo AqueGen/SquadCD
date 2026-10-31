@@ -237,6 +237,7 @@ local function scan(w)
         count(s.hit, w.sensor:HitTest(id))
         if v ~= nil then
             if v then seen[id] = true end
+            if v and w.last[id] ~= true then s.last = entries[1].spell end
             if v and w.last[id] == false then fire(w, entries) end
             w.last[id] = v
         end
