@@ -5,6 +5,7 @@
 ## Version: 0.1.0
 ## SavedVariables: SquadCDDB
 ## X-License: All Rights Reserved
+## X-Curse-Project-ID: 1776162
 ## IconTexture: Interface\AddOns\SquadCD\Media\icon
 ## AddonCompartmentFunc: SquadCD_OnCompartmentClick
 
