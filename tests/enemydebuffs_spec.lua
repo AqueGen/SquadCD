@@ -2,7 +2,7 @@ local here = debug.getinfo(1, "S").source:match("^@(.*)[/\][^/\]*$") or "tests"
 local helpers = dofile(here .. "/helpers.lua")
 
 local FILES = {
-    "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/Persist.lua",
+    "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/LayoutRules.lua", "Logic/Persist.lua",
     "Game/Inspect.lua", "Game/Group.lua", "Game/Sensors.lua", "Game/EnemyDebuffs.lua", "Game/Probe.lua",
 }
 
@@ -179,6 +179,21 @@ describe("EnemyDebuffs", function()
         assert.is_true(reads > 0)
         plate(w, "nameplate1", KIDNEY_SHOT, true)
         assert.are.equal(reads, w.reads)
+    end)
+
+    it("secret read in combat is read again after combat", function()
+        local ns, w = start({ mode = "party" })
+        w.combat = true
+        w.secret = true
+        add(w, "nameplate1")
+        assert.is_true(ns.LayoutRules.Unknown(KIDNEY_SHOT, false, true, ns.EnemyDebuffs.SecretIds()))
+        w.combat = false
+        w.secret = false
+        helpers.fire("PLAYER_REGEN_ENABLED")
+        assert.is_false(ns.LayoutRules.Unknown(KIDNEY_SHOT, false, true, ns.EnemyDebuffs.SecretIds()))
+        plate(w, "nameplate1", KIDNEY_SHOT, false)
+        plate(w, "nameplate1", KIDNEY_SHOT, true)
+        assert.is_false(ns.tracker:State("A", KIDNEY_SHOT).ready)
     end)
 
     it("repeated aura events extend one poll ticker", function()

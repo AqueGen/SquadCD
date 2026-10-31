@@ -156,6 +156,7 @@ local function rebuild()
         return
     end
     pending = false
+    secretIds = {}
     for _, e in ipairs(pool) do
         if e.unit then release(e) end
     end
@@ -223,8 +224,9 @@ events:SetScript("OnEvent", function(_, event, unit)
         attach(unit)
     elseif event == "NAME_PLATE_UNIT_REMOVED" then
         detach(unit)
-    elseif pending then
-        rebuild()
+    else
+        secretIds = {}
+        if pending then rebuild() end
     end
 end)
 
