@@ -40,6 +40,7 @@ UI/LayoutParts.lua
 UI/EditMode.lua
 UI/MemberChip.lua
 UI/Window.lua
+UI/Wizard.lua
 Pages/About.lua
 Pages/Presets.lua
 Pages/Panels.lua

@@ -606,5 +606,6 @@ function LayoutModel.Migrate(db)
         db.layout = migrated(db)
     end
     db.version = 2
+    db.wizardDue = true
     return db
 end

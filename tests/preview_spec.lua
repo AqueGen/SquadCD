@@ -61,6 +61,58 @@ describe("Preview", function()
         assert.are.equal(shown, d.layout)
     end)
 
+    it("hold works on a copy and cancel puts the held layout back", function()
+        local d = db()
+        local saved = d.layout
+        local before = db().layout
+        local held = P.New()
+        held.Hold(d)
+        assert.are_not.equal(saved, d.layout)
+        assert.are.same(before, d.layout)
+        L.ApplyPreset(d.layout, 4)
+        d.layout.panelLook.iconSize = 32
+        assert.are.same(before, saved)
+        assert.is_true(held.Cancel(d))
+        assert.are.equal(saved, d.layout)
+        assert.is_false(held.Cancel(d))
+    end)
+
+    it("hold twice keeps the first snapshot", function()
+        local d = db()
+        local saved = d.layout
+        local held = P.New()
+        held.Hold(d)
+        d.layout.timers = false
+        held.Hold(d)
+        assert.is_false(d.layout.timers)
+        held.Cancel(d)
+        assert.are.equal(saved, d.layout)
+    end)
+
+    it("apply after hold keeps every edit", function()
+        local d = db()
+        local held = P.New()
+        held.Hold(d)
+        L.ApplyPreset(d.layout, 2)
+        local edited = d.layout
+        held.Apply()
+        assert.are.equal(edited, d.layout)
+        assert.are.equal(2, d.layout.preset)
+        assert.is_false(held.Cancel(d))
+    end)
+
+    it("a held snapshot is untouched by the shared preview", function()
+        local d = db()
+        local saved = d.layout
+        local held = P.New()
+        held.Hold(d)
+        assert.is_false(P.Cancel(d))
+        L.ApplyPreset(d.layout, 3)
+        assert.is_true(held.Cancel(d))
+        assert.are.equal(saved, d.layout)
+        assert.is_nil(P.Saved())
+    end)
+
     it("an unknown preset changes nothing", function()
         local d = db()
         local saved = d.layout
