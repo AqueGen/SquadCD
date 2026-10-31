@@ -53,6 +53,28 @@ class GenDataTests(unittest.TestCase):
         spell["type"] = "Personal"
         self.assertNotIn("debuffs=", gen_data.spell_line(spell, "ROGUE", [], [408]))
 
+    def test_spell_line_emits_buff_duration(self):
+        spell = {"id": 48792, "name": "X", "icon": "i", "type": "Personal", "classId": 6, "specs": [],
+                 "cdMs": 120000, "maxCharges": 0, "chargeMs": 0, "recoveryMs": 0, "talentGated": False,
+                 "cdMods": {}, "cdPct": {}, "chargeMods": {}, "chargePct": {}, "specMods": {},
+                 "chargeAdds": {}, "replaces": [], "races": [], "aoe": False}
+        self.assertIn("buffs={48792},dur=8,track", gen_data.spell_line(spell, "DEATHKNIGHT", [48792], (), None, {48792: 8000}))
+        self.assertNotIn("dur=", gen_data.spell_line(spell, "DEATHKNIGHT", [48792], (), None, {}))
+
+    def test_load_durations_joins_misc_and_duration(self):
+        import tempfile
+        d = tempfile.mkdtemp()
+        misc, dur = os.path.join(d, "m.csv"), os.path.join(d, "d.csv")
+        with open(misc, "w", encoding="utf8") as f:
+            f.write("ID,DifficultyID,DurationIndex,SpellID\n1,0,3,48792\n2,1,4,48792\n3,0,0,871\n")
+        with open(dur, "w", encoding="utf8") as f:
+            f.write("ID,Duration,MaxDuration,DurationPerResource\n3,8000,8000,0\n4,1,1,0\n")
+        self.assertEqual({48792: 8000}, gen_data.load_durations(misc, dur))
+
+    def test_render_starts_with_copyright(self):
+        text = gen_data.render({"spells": [], "talentEntries": {}, "specs": {}, "classes": {}}, {}, {}, [])
+        self.assertTrue(text.startswith("-- Copyright (c) 2026 AqueGen. All rights reserved. See LICENSE.\n"))
+
     def test_unknown_override_key_raises(self):
         catalog = {"spells": [{"id": 871}]}
         with self.assertRaisesRegex(ValueError, "999"):

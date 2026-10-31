@@ -16,7 +16,8 @@ ITEM_SUBCLASS_POTION = "1"
 FRIENDLY_TARGETS = {1, 5, 21, 25, 29, 30, 31, 57}
 HOSTILE_TARGETS = {6, 15, 16, 24, 104}
 TRIGGER_DEPTH = 2
-TRACK_BY_TYPE = {"External": "target", "Kick": "kick", "Stun": "debuff", "CC": "debuff"}
+COPYRIGHT = "-- Copyright (c) 2026 AqueGen. All rights reserved. See LICENSE."
+TRACK_BY_TYPE ={"External": "target", "Kick": "kick", "Stun": "debuff", "CC": "debuff"}
 
 
 def load_effects(path):
@@ -162,7 +163,21 @@ def lua_map(mapping, conv):
     return "{" + ",".join("[%s]=%s" % (k, conv(v)) for k, v in sorted(mapping.items(), key=lambda kv: int(kv[0]))) + "}"
 
 
-def spell_line(spell, token, buffs, debuffs=(), tokens=None):
+def load_durations(misc_path, duration_path):
+    with open(duration_path, encoding="utf8", newline="") as f:
+        by_index = {int(r["ID"]): int(r["Duration"]) for r in csv.DictReader(f)}
+    durations = {}
+    with open(misc_path, encoding="utf8", newline="") as f:
+        for r in csv.DictReader(f):
+            if r["DifficultyID"] != "0":
+                continue
+            ms = by_index.get(int(r["DurationIndex"]), 0)
+            if ms > 0:
+                durations[int(r["SpellID"])] = ms
+    return durations
+
+
+def spell_line(spell, token, buffs, debuffs=(), tokens=None, durations=None):
     fields = [
         "name=" + lua_str(spell["name"]),
         "icon=" + lua_str(spell["icon"]),
@@ -203,22 +218,24 @@ def spell_line(spell, token, buffs, debuffs=(), tokens=None):
     if buffs:
         fields.append("buffs=" + lua_list(str(b) for b in buffs))
     track = track_kind(spell["type"], buffs)
+    if buffs and track in ("buff", "target") and (durations or {}).get(buffs[0]):
+        fields.append("dur=" + seconds(durations[buffs[0]]))
     if debuffs and track == "debuff":
         fields.append("debuffs=" + lua_list(str(d) for d in debuffs))
     fields.append("track=" + lua_str(track))
     return "ns.Spells[%d]={%s}" % (spell["id"], ",".join(fields))
 
 
-def render(catalog, effects, overrides, potions):
+def render(catalog, effects, overrides, potions, durations=None):
     check_overrides(catalog, overrides)
     tokens = {int(k): v["token"] for k, v in catalog["classes"].items()}
     buff_overrides = overrides.get("buffs", {})
     debuff_overrides = overrides.get("debuffs", {})
-    out = ["local _, ns = ...", "ns.Spells = {}", "ns.TalentEntries = {}", "ns.Specs = {}", "ns.Classes = {}"]
+    out = [COPYRIGHT, "local _, ns = ...", "ns.Spells = {}", "ns.TalentEntries = {}", "ns.Specs = {}", "ns.Classes = {}"]
     for spell in sorted(catalog["spells"], key=lambda s: s["id"]):
         token = tokens.get(spell["classId"])
         out.append(spell_line(spell, token, buff_ids(spell["id"], effects, buff_overrides),
-                              debuff_ids(spell["id"], effects, debuff_overrides), tokens))
+                              debuff_ids(spell["id"], effects, debuff_overrides), tokens, durations))
     for entry, talent in sorted(catalog["talentEntries"].items(), key=lambda kv: int(kv[0])):
         out.append("ns.TalentEntries[%s]=%d" % (entry, talent))
     for spec_id, spec in sorted(catalog["specs"].items(), key=lambda kv: int(kv[0])):
@@ -257,7 +274,8 @@ def main():
     with open(args.overrides, encoding="utf8") as f:
         overrides = json.load(f)
     effects = load_effects(fetch_table("SpellEffect", args.cache))
-    text = render(catalog, effects, overrides, load_potions(args.cache, effects))
+    durations = load_durations(fetch_table("SpellMisc", args.cache), fetch_table("SpellDuration", args.cache))
+    text = render(catalog, effects, overrides, load_potions(args.cache, effects), durations)
     with open(args.out, "w", encoding="utf8", newline="\n") as f:
         f.write(text)
 
