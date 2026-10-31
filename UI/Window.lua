@@ -167,7 +167,7 @@ end
 
 function Window.Show(key)
     if not ns.DB then return end
-    if ns.Wizard.IsOpen() then
+    if ns.Wizard and ns.Wizard.IsOpen() then
         ns.Wizard.Open()
         return
     end

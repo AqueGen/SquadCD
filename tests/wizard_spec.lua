@@ -53,6 +53,12 @@ describe("Wizard opens once", function()
         assert.are.equal(1, shown)
     end)
 
+    it("keeps the offer when showing the wizard fails", function()
+        W.Show = function() error("boom") end
+        assert.has_error(function() login({}) end)
+        assert.is_true(ns.DB.wizardDue)
+    end)
+
     it("opens once after a v1 migration", function()
         local db = login({ placement = { Kick = "Panel" }, row = { side = "LEFT", size = 24 } })
         assert.are.equal(1, shown)

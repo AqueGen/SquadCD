@@ -141,6 +141,16 @@ describe("EditMode", function()
         assert.are.same({ "Group", "Off" }, demo.calls)
     end)
 
+    it("does nothing while the layout wizard is open and says so", function()
+        ns.Wizard = { IsOpen = function() return true end }
+        assert.is_false(E.StartPanels())
+        assert.is_false(E.StartMembers())
+        assert.is_false(E.Panels())
+        assert.is_false(E.Members())
+        assert.are.equal(2, #printed)
+        assert.truthy(printed[1]:find("layout wizard"))
+    end)
+
     it("stops its demo when combat ends if combat cut edit mode short", function()
         E.StartPanels()
         combat = true

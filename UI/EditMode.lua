@@ -16,9 +16,15 @@ local overlays = {}
 local driver = CreateFrame("Frame")
 
 local function blocked(what)
-    if not InCombatLockdown() then return false end
-    print("Huddle: " .. what .. " is available out of combat only.")
-    return true
+    if InCombatLockdown() then
+        print("Huddle: " .. what .. " is available out of combat only.")
+        return true
+    end
+    if ns.Wizard and ns.Wizard.IsOpen() then
+        print("Huddle: " .. what .. " is available after the layout wizard closes.")
+        return true
+    end
+    return false
 end
 
 local function refreshWindow()

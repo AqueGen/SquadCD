@@ -79,10 +79,13 @@ builders[3] = function(page)
     position:Button({
         text = "Move the panels", width = 140,
         onClick = function()
-            if ns.EditMode.StartPanels() then
-                reopen = false
-                close(true)
+            if InCombatLockdown() then
+                ns.EditMode.StartPanels()
+                return
             end
+            reopen = false
+            close(true)
+            ns.EditMode.StartPanels()
         end,
     })
     position:Note("Icons at party frames follow your party frames.")
@@ -196,16 +199,18 @@ local function build()
         keep = false
         if reopen then
             reopen = false
-            ns.Window.Show("presets")
+            C_Timer.After(0, function()
+                if not Wizard.IsOpen() then ns.Window.Show() end
+            end)
         end
     end)
 end
 
 function Wizard.Show()
+    if not frame then build() end
     reopen = ns.Window.Hide()
     if ns.Preview.Cancel(ns.DB) then ns.Display.Changed() end
     held.Hold(ns.DB)
-    if not frame then build() end
     keep = false
     frame:Show()
     showStep(1)
@@ -218,8 +223,8 @@ end
 local function try()
     if not wanted or not ns.DB or InCombatLockdown() or editing() then return end
     wanted = false
-    ns.DB.wizardDue = nil
     Wizard.Show()
+    ns.DB.wizardDue = nil
 end
 
 function Wizard.Open()
