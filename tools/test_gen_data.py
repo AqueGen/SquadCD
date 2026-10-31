@@ -129,6 +129,11 @@ class GenDataTests(unittest.TestCase):
         self.assertEqual({"378425": -15}, spell["chargePct"])
         self.assertEqual({}, spell["cdMods"])
 
+    def test_merge_keeps_a_talent_the_catalog_already_placed(self):
+        spell = {"chargeMs": 90000, "cdMods": {"382953": -90000}, "cdPct": {}, "chargeMods": {}, "chargePct": {}}
+        gen_data.merge_cd_mods(spell, {382953: -90000}, {})
+        self.assertEqual({}, spell["chargeMods"])
+
     def test_spell_line_merges_derived_cd_mods(self):
         spell = {"id": 48707, "name": "X", "icon": "i", "type": "Personal", "classId": 6, "specs": [],
                  "cdMs": 60000, "maxCharges": 0, "chargeMs": 0, "recoveryMs": 0, "talentGated": False,

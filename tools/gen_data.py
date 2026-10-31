@@ -142,10 +142,13 @@ def talent_cd_mods(spell_id, options, mods, talents, categories, labels):
 
 def merge_cd_mods(spell, flat, pct):
     mods, pcts = ("chargeMods", "chargePct") if spell["chargeMs"] else ("cdMods", "cdPct")
+    listed = set(spell["cdMods"]) | set(spell["cdPct"]) | set(spell["chargeMods"]) | set(spell["chargePct"])
     for sid, ms in flat.items():
-        spell[mods].setdefault(str(sid), ms)
+        if str(sid) not in listed:
+            spell[mods][str(sid)] = ms
     for sid, p in pct.items():
-        spell[pcts].setdefault(str(sid), p)
+        if str(sid) not in listed:
+            spell[pcts][str(sid)] = p
 
 
 def load_talent_entries(node_entry_path, definition_path):
