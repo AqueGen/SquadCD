@@ -36,6 +36,7 @@ local function fakePane()
     function pane:SetCaption(text) self.captionText = text end
     function pane:SetOff(text) self.off = text end
     function pane:Fit(content, w, h) self.fit = { content = content, w = w, h = h } end
+    function pane:IsVisible() return self.shown and not self.parentHidden end
     return pane
 end
 
@@ -110,5 +111,26 @@ describe("Panel preview", function()
         pane:Hide()
         ns.PanelPreview.Refresh()
         assert.is_nil(pane.fit)
+    end)
+
+    it("does nothing while the settings window is closed", function()
+        pane.parentHidden = true
+        ns.Display.Changed()
+        assert.is_nil(pane.fit)
+    end)
+
+    it("keeps the demo timeline across settings changes and restarts it on refresh", function()
+        local made = 0
+        local source = ns.Demo.Source
+        ns.Demo.Source = function(n)
+            made = made + 1
+            return source(n)
+        end
+        ns.PanelPreview.Refresh()
+        ns.Display.Changed()
+        ns.Display.Changed()
+        assert.are.equal(1, made)
+        ns.PanelPreview.Refresh()
+        assert.are.equal(2, made)
     end)
 end)

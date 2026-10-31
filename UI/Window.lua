@@ -165,7 +165,7 @@ local function Build()
     pane = UI.PreviewPane(frame)
     pane:Hide()
     ns.PanelPreview.Attach(pane)
-    frame:SetScript("OnSizeChanged", function()
+    frame:HookScript("OnSizeChanged", function()
         if current then Layout() end
     end)
 

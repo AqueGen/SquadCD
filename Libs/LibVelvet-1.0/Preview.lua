@@ -4,6 +4,7 @@ if not lib.loading then return end
 
 local T = lib.T
 local OFF_ALPHA = 0.35
+local LINE_H = 14
 local WORLD_TOP, WORLD_BOTTOM = { 0.16, 0.19, 0.15, 1 }, { 0.07, 0.08, 0.07, 1 }
 
 function lib.PreviewLayout(contentW, columnMin, zoneMin, zoneMax)
@@ -25,10 +26,15 @@ function Pane:SetCaption(text)
     self.caption:SetText(text)
 end
 
+local function placeStage(pane, lineH)
+    pane.stage:SetPoint("BOTTOMRIGHT", pane, "BOTTOMRIGHT", -lib.PAD, lib.PAD + lineH)
+end
+
 function Pane:SetOff(text)
     self.stage:SetAlpha(text and OFF_ALPHA or 1)
     self.offLine:SetText(text or "")
     self.offLine:SetShown(text ~= nil)
+    placeStage(self, text and math.max(LINE_H, self.offLine:GetStringHeight() + 2) or LINE_H)
 end
 
 local function refit(pane)
@@ -67,7 +73,7 @@ function lib.PreviewPane(parent)
 
     pane.stage = CreateFrame("Frame", nil, pane)
     pane.stage:SetPoint("TOPLEFT", pane.caption, "BOTTOMLEFT", 0, -lib.GAP)
-    pane.stage:SetPoint("BOTTOMRIGHT", pane, "BOTTOMRIGHT", -lib.PAD, lib.PAD + 14)
+    placeStage(pane, LINE_H)
     pane.stage:SetClipsChildren(true)
     pane.stage:SetScript("OnSizeChanged", function() refit(pane) end)
 

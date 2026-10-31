@@ -37,9 +37,19 @@ describe("Settings window preview zone", function()
                 function f:SetText(t) self.text = t end
                 function f:SetWidth(w) self.width = w end
                 function f:SetHeight(h) self.height = h end
+                function f:HookScript(event, fn)
+                    local prev = self.scripts[event]
+                    self.scripts[event] = function(...)
+                        if prev then prev(...) end
+                        fn(...)
+                    end
+                end
                 if name then
                     _G[name] = f
-                    if name == "SquadCDSettings" then settings = f end
+                    if name == "SquadCDSettings" then
+                        settings = f
+                        f.scripts.OnSizeChanged = function() f.backdropResized = true end
+                    end
                 end
                 return f
             end,
@@ -82,6 +92,7 @@ describe("Settings window preview zone", function()
         assert.is_not_nil(point(pane, "TOPLEFT"))
         assert.is_nil(point(pane, "BOTTOMRIGHT"))
         assert.are.equal(150, pane.height)
+        assert.is_true(settings.backdropResized)
     end)
 
     it("opens wide enough for the side zone by default", function()
