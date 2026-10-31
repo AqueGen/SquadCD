@@ -15,3 +15,5 @@ Logic/Tracker.lua
 Logic/Persist.lua
 Game/Inspect.lua
 Game/Group.lua
+Game/Sensors.lua
+Game/Probe.lua

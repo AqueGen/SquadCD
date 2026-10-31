@@ -22,9 +22,12 @@ local function newFrame()
     function f:GetWidth() return self.width end
     function f:GetHeight() return self.height end
     function f:SetParent(p) self.parent = p end
+    function f:EnableMouse(v) self.mouse = v end
     frames[#frames + 1] = f
     return f
 end
+
+helpers.newFrame = newFrame
 
 function helpers.load(files, stubs)
     for k, saved in pairs(applied) do
