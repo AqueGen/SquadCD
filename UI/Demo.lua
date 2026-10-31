@@ -12,7 +12,7 @@ local MEMBERS = {
 }
 local CHARGED = 204021
 
-local running = false
+local mode = "Off"
 
 local function fits(s, spec)
     if #(s.specs or {}) == 0 then return true end
@@ -42,9 +42,10 @@ local function talentsFor(class, spec)
     return t
 end
 
-local function members()
+local function members(count)
     local list = {}
-    for i, m in ipairs(MEMBERS) do
+    for i = 1, count do
+        local m = MEMBERS[i]
         list[i] = {
             guid = m.guid, unit = m.unit, class = m.class, spec = m.spec, race = m.race, name = m.name, own = m.own,
             talents = not m.unread and talentsFor(m.class, m.spec) or nil,
@@ -59,14 +60,10 @@ local function first(m, kind)
     end
 end
 
-function Demo.Start()
-    if InCombatLockdown() then
-        print("Huddle: demo is available out of combat only.")
-        return
-    end
+local function start(count)
     local shift
     local tracker = ns.Tracker.New(function() return GetTime() - (shift or 0) end)
-    local list = members()
+    local list = members(count)
     tracker:SetMembers(list)
     local function used(m, id, ago, certain)
         if not id then return end
@@ -77,36 +74,53 @@ function Demo.Start()
     local dh, priest, mage, paladin, monk = unpack(list)
     used(dh, first(dh, "Personal"), 20, true)
     used(dh, CHARGED, 5, true)
-    used(priest, first(priest, "External"), 30, false)
-    used(mage, first(mage, "Kick"), 8, true)
-    used(mage, first(mage, "Personal"), 60, true)
-    used(paladin, first(paladin, "Stun"), 15, true)
-    used(paladin, "potion", 100, true)
-    used(monk, first(monk, "Burst"), 50, true)
-    running = true
+    if count > 1 then
+        used(priest, first(priest, "External"), 30, false)
+        used(mage, first(mage, "Kick"), 8, true)
+        used(mage, first(mage, "Personal"), 60, true)
+        used(paladin, first(paladin, "Stun"), 15, true)
+        used(paladin, "potion", 100, true)
+        used(monk, first(monk, "Burst"), 50, true)
+    end
     ns.Display.SetSource({ members = list, tracker = tracker })
 end
 
-function Demo.Stop()
+Demo.MODES = { "Off", "Me", "Group" }
+
+function Demo.Set(next)
+    if next ~= "Off" and next ~= "Me" and next ~= "Group" then return end
     if InCombatLockdown() then
         print("Huddle: demo is available out of combat only.")
         return
     end
-    running = false
-    ns.Display.SetSource(nil)
+    mode = next
+    if mode == "Off" then
+        ns.Display.SetSource(nil)
+    else
+        start(mode == "Me" and 1 or #MEMBERS)
+    end
+    if ns.Window then ns.Window.Refresh() end
+end
+
+function Demo.Mode()
+    return mode
 end
 
 function Demo.Running()
-    return running
+    return mode ~= "Off"
 end
 
 function Demo.Toggle()
-    if running then Demo.Stop() else Demo.Start() end
-    if ns.Window then ns.Window.Refresh() end
+    Demo.Set(mode == "Off" and "Group" or "Off")
 end
 
 function Huddle_Demo()
     Demo.Toggle()
 end
 
-ns.Slash("demo", Demo.Toggle)
+local SLASH_MODES = { off = "Off", me = "Me", group = "Group" }
+
+ns.Slash("demo", function(rest)
+    local picked = SLASH_MODES[(rest or ""):lower()]
+    if picked then Demo.Set(picked) else Demo.Toggle() end
+end)

@@ -205,6 +205,32 @@ function LayoutModel.TypeOrder(layout, container)
     return out
 end
 
+function LayoutModel.OwnWindow(layout, section)
+    return layout.overlay == "Windows" or section.ownWindow == true
+end
+
+function LayoutModel.Bars(layout, type)
+    return type == "Kick" and layout.kickStyle == "Bars"
+end
+
+function LayoutModel.LineShape(layout, section, type)
+    local own = LayoutModel.OwnWindow(layout, section)
+    local shape = own and section.shape or layout.panelShape
+    if not own and type == "Kick" and section.shape then
+        shape = copy(section.shape)
+        shape.origin = layout.panelShape.origin
+    end
+    if LayoutModel.Bars(layout, type) then
+        shape = copy(shape)
+        shape.axis, shape.perLine = "Rows", 1
+    end
+    return shape
+end
+
+function LayoutModel.LookOf(layout, container, member)
+    return container.look or (member and layout.memberLook or layout.panelLook)
+end
+
 function LayoutModel.RoleOrder(layout)
     local valid, out, seen = {}, {}, {}
     for _, r in ipairs(ROLES) do valid[r] = true end

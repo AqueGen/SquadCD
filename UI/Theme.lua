@@ -16,6 +16,38 @@ local Theme = {
 }
 ns.Theme = Theme
 
+local DARK, LIGHT = { 0.078, 0.086, 0.102 }, { 0.961, 0.953, 0.98 }
+local function style(r, g, b, text, glyph)
+    return { fill = { r, g, b }, text = text, glyph = glyph }
+end
+Theme.TYPES = {
+    Personal = style(0.478, 0.384, 0.757, LIGHT, "P"), External = style(0.184, 0.627, 1, DARK, "E"),
+    Group = style(0.533, 0.886, 0.8, DARK, "G"), Kick = style(0.867, 0.784, 0.169, DARK, "K"),
+    Control = style(0.616, 0.369, 0.51, LIGHT, "C"), Stun = style(0.894, 0.631, 0.525, DARK, "S"),
+    CC = style(0.616, 0.369, 0.51, LIGHT, "C"), Dispel = style(0.071, 0.722, 0.737, DARK, "D"),
+    Purge = style(0.055, 0.486, 0.502, LIGHT, "X"), Burst = style(0.514, 0.608, 0, DARK, "B"),
+    Racial = style(0.784, 0.537, 0.29, DARK, "R"), Potion = style(0.753, 0.314, 0.302, LIGHT, "+"),
+    Movement = style(0.443, 0.514, 0.294, LIGHT, "M"),
+}
+Theme.BACKGROUNDS = { Default = { 0.078, 0.086, 0.106 }, Black = { 0, 0, 0 }, Slate = { 0.165, 0.192, 0.251 } }
+
+function Theme.Backdrop(frame, look, unlocked)
+    frame:SetBackdrop(Theme.FLAT)
+    local rgb = Theme.BACKGROUNDS[look.background]
+    if rgb then
+        frame:SetBackdropColor(rgb[1], rgb[2], rgb[3], look.opacity / 100)
+    else
+        frame:SetBackdropColor(0, 0, 0, 0)
+    end
+    if unlocked then
+        frame:SetBackdropBorderColor(unpack(Theme.gold))
+    elseif rgb then
+        frame:SetBackdropBorderColor(unpack(Theme.border))
+    else
+        frame:SetBackdropBorderColor(0, 0, 0, 0)
+    end
+end
+
 function Theme.Panel(frame)
     frame:SetBackdrop(Theme.FLAT)
     frame:SetBackdropColor(unpack(Theme.bg))

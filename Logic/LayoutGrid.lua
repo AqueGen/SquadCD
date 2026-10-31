@@ -13,28 +13,142 @@ function LayoutGrid.RoleOf(specId)
     return spec.ranged and "Ranged" or "Melee"
 end
 
-function LayoutGrid.Cells(count, shape, size, gap)
-    if count <= 0 then return {}, 0, 0 end
-    local per = math.max(MIN_PER_LINE, math.min(MAX_PER_LINE, math.floor(shape.perLine or MIN_PER_LINE)))
-    local rows = shape.axis ~= "Columns"
-    local step = size + gap
-    local lines = math.ceil(count / per)
-    local along = math.min(count, per) * step - gap
-    local across = lines * step - gap
-    local w, h = across, along
-    if rows then w, h = along, across end
-    local flipX = shape.origin == "TopRight" or shape.origin == "BottomRight"
-    local flipY = shape.origin == "BottomLeft" or shape.origin == "BottomRight"
+local function perLine(n)
+    return math.max(MIN_PER_LINE, math.min(MAX_PER_LINE, math.floor(n or MIN_PER_LINE)))
+end
+
+local function flow(cells, axis, per, origin, gap, acrossLimit)
+    per = perLine(per)
+    local rows = axis ~= "Columns"
+    local placed = {}
+    local blockU, blockAlong, v, maxU, maxV = 0, 0, 0, 0, 0
+    for first = 1, #cells, per do
+        local last = math.min(first + per - 1, #cells)
+        local thick = 0
+        for i = first, last do thick = math.max(thick, rows and cells[i].h or cells[i].w) end
+        if v > 0 and v + thick > acrossLimit then
+            blockU, blockAlong, v = blockU + blockAlong + LayoutGrid.OVERFLOW_GAP, 0, 0
+        end
+        local u = blockU
+        for i = first, last do
+            local along, across = cells[i].w, cells[i].h
+            if not rows then along, across = across, along end
+            placed[i] = { u, v, along, across }
+            u = u + along + gap
+        end
+        blockAlong = math.max(blockAlong, u - gap - blockU)
+        maxU = math.max(maxU, u - gap)
+        maxV = math.max(maxV, v + thick)
+        v = v + thick + gap
+    end
+    local w, h = maxU, maxV
+    if not rows then w, h = maxV, maxU end
+    local flipX = origin == "TopRight" or origin == "BottomRight"
+    local flipY = origin == "BottomLeft" or origin == "BottomRight"
     local out = {}
-    for i = 0, count - 1 do
-        local u, v = (i % per) * step, math.floor(i / per) * step
-        local x, y = u, v
-        if not rows then x, y = v, u end
-        if flipX then x = w - x - size end
-        if flipY then y = h - y - size end
-        out[i + 1] = { x = x, y = y }
+    for i, p in ipairs(placed) do
+        local r = rows and { x = p[1], y = p[2], w = p[3], h = p[4] } or { x = p[2], y = p[1], w = p[4], h = p[3] }
+        if flipX then r.x = w - r.x - r.w end
+        if flipY then r.y = h - r.y - r.h end
+        out[i] = r
     end
     return out, w, h
+end
+
+function LayoutGrid.Place(cells, shape, gap)
+    return flow(cells, shape.axis, shape.perLine, shape.origin, gap, math.huge)
+end
+
+function LayoutGrid.PlaceSections(sections, shape, gap)
+    return flow(sections, shape.axis, 1, shape.origin, gap, math.huge)
+end
+
+function LayoutGrid.MemberOrigin(origin, side)
+    local bottom = origin == "BottomLeft" or origin == "BottomRight"
+    local right = origin == "TopRight" or origin == "BottomRight"
+    if side == "Left" then return bottom and "BottomRight" or "TopRight" end
+    if side == "Right" then return bottom and "BottomLeft" or "TopLeft" end
+    if side == "Above" then return right and "BottomRight" or "BottomLeft" end
+    return right and "TopRight" or "TopLeft"
+end
+
+local function beside(side)
+    return side == "Left" or side == "Right"
+end
+
+function LayoutGrid.PlaceMemberRow(cells, shape, side, frameHeight, gap)
+    local limit = beside(side) and shape.axis ~= "Columns" and frameHeight > 0 and frameHeight or math.huge
+    return flow(cells, shape.axis, shape.perLine, LayoutGrid.MemberOrigin(shape.origin, side), gap, limit)
+end
+
+local function fits(room, cell, gap)
+    return math.max(1, math.floor((room + gap) / (cell + gap) + 1e-6))
+end
+
+local function ceilDiv(a, b)
+    return math.ceil(a / b)
+end
+
+function LayoutGrid.FitShape(shape, side, count, cellW, cellH, lead, frameW, frameH, gap)
+    if count <= 0 or shape.axis == "Columns" then return shape end
+    local per
+    if beside(side) then
+        if frameH <= 0 then return shape end
+        per = ceilDiv(count, fits(frameH, cellH, gap))
+    else
+        if frameW <= 0 then return shape end
+        per = ceilDiv(count, ceilDiv(count, fits(frameW - lead, cellW, gap)))
+    end
+    local out = {}
+    for k, v in pairs(shape) do out[k] = v end
+    out.perLine = perLine(per)
+    return out
+end
+
+function LayoutGrid.Tabs(runs, per)
+    per = perLine(per)
+    local out = {}
+    for _, n in ipairs(runs) do
+        for i = 1, n do out[#out + 1] = i == 1 or #out % per == 0 end
+    end
+    return out
+end
+
+local CORNER_POINT = { TopLeft = "TOPLEFT", TopRight = "TOPRIGHT", BottomLeft = "BOTTOMLEFT", BottomRight = "BOTTOMRIGHT" }
+local FACING = {
+    Left = { TopRight = "TOPLEFT", BottomRight = "BOTTOMLEFT" },
+    Right = { TopLeft = "TOPRIGHT", BottomLeft = "BOTTOMRIGHT" },
+    Above = { BottomLeft = "TOPLEFT", BottomRight = "TOPRIGHT" },
+    Below = { TopLeft = "BOTTOMLEFT", TopRight = "BOTTOMRIGHT" },
+}
+
+function LayoutGrid.MemberAnchor(side, corner, away, shift)
+    local point, relative = CORNER_POINT[corner], FACING[side][corner]
+    if side == "Left" then return point, relative, -away, shift end
+    if side == "Right" then return point, relative, away, shift end
+    if side == "Above" then return point, relative, shift, away end
+    return point, relative, shift, -away
+end
+
+local TAB_GAP, TAB_GAP_ACROSS = 6, 4
+
+function LayoutGrid.Line(tab, entries, across, right, bottom)
+    local e = { x = 0, y = 0, w = entries.w, h = entries.h }
+    if not tab then return e.w, e.h, nil, e end
+    local t
+    local w, h
+    if across then
+        w, h = math.max(entries.w, tab.w), tab.h + TAB_GAP_ACROSS + entries.h
+        t = { x = 0, y = 0, w = w, h = tab.h }
+        if bottom then t.y = h - tab.h else e.y = tab.h + TAB_GAP_ACROSS end
+        if right then e.x = w - entries.w end
+    else
+        w, h = tab.w + TAB_GAP + entries.w, math.max(entries.h, tab.h)
+        t = { x = 0, y = 0, w = tab.w, h = h }
+        if right then t.x = w - tab.w else e.x = tab.w + TAB_GAP end
+        if bottom then e.y = h - entries.h end
+    end
+    return w, h, t, e
 end
 
 local roleRank = {}
@@ -86,9 +200,10 @@ function LayoutGrid.Sort(states, shape, roleOrder, out)
 end
 
 function LayoutGrid.Next(states, roleOrder)
-    rankRoles(states, roleOrder or {})    local best
+    rankRoles(states, roleOrder or {})
+    local best
     for i, s in ipairs(states) do
-        if s.ready and not s.dead and (not best or roleRank[s] < roleRank[states[best]]) then best = i end
+        if s.ready and not s.dead and not s.unknown and (not best or roleRank[s] < roleRank[states[best]]) then best = i end
     end
     clearRanks(states)
     return best

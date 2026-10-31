@@ -34,7 +34,7 @@ ns.Window.Register("layout", function(page)
             get = function() return ns.DB.placement[t] end,
             set = function(value)
                 ns.DB.placement[t] = value
-                ns.Display.Rebuild()
+                ns.Display.Changed()
             end,
         })
     end

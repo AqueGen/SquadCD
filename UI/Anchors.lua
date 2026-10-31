@@ -97,7 +97,7 @@ end
 function Anchors.Stack()
     if not stack then
         stack = CreateFrame("Frame", "HuddleStack", UIParent, "BackdropTemplate")
-        ns.Theme.MakeMovable(stack, function() return ns.DB.panel.locked end, function(point)
+        ns.Theme.MakeMovable(stack, function() return ns.DB.layout.panel.locked end, function(point)
             ns.DB.row.point = point
             Anchors.PlaceStack()
         end)
@@ -115,4 +115,10 @@ function Anchors.FrameFor(unit)
     local f = found[unit]
     if f then return f, false end
     return Anchors.Stack(), true
+end
+
+function Anchors.SizeOf(frame)
+    local w, h = plain(frame, "GetWidth"), plain(frame, "GetHeight")
+    if type(w) ~= "number" or type(h) ~= "number" then return 0, 0 end
+    return w, h
 end

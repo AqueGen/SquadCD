@@ -641,4 +641,59 @@ describe("LayoutModel fix round 1", function()
         L.Normalize(d)
         assert.are.same({ x = 1, y = 2 }, d.sections[1].pos)
     end)
+
+    describe("line shape and look", function()
+        local own = { axis = "Columns", perLine = 2, origin = "BottomRight", sort = "ReadyFirst" }
+
+        it("a section in the one panel uses the panel shape", function()
+            local L = load()
+            local d = L.Defaults()
+            d.sections[2].shape = own
+            assert.is_false(L.OwnWindow(d, d.sections[2]))
+            assert.are.same(d.panelShape, L.LineShape(d, d.sections[2], "Control"))
+        end)
+
+        it("a section in its own window uses its own shape, or the panel shape without one", function()
+            local L = load()
+            local d = L.Defaults()
+            d.sections[2].shape, d.sections[2].ownWindow = own, true
+            assert.is_true(L.OwnWindow(d, d.sections[2]))
+            assert.are.same(own, L.LineShape(d, d.sections[2], "Control"))
+            d.overlay = "Windows"
+            assert.is_true(L.OwnWindow(d, d.sections[3]))
+            assert.are.same(d.panelShape, L.LineShape(d, d.sections[3], "External"))
+        end)
+
+        it("the kick line keeps its own shape in the one panel, at the panel origin", function()
+            local L = load()
+            local d = L.Defaults()
+            d.kickStyle = "Icons"
+            d.sections[1].shape = own
+            assert.are.same({ axis = "Columns", perLine = 2, origin = "TopLeft", sort = "ReadyFirst" }, L.LineShape(d, d.sections[1], "Kick"))
+            assert.are.equal("BottomRight", own.origin)
+        end)
+
+        it("kick bars are one per line", function()
+            local L = load()
+            local d = L.Defaults()
+            assert.is_true(L.Bars(d, "Kick"))
+            assert.is_false(L.Bars(d, "Control"))
+            local s = L.LineShape(d, d.sections[1], "Kick")
+            assert.are.same({ "Rows", 1 }, { s.axis, s.perLine })
+            d.kickStyle = "Icons"
+            assert.is_false(L.Bars(d, "Kick"))
+            assert.are.equal(6, L.LineShape(d, d.sections[1], "Kick").perLine)
+        end)
+
+        it("look is the container's own or the panel or member look", function()
+            local L = load()
+            local d = L.Defaults()
+            assert.are.equal(d.panelLook, L.LookOf(d, d.sections[1]))
+            assert.are.equal(d.memberLook, L.LookOf(d, d.groups[1], true))
+            local mine = { iconSize = 30 }
+            d.sections[1].look, d.groups[1].look = mine, mine
+            assert.are.equal(mine, L.LookOf(d, d.sections[1]))
+            assert.are.equal(mine, L.LookOf(d, d.groups[1], true))
+        end)
+    end)
 end)

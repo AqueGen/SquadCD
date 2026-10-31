@@ -4,22 +4,21 @@ local Rows = {}
 ns.Rows = Rows
 
 local T = ns.Theme
-local SLOT_W, PAD = 60, 4
+local Grid, Model = ns.LayoutGrid, ns.LayoutModel
+local SLOT_W, PAD, ICON_GAP, RING, TAB_GAP, STACK_GAP = 60, 4, 2, 2, 2, 2
+local TAB = { None = 0, Glyph = 11, Short = 30 }
 
-local SIDES = {
-    LEFT = { "RIGHT", "LEFT", -1, 0, "RIGHT", -1 },
-    RIGHT = { "LEFT", "RIGHT", 1, 0, "LEFT", 1 },
-    ABOVE = { "BOTTOMLEFT", "TOPLEFT", 0, 1, "LEFT", 1 },
-    BELOW = { "TOPLEFT", "BOTTOMLEFT", 0, -1, "LEFT", 1 },
-}
+local members, slots, active = {}, {}, 0
 
-local rows, slots, active = {}, {}, 0
-
-local function row(i)
-    if not rows[i] then
-        rows[i] = { frame = CreateFrame("Frame", nil, UIParent), icons = {} }
+local function holder(i, gi)
+    members[i] = members[i] or {}
+    local g = members[i][gi]
+    if not g then
+        g = { frame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate"), icons = {}, tabs = {} }
+        g.frame:SetFrameStrata("MEDIUM")
+        members[i][gi] = g
     end
-    return rows[i]
+    return g
 end
 
 local function slot(stack, i)
@@ -34,7 +33,7 @@ local function slot(stack, i)
     return slots[i]
 end
 
-local function layoutStack(stacked, size, spacing)
+local function layoutStack(stacked)
     local stack = ns.Anchors.Stack()
     local byGuid = {}
     for _, f in ipairs(slots) do f:Hide() end
@@ -43,76 +42,164 @@ local function layoutStack(stacked, size, spacing)
         return byGuid
     end
     T.Panel(stack)
-    stack:EnableMouse(not ns.DB.panel.locked)
-    stack:SetSize(SLOT_W + PAD * 2, #stacked * (size + spacing) - spacing + PAD * 2)
-    ns.Anchors.PlaceStack()
-    for i, m in ipairs(stacked) do
+    stack:EnableMouse(not ns.DB.layout.panel.locked)
+    local y = PAD
+    for i, s in ipairs(stacked) do
         local f = slot(stack, i)
-        f:SetSize(SLOT_W, size)
+        f:SetSize(SLOT_W, s.height)
         f:ClearAllPoints()
-        f:SetPoint("TOPLEFT", PAD, -PAD - (i - 1) * (size + spacing))
-        f.name:SetText(ns.LayoutRules.ShortName(m.name or m.class, 8))
-        f.name:SetTextColor(T.ClassColor(m.class))
+        f:SetPoint("TOPLEFT", PAD, -y)
+        f.name:SetText(ns.LayoutRules.ShortName(s.member.name or s.member.class, 8))
+        f.name:SetTextColor(T.ClassColor(s.member.class))
         f:Show()
-        byGuid[m.guid] = f
+        byGuid[s.member.guid] = f
+        y = y + s.height + STACK_GAP
     end
+    stack:SetSize(SLOT_W + PAD * 2, y - STACK_GAP + PAD)
+    ns.Anchors.PlaceStack()
     stack:Show()
     return byGuid
 end
 
-function Rows.Build(entries)
-    local cfg = ns.DB.row
-    local size, spacing = cfg.size, cfg.spacing
-    local side = SIDES[cfg.side] or SIDES.LEFT
-    local stacked = {}
-    for _, e in ipairs(entries) do
-        local anchor, isStack = ns.Anchors.FrameFor(e.member.unit)
-        e.anchor = not isStack and anchor or nil
-        if isStack then stacked[#stacked + 1] = e.member end
+local function measure(row, g, gi, layout, isStack, fw, fh)
+    local look = Model.LookOf(layout, g, true)
+    local size = look.iconSize
+    local side = g.side
+    if isStack and (side == "Above" or side == "Below") then side = "Right" end
+    local counts, total = {}, 0
+    for k, run in ipairs(row.groups[gi]) do
+        counts[k] = #run.spells
+        total = total + #run.spells
     end
-    local stackSlots = layoutStack(stacked, size, spacing)
+    if total == 0 then return nil end
+    local tabW = TAB[look.labels] or 0
+    local lead = tabW > 0 and tabW + TAB_GAP or 0
+    local shape = g.shape
+    if layout.memberFit and not isStack then
+        shape = Grid.FitShape(shape, side, total, size, size, lead, fw, fh, ICON_GAP)
+    end
+    local tabs = Grid.Tabs(counts, shape.perLine)
+    local cells = {}
+    for k = 1, total do cells[k] = { w = size + (tabs[k] and lead or 0), h = size } end
+    local rects, w, h = Grid.PlaceMemberRow(cells, shape, side, isStack and 0 or fh, ICON_GAP)
+    return {
+        gi = gi, group = g, look = look, size = size, side = side, tabW = tabW, tabs = tabs, rects = rects,
+        corner = Grid.MemberOrigin(shape.origin, side), w = w + 2 * RING, h = h + 2 * RING,
+        offsetX = g.offsetX, offsetY = g.offsetY,
+    }
+end
 
-    for i = #entries + 1, #rows do rows[i].frame:Hide() end
-    active = #entries
-    local step = size + spacing
-    for i, e in ipairs(entries) do
-        local r = row(i)
-        local anchor = e.anchor or stackSlots[e.member.guid]
-        local dir = e.anchor and side or SIDES.RIGHT
-        local n = math.min(#e.spells, cfg.max)
-        r.guid, r.count, r.own = e.member.guid, n, e.own
-        r.frame:ClearAllPoints()
-        r.frame:SetSize(math.max(1, n * step - spacing), size)
-        r.frame:SetPoint(dir[1], anchor, dir[2], dir[3] * (spacing + 1), dir[4] * (spacing + 1))
-        for k = 1, n do
-            local icon = r.icons[k] or ns.Icon.New(r.frame)
-            r.icons[k] = icon
-            icon:SetSpell(e.spells[k], e.member, size)
+local function draw(i, m, row, anchor, away)
+    local holderOf = holder(i, m.gi)
+    local f = holderOf.frame
+    T.Backdrop(f, m.look, false)
+    f:SetSize(m.w, m.h)
+    f:ClearAllPoints()
+    local beside = m.side == "Left" or m.side == "Right"
+    local point, relative, x, y = Grid.MemberAnchor(m.side, m.corner, away, beside and m.offsetY or m.offsetX)
+    f:SetPoint(point, anchor, relative, x, y)
+    local mirrored = m.corner == "TopRight" or m.corner == "BottomRight"
+    local k = 0
+    local used = 0
+    for _, run in ipairs(row.groups[m.gi]) do
+        for _, spell in ipairs(run.spells) do
+            k = k + 1
+            local r = m.rects[k]
+            local icon = holderOf.icons[k] or ns.Icon.New(f)
+            holderOf.icons[k] = icon
+            icon:SetSpell(spell, row.member, m.size)
+            icon.guid, icon.own = row.member.guid, row.own
+            local iconX = r.x
+            if m.tabs[k] and m.tabW > 0 then
+                used = used + 1
+                local tab = holderOf.tabs[used] or ns.Icon.NewTab(f)
+                holderOf.tabs[used] = tab
+                tab:Set(run.type, m.look.labels)
+                tab.frame:SetSize(m.tabW, m.size)
+                tab.frame:ClearAllPoints()
+                local tabX = mirrored and r.x + m.size + TAB_GAP or r.x
+                if not mirrored then iconX = r.x + m.tabW + TAB_GAP end
+                tab.frame:SetPoint("TOPLEFT", f, "TOPLEFT", RING + tabX, -(RING + r.y))
+                tab.text:ClearAllPoints()
+                tab.text:SetPoint("CENTER", tab.frame, "CENTER", 0, 0)
+                tab.frame:Show()
+            end
             icon.frame:ClearAllPoints()
-            icon.frame:SetPoint(dir[5], r.frame, dir[5], dir[6] * (k - 1) * step, 0)
+            icon.frame:SetPoint("TOPLEFT", f, "TOPLEFT", RING + iconX, -(RING + r.y))
             icon.frame:Show()
         end
-        for k = n + 1, #r.icons do r.icons[k].frame:Hide() end
-        r.frame:SetShown(n > 0)
+    end
+    for j = k + 1, #holderOf.icons do holderOf.icons[j].frame:Hide() end
+    for j = used + 1, #holderOf.tabs do holderOf.tabs[j].frame:Hide() end
+    holderOf.count = k
+    f:Show()
+end
+
+local function hideMember(i, keep)
+    for gi, g in pairs(members[i] or {}) do
+        if not keep[gi] then
+            g.frame:Hide()
+            g.count = 0
+        end
+    end
+end
+
+function Rows.Build(rows)
+    local layout = ns.DB.layout
+    local plan, stacked = {}, {}
+    for i, row in ipairs(rows) do
+        local anchor, isStack = ns.Anchors.FrameFor(row.member.unit)
+        local fw, fh = 0, 0
+        if not isStack then fw, fh = ns.Anchors.SizeOf(anchor) end
+        local list, height = {}, 0
+        for gi, g in ipairs(layout.groups) do
+            if row.groups[gi] then
+                local m = measure(row, g, gi, layout, isStack, fw, fh)
+                if m then
+                    list[#list + 1] = m
+                    height = math.max(height, m.h)
+                end
+            end
+        end
+        plan[i] = { anchor = not isStack and anchor or nil, list = list }
+        if isStack then stacked[#stacked + 1] = { member = row.member, height = math.max(height, layout.memberLook.iconSize) } end
+    end
+    local stackSlots = layoutStack(stacked)
+    for i = #rows + 1, #members do hideMember(i, {}) end
+    active = #rows
+    for i, row in ipairs(rows) do
+        local p = plan[i]
+        local anchor = p.anchor or stackSlots[row.member.guid]
+        local keep = {}
+        local away = {}
+        for _, side in ipairs({ "Left", "Right", "Above", "Below" }) do
+            for k, v in pairs(Grid.MemberStack(p.list, side)) do away[k] = v end
+        end
+        for k, m in ipairs(p.list) do
+            draw(i, m, row, anchor, away[k])
+            keep[m.gi] = true
+        end
+        hideMember(i, keep)
     end
 end
 
 function Rows.Update(tracker, now, sight)
     for i = 1, active do
-        local r = rows[i]
-        for k = 1, r.count do
-            local icon = r.icons[k]
-            local state = tracker:State(r.guid, icon.spell.id, icon.buf)
-            if state then
-                state.unknown = state.ready and ns.LayoutRules.Unknown(icon.spell.id, r.own, sight.plain, sight.secret)
+        for _, g in pairs(members[i] or {}) do
+            for k = 1, g.count or 0 do
+                local icon = g.icons[k]
+                local state = tracker:State(icon.guid, icon.spell.id, icon.buf)
+                if state then
+                    state.unknown = state.ready and ns.LayoutRules.Unknown(icon.spell.id, icon.own, sight.plain, sight.secret)
+                end
+                icon:Update(state, now, sight.timers)
             end
-            icon:Update(state, now)
         end
     end
 end
 
 function Rows.Hide()
-    for _, r in ipairs(rows) do r.frame:Hide() end
+    for i in pairs(members) do hideMember(i, {}) end
     active = 0
     ns.Anchors.Stack():Hide()
 end

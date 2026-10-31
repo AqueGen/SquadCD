@@ -9,8 +9,13 @@ LayoutRules.TYPES = {
 
 LayoutRules.LABELS = {
     Personal = "Personal", Burst = "Burst", Racial = "Racial", Potion = "Potion", External = "External",
-    Kick = "Kick", Stun = "Stun", CC = "CC", Group = "Raid defensives", Dispel = "Dispel", Purge = "Purge",
+    Kick = "Kick", Control = "Control", Stun = "Stun", CC = "CC", Group = "Raid defensives", Dispel = "Dispel", Purge = "Purge",
     Movement = "Movement",
+}
+
+LayoutRules.SHORT = {
+    Personal = "Pers", Burst = "Burst", Racial = "Race", Potion = "Pot", External = "Ext", Kick = "Kick",
+    Control = "Ctrl", Stun = "Stun", CC = "CC", Group = "Raid", Dispel = "Disp", Purge = "Purge", Movement = "Move",
 }
 
 local rank = {}
@@ -59,18 +64,45 @@ function LayoutRules.Catalog(class)
     return list
 end
 
-function LayoutRules.Split(spells, placement)
-    local row, panel = {}, {}
-    for _, s in ipairs(spells) do
-        local where = placement[s.type]
-        if where == "Row" then
-            row[#row + 1] = s
-        elseif where == "Panel" then
-            panel[s.type] = panel[s.type] or {}
-            table.insert(panel[s.type], s)
+function LayoutRules.Route(layout, members)
+    local Model = ns.LayoutModel
+    local byType, rows = {}, {}
+    for i, m in ipairs(members) do
+        local perGroup = {}
+        for _, spell in ipairs(m.spells) do
+            local t = Model.VisibleTypeOf(layout, spell.type)
+            local place, at = Model.PlaceOf(layout, t)
+            if place == "panel" then
+                byType[t] = byType[t] or {}
+                table.insert(byType[t], { member = m.member, spell = spell, own = m.own })
+            elseif place == "member" then
+                perGroup[at] = perGroup[at] or {}
+                perGroup[at][t] = perGroup[at][t] or {}
+                table.insert(perGroup[at][t], spell)
+            end
+        end
+        local groups = {}
+        for gi, g in ipairs(layout.groups) do
+            if g.shown then
+                local runs = {}
+                for _, t in ipairs(Model.TypeOrder(layout, g)) do
+                    local list = perGroup[gi] and perGroup[gi][t]
+                    if list then runs[#runs + 1] = { type = t, spells = list } end
+                end
+                groups[gi] = runs
+            end
+        end
+        rows[i] = { member = m.member, own = m.own, groups = groups }
+    end
+    local lines = {}
+    for _, s in ipairs(layout.sections) do
+        if s.shown then
+            for _, t in ipairs(Model.TypeOrder(layout, s)) do
+                if byType[t] then lines[#lines + 1] = { section = s, type = t, entries = byType[t] } end
+            end
         end
     end
-    return row, panel
+    return lines, rows
 end
 
 local POTION = { track = "buff", buffs = {} }
@@ -87,12 +119,6 @@ function LayoutRules.Unknown(spellId, own, plain, secret)
         return true
     end
     return false
-end
-
-local READY_FIRST = { sort = "ReadyFirst" }
-
-function LayoutRules.Order(states, out)
-    return ns.LayoutGrid.Sort(states, READY_FIRST, nil, out)
 end
 
 function LayoutRules.FormatRemaining(remaining)

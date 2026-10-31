@@ -4,7 +4,6 @@ local helpers = dofile(here .. "/helpers.lua")
 describe("LayoutRules", function()
     local ns = helpers.load({ "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/LayoutGrid.lua", "Logic/LayoutRules.lua" })
     local R = ns.LayoutRules
-    local placement = ns.DEFAULTS.placement
 
     local function ids(list)
         local out = {}
@@ -12,25 +11,66 @@ describe("LayoutRules", function()
         return out
     end
 
-    it("split by placement", function()
-        local spells = {
-            { id = 1, type = "Personal" },
-            { id = 2, type = "Kick" },
-            { id = 3, type = "External" },
-            { id = 4, type = "Kick" },
-            { id = "potion", type = "Potion" },
-        }
-        local row, panel = R.Split(spells, placement)
-        assert.are.same({ 1, "potion" }, ids(row))
-        assert.are.same({ 2, 4 }, ids(panel.Kick))
-        assert.are.same({ 3 }, ids(panel.External))
-    end)
+    local function order(states, out)
+        return ns.LayoutGrid.Sort(states, { sort = "ReadyFirst" }, nil, out)
+    end
 
-    it("off types dropped", function()
-        local spells = { { id = 1, type = "Dispel" }, { id = 2, type = "Movement" }, { id = 3, type = "Unknown" } }
-        local row, panel = R.Split(spells, placement)
-        assert.are.same({}, row)
-        assert.are.same({}, panel)
+    describe("Route", function()
+        local m1, m2 = { guid = "A" }, { guid = "B" }
+        local function spell(id, type) return { id = id, type = type, name = tostring(id) } end
+        local function input()
+            return {
+                { member = m1, own = true, spells = {
+                    spell(1, "Personal"), spell(2, "Kick"), spell(3, "Stun"), spell(4, "CC"), spell(5, "External"), spell(6, "Dispel"),
+                } },
+                { member = m2, own = false, spells = { spell(7, "Kick") } },
+            }
+        end
+        local function lineIds(line)
+            local out = {}
+            for _, e in ipairs(line.entries) do out[#out + 1] = e.spell.id end
+            return out
+        end
+
+        it("panel types make one line per type in section order, others go to member groups, off types drop", function()
+            local layout = ns.LayoutModel.Defaults()
+            local lines, rows = R.Route(layout, input())
+            local types = {}
+            for i, l in ipairs(lines) do types[i] = l.type end
+            assert.are.same({ "Kick", "Control", "External" }, types)
+            assert.are.same({ 2, 7 }, lineIds(lines[1]))
+            assert.are.same({ 3, 4 }, lineIds(lines[2]))
+            assert.are.equal(layout.sections[2], lines[2].section)
+            assert.are.equal(m2, lines[1].entries[2].member)
+            assert.is_false(lines[1].entries[2].own)
+            assert.are.equal(1, #rows[1].groups[1])
+            assert.are.equal("Personal", rows[1].groups[1][1].type)
+            assert.are.same({ 1 }, ids(rows[1].groups[1][1].spells))
+            assert.are.same({}, rows[2].groups[1])
+            assert.are.equal(m2, rows[2].member)
+        end)
+
+        it("split shows stun and CC on lines of their own", function()
+            local layout = ns.LayoutModel.SetSplit(ns.LayoutModel.Defaults(), true)
+            local lines = R.Route(layout, input())
+            assert.are.same({ "Stun", "CC" }, { lines[2].type, lines[3].type })
+        end)
+
+        it("hidden sections and groups show nothing", function()
+            local layout = ns.LayoutModel.Defaults()
+            layout.sections[1].shown, layout.groups[1].shown = false, false
+            local lines, rows = R.Route(layout, input())
+            assert.are.equal("Control", lines[1].type)
+            assert.is_nil(rows[1].groups[1])
+        end)
+
+        it("runs follow the group type order", function()
+            local layout = ns.LayoutModel.Defaults()
+            ns.LayoutModel.SetPlace(layout, "External", "member")
+            layout.groups[1].shape.typeOrder = { "External", "Personal" }
+            local _, rows = R.Route(layout, input())
+            assert.are.same({ "External", "Personal" }, { rows[1].groups[1][1].type, rows[1].groups[1][2].type })
+        end)
     end)
 
     it("order ready first", function()
@@ -41,7 +81,7 @@ describe("LayoutRules", function()
             { key = "d", ready = true, remaining = 0, maybe = false },
         }
         local keys = {}
-        for _, s in ipairs(R.Order(states)) do keys[#keys + 1] = s.key end
+        for _, s in ipairs(order(states)) do keys[#keys + 1] = s.key end
         assert.are.same({ "b", "d", "c", "a" }, keys)
     end)
 
@@ -52,7 +92,7 @@ describe("LayoutRules", function()
             { key = "ready", ready = true, remaining = 0, maybe = false },
         }
         local keys = {}
-        for _, s in ipairs(R.Order(states)) do keys[#keys + 1] = s.key end
+        for _, s in ipairs(order(states)) do keys[#keys + 1] = s.key end
         assert.are.same({ "ready", "sure", "maybe" }, keys)
     end)
 
@@ -64,7 +104,7 @@ describe("LayoutRules", function()
             { key = "coolMaybe", ready = false, remaining = 1, maybe = true },
         }
         local keys = {}
-        for _, s in ipairs(R.Order(states)) do keys[#keys + 1] = s.key end
+        for _, s in ipairs(order(states)) do keys[#keys + 1] = s.key end
         assert.are.same({ "ready", "readyMaybe", "cool", "coolMaybe" }, keys)
     end)
 
@@ -75,7 +115,7 @@ describe("LayoutRules", function()
             { key = "ready", ready = true, remaining = 0 },
         }
         local keys = {}
-        for _, s in ipairs(R.Order(states)) do keys[#keys + 1] = s.key end
+        for _, s in ipairs(order(states)) do keys[#keys + 1] = s.key end
         assert.are.same({ "ready", "unknown", "cool" }, keys)
     end)
 
@@ -116,20 +156,20 @@ describe("LayoutRules", function()
         local states = {}
         for i = 1, 12 do states[i] = { key = i, ready = true, remaining = 0, maybe = false } end
         local keys = {}
-        for _, s in ipairs(R.Order(states)) do keys[#keys + 1] = s.key end
+        for _, s in ipairs(order(states)) do keys[#keys + 1] = s.key end
         assert.are.same({ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }, keys)
     end)
 
     it("order refills a given table", function()
         local a, b = { ready = false, remaining = 5 }, { ready = true, remaining = 0 }
         local out = { "stale", "stale", "stale" }
-        assert.are.equal(out, R.Order({ a, b }, out))
+        assert.are.equal(out, order({ a, b }, out))
         assert.are.same({ b, a }, out)
     end)
 
     it("order keeps input untouched", function()
         local states = { { key = "a", ready = false, remaining = 9 }, { key = "b", ready = true, remaining = 0 } }
-        R.Order(states)
+        order(states)
         assert.are.equal("a", states[1].key)
     end)
 

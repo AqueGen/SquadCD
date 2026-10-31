@@ -59,7 +59,7 @@ local function NewRow(list)
     row.check:SetPoint("LEFT")
     row.check:SetScript("OnClick", function(self)
         if self:GetChecked() then ns.DB.spells[row.id] = nil else ns.DB.spells[row.id] = false end
-        ns.Display.Rebuild()
+        ns.Display.Changed()
     end)
     row.icon = row:CreateTexture(nil, "ARTWORK")
     row.icon:SetSize(18, 18)

@@ -105,6 +105,16 @@ function Docking.Clamp(rect, screen)
     return x, y
 end
 
+function Docking.FromPoint(point, size, screen)
+    local p = point[1] or "CENTER"
+    local fx = p:find("LEFT") and 0 or p:find("RIGHT") and 1 or 0.5
+    local fy = p:find("TOP") and 0 or p:find("BOTTOM") and 1 or 0.5
+    return {
+        x = screen.x + fx * (screen.w - size.w) + (point[2] or 0),
+        y = screen.y + fy * (screen.h - size.h) - (point[3] or 0),
+    }
+end
+
 local function placed(pos, target, size, gap)
     local x, y
     if pos.side == "Right" then x, y = right(target) + gap, target.y + pos.offset

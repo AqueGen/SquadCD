@@ -10,7 +10,7 @@ local function Setting(section, key, after)
         get = function() return ns.DB[section][key] end,
         set = function(value)
             ns.DB[section][key] = value
-            ns.Display.Rebuild()
+            ns.Display.Changed()
             if after then after() end
         end,
     }
@@ -41,7 +41,7 @@ ns.Window.Register("look", function(page)
     panel:Slider(With(Setting("panel", "size"), { label = "Icon size", min = 16, max = 48 }))
     panel:Check({
         label = "Lock panel",
-        get = function() return ns.DB.panel.locked end,
+        get = function() return ns.DB.layout.panel.locked end,
         set = function(value)
             ns.Panel.SetLocked(value)
             ns.Window.Refresh()

@@ -183,4 +183,24 @@ describe("Docking", function()
             end
         end)
     end)
+
+    describe("FromPoint", function()
+        local screen = { x = 0, y = 0, w = 1000, h = 800 }
+        local size = { w = 100, h = 40 }
+
+        it("a CENTER point gives the top-left corner, y down", function()
+            assert.are.same({ x = 450, y = 580 }, D.FromPoint({ "CENTER", 0, -200 }, size, screen))
+        end)
+
+        it("corner and edge points pin that corner or edge", function()
+            assert.are.same({ x = 10, y = 20 }, D.FromPoint({ "TOPLEFT", 10, -20 }, size, screen))
+            assert.are.same({ x = 890, y = 750 }, D.FromPoint({ "BOTTOMRIGHT", -10, 10 }, size, screen))
+            assert.are.same({ x = 0, y = 380 }, D.FromPoint({ "LEFT", 0, 0 }, size, screen))
+            assert.are.same({ x = 455, y = 0 }, D.FromPoint({ "TOP", 5, 0 }, size, screen))
+        end)
+
+        it("a missing offset counts as zero", function()
+            assert.are.same({ x = 450, y = 380 }, D.FromPoint({ "CENTER" }, size, screen))
+        end)
+    end)
 end)

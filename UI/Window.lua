@@ -41,7 +41,7 @@ local function Paint()
         entry.bar:SetShown(on)
     end
     demo:SetText(ns.Demo.Running() and "Stop demo" or "Demo")
-    unlock:SetText(ns.DB.panel.locked and "Unlock panel" or "Lock panel")
+    unlock:SetText(ns.DB.layout.panel.locked and "Unlock panel" or "Lock panel")
 end
 
 local function BuildMenu()
@@ -119,7 +119,7 @@ local function Build()
 
     local close = TitleButton(title, "X", 22, title, function() frame:Hide() end)
     unlock = TitleButton(title, "Unlock panel", 100, close, function()
-        ns.Panel.SetLocked(not ns.DB.panel.locked)
+        ns.Panel.SetLocked(not ns.DB.layout.panel.locked)
     end)
     demo = TitleButton(title, "Demo", 80, unlock, ns.Demo.Toggle)
 

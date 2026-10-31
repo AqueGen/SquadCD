@@ -22,6 +22,7 @@ local function tick()
     if isLive then tracker:Tick() end
     sight.plain = not isLive or ns.Sensors.Mode() == "plain"
     sight.secret = isLive and ns.EnemyDebuffs.SecretIds() or NONE
+    sight.timers = ns.DB.layout.timers
     local now = GetTime()
     ns.Rows.Update(tracker, now, sight)
     ns.Panel.Update(tracker, now, sight)
@@ -35,27 +36,15 @@ local function named(m)
 end
 
 local function collect(members)
-    local rows, byType = {}, {}
+    local list = {}
     local own = UnitGUID("player")
     if issecretvalue(own) then own = nil end
-    for _, raw in ipairs(members) do
+    for i, raw in ipairs(members) do
         local m = named(raw)
         local isOwn = m.guid == own or m.own or false
-        local spells = ns.LayoutRules.SpellsFor(m, isOwn, ns.DB.spells)
-        local row, panel = ns.LayoutRules.Split(spells, ns.DB.placement)
-        rows[#rows + 1] = { member = m, spells = row, own = isOwn }
-        for t, list in pairs(panel) do
-            byType[t] = byType[t] or {}
-            for _, spell in ipairs(list) do
-                table.insert(byType[t], { member = m, spell = spell, own = isOwn })
-            end
-        end
+        list[i] = { member = m, own = isOwn, spells = ns.LayoutRules.SpellsFor(m, isOwn, ns.DB.spells) }
     end
-    local groups = {}
-    for _, t in ipairs(ns.LayoutRules.TYPES) do
-        if byType[t] then groups[#groups + 1] = { type = t, entries = byType[t] } end
-    end
-    return rows, groups
+    return ns.LayoutRules.Route(ns.DB.layout, list)
 end
 
 local function onUpdate(_, dt)
@@ -83,9 +72,9 @@ function Display.Rebuild(late)
         return
     end
     if not ns.Anchors.Scan() and not forced then return end
-    local rows, groups = collect(members)
+    local lines, rows = collect(members)
     ns.Rows.Build(rows)
-    ns.Panel.Build(groups)
+    ns.Panel.Build(lines)
     tick()
     driver:SetScript("OnUpdate", onUpdate)
     if late then return end
@@ -94,6 +83,11 @@ function Display.Rebuild(late)
     C_Timer.After(LATE_RESCAN, function()
         if mine == generation and not InCombatLockdown() then Display.Rebuild(true) end
     end)
+end
+
+function Display.Changed()
+    if InCombatLockdown() then print("Huddle: the change applies when combat ends.") end
+    Display.Rebuild()
 end
 
 function Display.SetSource(src)

@@ -72,7 +72,7 @@ end
 function Icon:SetSpell(spell, member, size)
     self.spell, self.member = spell, member
     self.duration, self.maxCharges = resolve(spell, member)
-    self.start, self.text, self.charges, self.look, self.maybe, self.unread = nil, nil, nil, nil, nil, nil
+    self.start, self.text, self.charges, self.look, self.maybe, self.unread, self.next = nil, nil, nil, nil, nil, nil, nil
     self.frame:SetSize(size, size)
     self.tex:SetTexture(texture(spell))
     self.time:SetFont(T.FONT, math.max(8, math.floor(size * 0.42)), "OUTLINE")
@@ -87,9 +87,27 @@ end
 function Icon:SetLabel(text, r, g, b)
     self.label:SetText(text)
     self.label:SetTextColor(r, g, b)
+    self.label:ClearAllPoints()
+    if text ~= "" and self.label:GetStringWidth() > self.frame:GetWidth() then
+        self.label:SetPoint("TOPLEFT", self.frame, "BOTTOMLEFT", 0, -1)
+    else
+        self.label:SetPoint("TOP", self.frame, "BOTTOM", 0, -1)
+    end
+    return math.ceil(self.label:GetStringWidth())
 end
 
-function Icon:Update(state, now)
+function Icon:SetNext(on)
+    if on == self.next then return end
+    self.next = on
+    self:Border()
+end
+
+function Icon:Border()
+    local color = self.next and T.gold or self.maybe and T.maybe or T.border
+    self.frame:SetBackdropBorderColor(unpack(color))
+end
+
+function Icon:Update(state, now, timers)
     if not state then return end
     local cooling = not state.ready
     local unknown = not cooling and state.unknown or false
@@ -104,7 +122,7 @@ function Icon:Update(state, now)
         self.start = nil
         self.cd:Clear()
     end
-    local text = timer > 0 and ns.LayoutRules.FormatRemaining(timer) or ""
+    local text = timers ~= false and timer > 0 and ns.LayoutRules.FormatRemaining(timer) or ""
     if text ~= self.text then
         self.text = text
         self.time:SetText(text)
@@ -124,7 +142,7 @@ function Icon:Update(state, now)
     local maybe = state.maybe or false
     if maybe ~= self.maybe then
         self.maybe = maybe
-        self.frame:SetBackdropBorderColor(unpack(maybe and T.maybe or T.border))
+        self:Border()
         self.time:SetTextColor(unpack(maybe and T.maybe or WHITE))
     end
     local unread = state.talentsKnown == false
@@ -132,4 +150,32 @@ function Icon:Update(state, now)
         self.unread = unread
         self.dot:SetAlpha(unread and 1 or 0)
     end
+end
+
+local Tab = {}
+Tab.__index = Tab
+
+function Icon.NewTab(parent)
+    local f = CreateFrame("Frame", nil, parent)
+    local fill = f:CreateTexture(nil, "BACKGROUND")
+    fill:SetAllPoints(f)
+    local text = f:CreateFontString(nil, "OVERLAY")
+    text:SetFont(T.FONT, 9, "")
+    return setmetatable({ frame = f, fill = fill, text = text }, Tab)
+end
+
+function Icon.TabText(type, labels)
+    if labels == "Glyph" then return T.TYPES[type] and T.TYPES[type].glyph or "" end
+    if labels == "Short" then return ns.LayoutRules.SHORT[type] or type end
+    if labels == "Full" then return ns.LayoutRules.LABELS[type] or type end
+    return ""
+end
+
+function Tab:Set(type, labels)
+    local style = T.TYPES[type] or { fill = T.control, text = T.text }
+    self.fill:SetColorTexture(style.fill[1], style.fill[2], style.fill[3], 1)
+    self.text:SetFont(T.FONT, 9, "")
+    self.text:SetTextColor(unpack(style.text))
+    self.text:SetText(Icon.TabText(type, labels))
+    return math.ceil(self.text:GetStringWidth())
 end

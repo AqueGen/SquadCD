@@ -26,6 +26,7 @@ Game/Kicks.lua
 Game/Probe.lua
 UI/Theme.lua
 UI/Icon.lua
+UI/KickBars.lua
 UI/Anchors.lua
 UI/Rows.lua
 UI/Panel.lua
