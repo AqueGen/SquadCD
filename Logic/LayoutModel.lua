@@ -84,6 +84,7 @@ function LayoutModel.Defaults()
         timers = true,
         memberFit = true,
         kickStyle = "Bars",
+        showWhen = "always",
         rolePriority = copy(ROLES),
         classOrder = defaultClassOrder(),
     }
@@ -452,6 +453,7 @@ function LayoutModel.Normalize(layout)
     layout.version = 2
     layout.overlay = oneOf(layout.overlay, { "OnePanel", "Windows" }, d.overlay)
     layout.kickStyle = oneOf(layout.kickStyle, { "Bars", "Icons" }, d.kickStyle)
+    layout.showWhen = oneOf(layout.showWhen, { "always", "group" }, d.showWhen)
     layout.split = bool(layout.split, d.split)
     layout.timers = bool(layout.timers, d.timers)
     layout.memberFit = bool(layout.memberFit, d.memberFit)

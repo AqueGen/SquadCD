@@ -61,5 +61,5 @@ ns.Group.OnRoster = function(list)
     for _, m in ipairs(list) do
         if m.unit == "player" then me = m end
     end
-    if ns.Group.Mode() == "party" then OwnCasts.Enable() else OwnCasts.Disable() end
+    if ns.Group.Mode() == "party" or me then OwnCasts.Enable() else OwnCasts.Disable() end
 end

@@ -87,13 +87,15 @@ local function publish(list)
 end
 
 function Group.Refresh()
-    local party = Group.Mode() == "party"
+    local mode = Group.Mode()
+    local party = mode == "party"
+    local solo = mode == "solo" and ns.DB.layout.showWhen == "always"
     local list, why = {}, nil
-    if party then list, why = Group.Members() end
+    if party or solo then list, why = Group.Members() end
     if why and #current > 0 then list = current end
     current, status = list, why
     for _, event in ipairs(PARTY_EVENTS) do
-        if party then frame:RegisterEvent(event) else frame:UnregisterEvent(event) end
+        if party or solo then frame:RegisterEvent(event) else frame:UnregisterEvent(event) end
     end
     ns.Inspect.SetActive(party)
     local present = {}

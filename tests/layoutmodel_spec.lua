@@ -57,6 +57,7 @@ describe("LayoutModel.Defaults", function()
         assert.is_true(d.timers)
         assert.is_true(d.memberFit)
         assert.are.equal("Bars", d.kickStyle)
+        assert.are.equal("always", d.showWhen)
         assert.are.same(ALL, d.typeOrder)
         local ids = {}
         for i, s in ipairs(d.sections) do
@@ -500,6 +501,13 @@ describe("LayoutModel.Migrate", function()
         assertOnePlaceEach(L, d)
     end)
 
+    it("migrated v1 db shows cooldowns always", function()
+        local L = load()
+        local db = v1db()
+        L.Migrate(db)
+        assert.are.equal("always", db.layout.showWhen)
+    end)
+
     it("migrates a Control that was off in v1", function()
         local L = load()
         local db = v1db()
@@ -636,6 +644,20 @@ describe("LayoutModel fix round 1", function()
         assert.are.equal("OnePanel", d.overlay)
         assert.are.equal("Bars", d.kickStyle)
         assert.are.equal("Left", d.groups[1].side)
+    end)
+
+    it("Normalize keeps a valid showWhen and turns anything else into always", function()
+        local L = load()
+        local d = L.Defaults()
+        d.showWhen = "group"
+        L.Normalize(d)
+        assert.are.equal("group", d.showWhen)
+        d.showWhen = "raid"
+        L.Normalize(d)
+        assert.are.equal("always", d.showWhen)
+        d.showWhen = nil
+        L.Normalize(d)
+        assert.are.equal("always", d.showWhen)
     end)
 
     it("Normalize drops unknown and duplicate types, empty sections, and fixes orders", function()

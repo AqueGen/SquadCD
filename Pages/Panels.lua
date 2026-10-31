@@ -6,6 +6,7 @@ local Model = ns.LayoutModel
 
 local OVERLAY = { { value = "OnePanel", text = "One panel" }, { value = "Windows", text = "A window per section" } }
 local KICKS = { { value = "Bars", text = "Bars" }, { value = "Icons", text = "Icons" } }
+local SHOW_WHEN = { { value = "always", text = "Always" }, { value = "group", text = "Only in a group" } }
 
 local function layout()
     return ns.DB.layout
@@ -94,6 +95,14 @@ end
 
 ns.Window.Register("panels", function(page)
     local panels = page:Group("Panels")
+    panels:Segmented({
+        label = "Show cooldowns", options = SHOW_WHEN, width = 260, get = get("showWhen"),
+        set = function(value)
+            Parts.Edit(function(l) l.showWhen = value end)
+            ns.Group.Refresh()
+        end,
+    })
+    panels:Note("Always: your own cooldowns show even without a group, at your frame if one is shown. Only in a group: nothing shows until you join a party.")
     panels:Segmented({ label = "Sections show in", options = OVERLAY, width = 260, get = get("overlay"), set = set("overlay") })
     panels:Note("One panel: every section stacks in one panel, a section can still get its own window. A window per section: each section is its own panel.")
     panels:Button({

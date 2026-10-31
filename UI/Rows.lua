@@ -150,17 +150,17 @@ local function hideMember(i, keep)
     end
 end
 
-function Rows.Build(rows)
+function Rows.Build(rows, noStack)
     outlined = nil
     local layout = ns.DB.layout
     local plan, stacked = {}, {}
     for i, row in ipairs(rows) do
-        local anchor, isStack = ns.Anchors.FrameFor(row.member.unit)
+        local anchor, isStack = ns.Anchors.FrameFor(row.member.unit, noStack)
         local fw, fh = 0, 0
-        if not isStack then fw, fh = ns.Anchors.SizeOf(anchor) end
+        if anchor and not isStack then fw, fh = ns.Anchors.SizeOf(anchor) end
         local list, height = {}, 0
         for gi, g in ipairs(layout.groups) do
-            if row.groups[gi] then
+            if anchor and row.groups[gi] then
                 local m = measure(row, g, gi, layout, isStack, fw, fh)
                 if m then
                     list[#list + 1] = m

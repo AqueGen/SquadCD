@@ -83,6 +83,37 @@ describe("OwnCasts", function()
     end)
 end)
 
+describe("OwnCasts roster gate", function()
+    local ns, used
+
+    local function solo()
+        ns = helpers.load(FILES, {
+            UnitGUID = function() return "P" end,
+            IsInRaid = function() return false end,
+            IsInGroup = function() return false end,
+            InCombatLockdown = function() return false end,
+            C_DamageMeter = { GetCombatSessionSourceFromType = function() end },
+        })
+        used = {}
+        ns.tracker = { Used = function(_, guid, id) used[#used + 1] = { guid, id } end }
+    end
+
+    it("solo with the player in the roster tracks own casts", function()
+        solo()
+        ns.Group.OnRoster({ { guid = "P", unit = "player", class = "PALADIN", spec = 66 } })
+        helpers.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "c", 642)
+        assert.same({ { "P", 642 } }, used)
+    end)
+
+    it("solo with an empty roster tracks nothing", function()
+        solo()
+        ns.OwnCasts.Enable()
+        ns.Group.OnRoster({})
+        helpers.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "c", 642)
+        assert.equal(0, #used)
+    end)
+end)
+
 describe("Kicks.Deltas", function()
     local ns
     before_each(function() ns = helpers.load(FILES) end)

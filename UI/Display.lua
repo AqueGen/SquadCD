@@ -74,9 +74,10 @@ function Display.Rebuild(late)
         driver:SetScript("OnUpdate", nil)
         return
     end
-    if not ns.Anchors.Scan() and not forced then return end
+    local solo = ns.Group.Mode() == "solo"
+    if not ns.Anchors.Scan(solo) and not forced then return end
     local lines, rows = collect(members)
-    ns.Rows.Build(rows)
+    ns.Rows.Build(rows, solo and source == live)
     ns.Panel.Build(lines)
     ns.EditMode.Refresh()
     tick()
