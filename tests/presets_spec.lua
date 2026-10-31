@@ -3,7 +3,7 @@ local here = debug.getinfo(1, "S").source:match("^@(.*)[/\\][^/\\]*$") or "tests
 local helpers = dofile(here .. "/helpers.lua")
 
 local FILES = {
-    "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/LayoutGrid.lua", "Logic/LayoutRules.lua", "Logic/Preview.lua", "UI/Theme.lua",
+    "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/LayoutGrid.lua", "Logic/LayoutRules.lua", "Logic/Preview.lua", "Logic/Profiles.lua", "UI/Theme.lua",
     "UI/WidgetRules.lua", "UI/Widgets.lua", "UI/LayoutParts.lua", "UI/Window.lua", "Pages/Presets.lua",
 }
 for i = #helpers.VELVET, 1, -1 do table.insert(FILES, 1, helpers.VELVET[i]) end
@@ -63,6 +63,12 @@ describe("Presets page", function()
         ns.LayoutParts.Demo = function() end
         ns.LayoutParts.TypesTable = function() end
         ns.LayoutParts.PresetCards = function(_, opts) cards = opts end
+        ns.ProfileSwitch = {
+            Specs = function() return { { id = 65, name = "Holy" }, { id = 66, name = "Protection" } } end,
+            CurrentSpec = function() return 65 end,
+            KeyOf = function(id) return "Ann-Realm:" .. id end,
+            Use = function(name) ns.Profiles.Switch(ns.DB, name) end,
+        }
         ns.Window.Show("presets")
     end)
 
@@ -84,5 +90,15 @@ describe("Presets page", function()
         uiShown = true
         page.hooks.OnHide(page)
         assert.is_nil(ns.Preview.Showing())
+    end)
+    it("lists the class specs with the profile each one uses", function()
+        ns.Profiles.New(ns.DB, "Wide")
+        ns.Profiles.Assign(ns.DB, "Ann-Realm:65", "Wide")
+        ns.Window.Refresh()
+        local picks = {}
+        for _, f in ipairs(created) do
+            if f.text == "Wide" or f.text == "Default" then picks[#picks + 1] = f.text end
+        end
+        assert.are.same({ "Wide", "Default" }, picks)
     end)
 end)

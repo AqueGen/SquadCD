@@ -20,6 +20,7 @@ Logic/LayoutRules.lua
 Logic/Docking.lua
 Logic/MemberEdit.lua
 Logic/Preview.lua
+Logic/Profiles.lua
 Logic/Persist.lua
 Game/Inspect.lua
 Game/Group.lua
@@ -48,6 +49,7 @@ UI/EditMode.lua
 UI/MemberChip.lua
 UI/Window.lua
 UI/Wizard.lua
+UI/ProfileSwitch.lua
 Pages/About.lua
 Pages/Presets.lua
 Pages/Panels.lua

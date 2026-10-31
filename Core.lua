@@ -32,6 +32,7 @@ function ns.Defaults(db)
         if k ~= "layout" then defaults[k] = v end
     end
     fill(db, defaults)
+    if ns.Profiles then ns.Profiles.Init(db) end
     return db
 end
 
