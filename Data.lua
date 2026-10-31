@@ -32,7 +32,7 @@ ns.Spells[5484]={name="Howl of Terror",icon="ability_warlock_howlofterror",type=
 ns.Spells[5938]={name="Shiv",icon="inv_throwingknife_04",type="Purge",class="ROGUE",specs={},cd=30,charges=1,chargeCd=30,talentGated=true,chargeMods={[1267182]=-15},track="none"}
 ns.Spells[6552]={name="Pummel",icon="inv_gauntlets_04",type="Kick",class="WARRIOR",specs={},cd=15,cdMods={[382297]=-5,[383115]=-1},cdPct={[391271]=-10},track="kick"}
 ns.Spells[6789]={name="Mortal Coil",icon="ability_warlock_mortalcoil",type="CC",class="WARLOCK",specs={},cd=45,talentGated=true,debuffs={6789},track="debuff"}
-ns.Spells[6940]={name="Blessing of Sacrifice",icon="spell_holy_sealofsacrifice",type="External",class="PALADIN",specs={},cd=120,talentGated=true,cdMods={[384820]=-60},buffs={6940,199448,200327},dur=12,track="target"}
+ns.Spells[6940]={name="Blessing of Sacrifice",icon="spell_holy_sealofsacrifice",type="External",class="PALADIN",specs={},cd=120,talentGated=true,cdMods={[384820]=-60},modsBySpec={[384820]={[65]=-15}},buffs={6940,199448,200327},dur=12,track="target"}
 ns.Spells[7744]={name="Will of the Forsaken",icon="spell_shadow_raisedead",type="Racial",specs={},cd=120,races={5},buffs={7744},dur=0.1,track="buff"}
 ns.Spells[8122]={name="Psychic Scream",icon="spell_shadow_psychicscream",type="CC",class="PRIEST",specs={},cd=40,talentGated=true,cdMods={[196704]=-10},aoe=true,debuffs={8122},track="debuff"}
 ns.Spells[10060]={name="Power Infusion",icon="spell_holy_powerinfusion",type="Burst",class="PRIEST",specs={},cd=120,talentGated=true,buffs={10060,265314},dur=15,track="buff"}
@@ -145,7 +145,7 @@ ns.Spells[114051]={name="Ascendance",icon="inv_misc_questionmark",type="Burst",c
 ns.Spells[114052]={name="Ascendance",icon="inv_misc_questionmark",type="Group",class="SHAMAN",specs={},cd=180,talentGated=true,cdMods={[462440]=-60},buffs={114052,114051,147059,1219480,1252197},dur=15,track="buff"}
 ns.Spells[115078]={name="Paralysis",icon="ability_monk_paralysis",type="CC",class="MONK",specs={},cd=45,talentGated=true,cdMods={[344359]=-15},debuffs={115078},track="debuff"}
 ns.Spells[115176]={name="Zen Meditation",icon="ability_monk_zenmeditation",type="Personal",class="MONK",specs={},cd=300,talentGated=true,cdPct={[387035]=-25},buffs={115176,328682},dur=8,track="buff"}
-ns.Spells[115203]={name="Fortifying Brew",icon="ability_monk_fortifyingale_new",type="Personal",class="MONK",specs={},cd=360,talentGated=true,cdMods={[388813]=-30,[1258122]=-240,[1258138]=-240},specMods={[269]={1258122},[270]={1258138}},buffs={120954},dur=15,track="buff"}
+ns.Spells[115203]={name="Fortifying Brew",icon="ability_monk_fortifyingale_new",type="Personal",class="MONK",specs={},cd=360,talentGated=true,cdMods={[388813]=-30,[1258122]=-240,[1258138]=-240},specMods={[269]={1258122},[270]={1258138}},modsBySpec={[388813]={[268]=-120}},buffs={120954},dur=15,track="buff"}
 ns.Spells[115310]={name="Revival",icon="spell_monk_revival",type="Group",class="MONK",specs={},cd=180,charges=1,chargeCd=180,recovery=1,talentGated=true,chargeMods={[388551]=-30},buffs={356722},track="buff"}
 ns.Spells[115450]={name="Detox",icon="ability_rogue_imrovedrecuperate",type="Dispel",class="MONK",specs={270},cd=8,charges=1,chargeCd=8,track="none"}
 ns.Spells[115750]={name="Blinding Light",icon="ability_paladin_blindinglight",type="CC",class="PALADIN",specs={},cd=90,talentGated=true,cdMods={[469325]=-15},aoe=true,debuffs={105421},track="debuff"}

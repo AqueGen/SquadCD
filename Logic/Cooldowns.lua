@@ -15,13 +15,18 @@ local function rank(s, specId, talents, id)
     return 0
 end
 
+local function value(s, specId, id, v)
+    local bySpec = s.modsBySpec and s.modsBySpec[id]
+    return bySpec and bySpec[specId] or v
+end
+
 local function apply(s, specId, talents, base, mods, pcts)
     local cd = base
     for id, v in pairs(mods or {}) do
-        cd = cd + v * rank(s, specId, talents, id)
+        cd = cd + value(s, specId, id, v) * rank(s, specId, talents, id)
     end
     for id, v in pairs(pcts or {}) do
-        cd = cd * (1 + v * rank(s, specId, talents, id) / 100)
+        cd = cd * (1 + value(s, specId, id, v) * rank(s, specId, talents, id) / 100)
     end
     return cd
 end

@@ -35,6 +35,12 @@ describe("Cooldowns", function()
         assert.are.equal(48, C.Resolve(204021, 581, { [389732] = 1 }).cd)
     end)
 
+    it("talent value can differ per spec", function()
+        assert.are.equal(105, C.Resolve(6940, 65, { [384820] = 1 }).cd)
+        assert.are.equal(60, C.Resolve(6940, 66, { [384820] = 1 }).cd)
+        assert.are.equal(120, C.Resolve(6940, 65, {}).cd)
+    end)
+
     it("spec mod counts as rank 1", function()
         assert.are.equal(30, C.Resolve(57994, 264, {}).cd)
         assert.are.equal(12, C.Resolve(57994, 263, {}).cd)
