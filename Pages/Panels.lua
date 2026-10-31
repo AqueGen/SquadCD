@@ -130,4 +130,4 @@ ns.Window.Register("panels", function(page)
     local intro = page:Group("Sections")
     intro:Note("One block per section: its types, own window, shape and look. Add a type to a section here, or set a type to Panel on the Presets and types page to give it a section of its own.")
     for i = 1, #ns.LayoutRules.TYPES do sectionEditor(page, i) end
-end)
+end, { preview = "panel" })

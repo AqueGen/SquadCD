@@ -59,6 +59,7 @@ describe("Presets page", function()
         ns.Display = { Changed = function() end, HasMembers = function() return false end }
         ns.Demo = { Mode = function() return "Off" end, Running = function() return false end, Set = function() end }
         ns.EditMode = { Panels = function() return editing end, Members = function() return false end }
+        ns.PanelPreview = { Attach = function() end, Refresh = function() end }
         ns.LayoutParts.Demo = function() end
         ns.LayoutParts.TypesTable = function() end
         ns.LayoutParts.PresetCards = function(_, opts) cards = opts end

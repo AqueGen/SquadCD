@@ -15,7 +15,7 @@ function lib.PreviewLayout(contentW, columnMin, zoneMin, zoneMax)
 end
 
 function lib.FitScale(w, h, availW, availH)
-    if not w or not h or w <= 0 or h <= 0 then return 1 end
+    if not w or not h or w <= 0 or h <= 0 or not availW or availW <= 0 or not availH or availH <= 0 then return 1 end
     return math.min(1, availW / w, availH / h)
 end
 
@@ -31,11 +31,18 @@ function Pane:SetOff(text)
     self.offLine:SetShown(text ~= nil)
 end
 
+local function refit(pane)
+    local fit = pane.fitting
+    if not fit then return end
+    local stageW, stageH = pane.stage:GetSize()
+    fit.content:SetScale(lib.FitScale(fit.w, fit.h, stageW, stageH))
+end
+
 function Pane:Fit(content, w, h)
-    local stageW, stageH = self.stage:GetSize()
+    self.fitting = { content = content, w = w, h = h }
     content:ClearAllPoints()
     content:SetPoint("CENTER", self.stage, "CENTER", 0, 0)
-    content:SetScale(lib.FitScale(w, h, stageW, stageH))
+    refit(self)
 end
 
 function lib.PreviewPane(parent)
@@ -62,6 +69,7 @@ function lib.PreviewPane(parent)
     pane.stage:SetPoint("TOPLEFT", pane.caption, "BOTTOMLEFT", 0, -lib.GAP)
     pane.stage:SetPoint("BOTTOMRIGHT", pane, "BOTTOMRIGHT", -lib.PAD, lib.PAD + 14)
     pane.stage:SetClipsChildren(true)
+    pane.stage:SetScript("OnSizeChanged", function() refit(pane) end)
 
     pane.world = pane:CreateTexture(nil, "BACKGROUND", nil, 1)
     pane.world:SetAllPoints(pane.stage)

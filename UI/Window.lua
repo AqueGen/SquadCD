@@ -8,9 +8,11 @@ local UI = LibStub("LibVelvet-1.0")
 
 local Window = {}
 
-local DEFAULT_W, DEFAULT_H = 860, 560
+local DEFAULT_W, DEFAULT_H = 1000, 560
 local MIN_W, MIN_H = 820, 420
 local TITLE_H, MENU_W, ENTRY_H, GAP, PAD = 28, 150, 20, 4, 8
+local SCROLLBAR, BOTTOM = 30, 20
+local COLUMN_MIN, ZONE_MIN, ZONE_MAX, BAND_H = 520, 260, 380, 150
 local PAGES = {
     { key = "about", label = "What SquadCD does" },
     { key = "presets", label = "Presets and types" },
@@ -20,8 +22,8 @@ local PAGES = {
     { key = "status", label = "Status" },
 }
 
-local frame, menu, scroll, host, demo, unlock
-local pages, builders, entries = {}, {}, {}
+local frame, menu, scroll, host, demo, unlock, pane
+local pages, builders, entries, previews = {}, {}, {}, {}
 local current
 
 local function Saved()
@@ -59,6 +61,31 @@ local function SavePosition()
     local point, _, relativePoint, x, y = frame:GetPoint(1)
     local saved = Saved()
     saved.point, saved.relativePoint, saved.x, saved.y = point, relativePoint, x, y
+end
+
+local function Layout()
+    scroll:ClearAllPoints()
+    scroll:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -SCROLLBAR, BOTTOM)
+    if previews[current] ~= "panel" then
+        scroll:SetPoint("TOPLEFT", menu, "TOPRIGHT", PAD, -PAD)
+        pane:Hide()
+        return
+    end
+    local slots = UI.PreviewLayout(frame:GetWidth() - MENU_W - 2 * PAD - SCROLLBAR, COLUMN_MIN, ZONE_MIN, ZONE_MAX)
+    pane:ClearAllPoints()
+    if slots.mode == "side" then
+        scroll:SetPoint("TOPLEFT", menu, "TOPRIGHT", PAD, -PAD)
+        scroll:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -(PAD + slots.zoneW + UI.GAP + SCROLLBAR), BOTTOM)
+        pane:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -PAD, -(TITLE_H + PAD))
+        pane:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -PAD, BOTTOM)
+        pane:SetWidth(slots.zoneW)
+    else
+        scroll:SetPoint("TOPLEFT", menu, "TOPRIGHT", PAD, -(PAD + BAND_H + UI.GAP))
+        pane:SetPoint("TOPLEFT", menu, "TOPRIGHT", PAD, -PAD)
+        pane:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -PAD, -(TITLE_H + PAD))
+        pane:SetHeight(BAND_H)
+    end
+    pane:Show()
 end
 
 local function TitleButton(parent, text, width, anchor, onClick)
@@ -127,14 +154,19 @@ local function Build()
 
     scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
     scroll.scrollBarHideable = true
-    scroll:SetPoint("TOPLEFT", menu, "TOPRIGHT", PAD, -PAD)
-    scroll:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -30, PAD + 12)
     host = CreateFrame("Frame", nil, scroll)
     host:SetSize(1, 1)
     scroll:SetScrollChild(host)
     scroll:SetScript("OnSizeChanged", function(_, width)
         host:SetWidth(width)
         if current and pages[current] then pages[current]:Refresh() end
+    end)
+
+    pane = UI.PreviewPane(frame)
+    pane:Hide()
+    ns.PanelPreview.Attach(pane)
+    frame:SetScript("OnSizeChanged", function()
+        if current then Layout() end
     end)
 
     Widgets.Grip(frame, MIN_W, MIN_H, function()
@@ -146,8 +178,9 @@ local function Build()
     BuildMenu()
 end
 
-function Window.Register(key, build)
+function Window.Register(key, build, opts)
     builders[key] = build
+    previews[key] = opts and opts.preview
 end
 
 function Window.Refresh()
@@ -169,12 +202,14 @@ function Window.Show(key)
         pages[current].frame:Hide()
     end
     current = key
+    Layout()
     local page = pages[key] or BuildPage(key)
     page.frame:Show()
     frame:Show()
     Paint()
     page:Refresh()
     scroll:SetVerticalScroll(0)
+    if pane:IsShown() then ns.PanelPreview.Refresh() end
 end
 
 function Window.Hide()
