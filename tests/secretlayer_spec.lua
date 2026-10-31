@@ -14,7 +14,12 @@ local function stub(kind, made)
                 return rawget(self, "fill")
             end
             if k == "GetFrameLevel" then return 1 end
-            if k == "GetStringHeight" or k == "GetStringWidth" or k == "GetWidth" then return 10 end
+            if k == "GetStringHeight" then
+                local text = (rawget(self, "calls").SetText or { "" })[1]
+                local _, breaks = tostring(text):gsub("\n", "")
+                return 10 * (breaks + 1) + 3 * breaks
+            end
+            if k == "GetStringWidth" or k == "GetWidth" then return 10 end
         end
     end })
 end
@@ -72,7 +77,7 @@ describe("SecretLayer", function()
         local strip = layer.slots[1].coolText
         rawset(strip, "GetStringHeight", function() error("attempt to perform numeric conversion on a secret number value") end)
         layer:SetLook("tex", 30)
-        assert.equal(11, layer.line)
+        assert.equal(13, layer.line)
     end)
 
     it("hides timers when the setting is off", function()
