@@ -156,15 +156,10 @@ end
 local Tab = {}
 Tab.__index = Tab
 
-local TYPE_SPELLS = {
-    Personal = 45438, Burst = 31884, Racial = 28730, External = 33206, Kick = 1766, Control = 853, Stun = 408,
-    CC = 383121, Group = 62618, Dispel = 527, Purge = 19505, Movement = 77761,
-}
+local GLYPHS = "Interface\\AddOns\\SquadCD\\Media\\Types\\"
 
 function Icon.TypeIcon(type)
-    if type == "Potion" then return C_Item.GetItemIconByID(ns.Potions[1].item) end
-    local spell = ns.Spells[TYPE_SPELLS[type]]
-    return spell and "Interface\\Icons\\" .. spell.icon
+    return T.TYPES[type] and GLYPHS .. type or nil
 end
 
 function Icon.NewTab(parent)
@@ -174,9 +169,8 @@ function Icon.NewTab(parent)
     local text = f:CreateFontString(nil, "OVERLAY")
     text:SetFont(T.FONT, 9, "")
     local icon = f:CreateTexture(nil, "ARTWORK")
-    icon:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -1)
-    icon:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -1)
-    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    icon:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
+    icon:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
     icon:Hide()
     return setmetatable({ frame = f, fill = fill, text = text, icon = icon }, Tab)
 end
@@ -198,7 +192,8 @@ function Tab:Set(type, labels)
     self.icon:SetShown(icon)
     if icon then
         self.icon:SetTexture(Icon.TypeIcon(type))
-        self.icon:SetHeight(Icon.TAB_ICON - 2)
+        self.icon:SetVertexColor(unpack(style.text))
+        self.icon:SetHeight(Icon.TAB_ICON)
         return Icon.TAB_ICON
     end
     return math.ceil(self.text:GetStringWidth())

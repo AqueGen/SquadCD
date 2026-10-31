@@ -208,6 +208,30 @@ describe("Rows spacing", function()
         local a, b = icons[1].frame.points[1], icons[2].frame.points[1]
         assert.are.equal(layout.memberLook.iconSize + 10, math.abs(b[4] - a[4]) + math.abs(b[5] - a[5]))
     end)
+
+    it("reports how far the rows reach on each side of the frames", function()
+        local ns = load({ "UI/Rows.lua" })
+        local rows = ns.Rows.New({
+            parent = frameStub(),
+            anchors = {
+                FrameFor = function() return frameStub(), false end,
+                SizeOf = function() return 0, 0 end,
+                Stack = function() return frameStub() end,
+                PlaceStack = function() end,
+            },
+        })
+        local layout = ns.DB.layout
+        layout.memberFit = false
+        layout.memberLook.labels = "None"
+        layout.groups = { { types = { "Personal" }, side = "Left", shape = { axis = "Rows", perLine = 8, origin = "TopLeft", sort = "Fixed" }, offsetX = 4, offsetY = 0, gap = 2 } }
+        local spells = { { id = 1 }, { id = 2 }, { id = 3 } }
+        rows.Build({ { member = { guid = "A", unit = "player", class = "PRIEST" }, own = true, groups = { [1] = { { type = "Personal", spells = spells } } } } })
+        local reach = rows.Reach()
+        local size = layout.memberLook.iconSize
+        assert.is_true(reach.Left >= 3 * size + 2 * 2 + 4)
+        assert.are.equal(0, reach.Right)
+        assert.are.equal(0, reach.Above)
+    end)
 end)
 
 describe("Member chip", function()

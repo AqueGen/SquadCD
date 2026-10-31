@@ -11,6 +11,7 @@ for i = #helpers.VELVET, 1, -1 do table.insert(FILES, 1, helpers.VELVET[i]) end
 local function region()
     local r = helpers.newFrame()
     function r:SetTexture(path) self.texture = path end
+    function r:SetVertexColor(...) self.vertex = { ... } end
     function r:SetColorTexture(...) self.color = { ... } end
     function r:SetTexCoord() end
     function r:SetText(t) self.text = t end
@@ -36,22 +37,19 @@ describe("Type mark", function()
         })
     end)
 
-    it("shows a spell icon and a stripe in the type colour", function()
+    it("shows the type glyph on a tile in the type colour", function()
         local parent = region()
-        function parent:CreateTexture() return region() end
-        function parent:CreateFontString() return region() end
         local mark, paint = ns.LayoutParts.Mark(parent, 16)
         paint("Kick")
-        assert.are.equal("Interface\\Icons\\ability_kick", mark.icon.texture)
-        assert.are.same(ns.Theme.TYPES.Kick.fill, { mark.stripe.color[1], mark.stripe.color[2], mark.stripe.color[3] })
+        assert.are.equal("Interface\\AddOns\\SquadCD\\Media\\Types\\Kick", mark.glyph.texture)
+        assert.are.same(ns.Theme.TYPES.Kick.fill, { mark.fill.color[1], mark.fill.color[2], mark.fill.color[3] })
+        assert.are.same(ns.Theme.TYPES.Kick.text, { mark.glyph.vertex[1], mark.glyph.vertex[2], mark.glyph.vertex[3] })
     end)
 
-    it("shows the potion item icon for Potion", function()
-        local parent = region()
-        function parent:CreateTexture() return region() end
-        function parent:CreateFontString() return region() end
-        local mark, paint = ns.LayoutParts.Mark(parent, 16)
-        paint("Potion")
-        assert.are.equal("item:" .. ns.Potions[1].item, mark.icon.texture)
+    it("has a glyph for every type", function()
+        for _, t in ipairs(ns.LayoutRules.TYPES) do
+            assert.are.equal("Interface\\AddOns\\SquadCD\\Media\\Types\\" .. t, ns.Icon.TypeIcon(t))
+        end
+        assert.is_not_nil(ns.Icon.TypeIcon("Control"))
     end)
 end)

@@ -6,7 +6,7 @@ ns.Panel = Panel
 
 local T = ns.Theme
 local Grid, Model = ns.LayoutGrid, ns.LayoutModel
-local PAD, LINE_GAP, CELL_GAP, NAME_H, GLYPH_TAB, LABEL_PAD = 6, 6, 2, 11, 11, 3
+local PAD, LINE_GAP, CELL_GAP, NAME_H, GLYPH_TAB, ICON_TAB, LABEL_PAD = 6, 6, 2, 11, 11, 16, 3
 local NEXT = { Kick = true, Control = true, Stun = true, CC = true, External = true, Group = true }
 
 local UNKNOWN = { ready = true, remaining = 0, recharge = 0, charges = 1, maybe = false, talentsKnown = true }
@@ -98,7 +98,7 @@ local function fill(c, key, list, layout)
         local l = c.lines[i]
         local tab
         if l.labels == "Icon" then
-            tab = across and { w = ns.Icon.TAB_ICON, h = ns.Icon.TAB_ICON } or { w = ns.Icon.TAB_ICON, h = l.head }
+            tab = across and { w = ICON_TAB, h = ICON_TAB } or { w = ICON_TAB, h = l.head }
         elseif l.labels == "Glyph" then
             tab = across and { w = GLYPH_TAB, h = GLYPH_TAB } or { w = GLYPH_TAB, h = l.head }
         elseif l.labels ~= "None" then

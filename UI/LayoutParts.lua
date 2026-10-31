@@ -29,22 +29,18 @@ function Parts.Label(t)
     return ns.LayoutRules.LABELS[t] or t
 end
 
-local STRIPE_W, STRIPE_GAP = 3, 2
-
 function Parts.Mark(parent, size)
     local mark = CreateFrame("Frame", nil, parent)
-    mark:SetSize(STRIPE_W + STRIPE_GAP + size, size)
-    mark.stripe = mark:CreateTexture(nil, "ARTWORK")
-    mark.stripe:SetPoint("TOPLEFT")
-    mark.stripe:SetSize(STRIPE_W, size)
-    mark.icon = mark:CreateTexture(nil, "ARTWORK")
-    mark.icon:SetPoint("LEFT", mark, "LEFT", STRIPE_W + STRIPE_GAP, 0)
-    mark.icon:SetSize(size, size)
-    mark.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    mark:SetSize(size, size)
+    mark.fill = mark:CreateTexture(nil, "BACKGROUND")
+    mark.fill:SetAllPoints(mark)
+    mark.glyph = mark:CreateTexture(nil, "ARTWORK")
+    mark.glyph:SetAllPoints(mark)
     return mark, function(t)
         local style = T.TYPES[t] or T.TYPES.Personal
-        mark.stripe:SetColorTexture(style.fill[1], style.fill[2], style.fill[3], 1)
-        mark.icon:SetTexture(ns.Icon.TypeIcon(t))
+        mark.fill:SetColorTexture(style.fill[1], style.fill[2], style.fill[3], 1)
+        mark.glyph:SetTexture(ns.Icon.TypeIcon(t))
+        mark.glyph:SetVertexColor(unpack(style.text))
     end
 end
 

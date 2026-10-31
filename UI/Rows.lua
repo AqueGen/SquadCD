@@ -42,6 +42,7 @@ local function new(opts)
     local self = {}
     local members, slots, active = {}, {}, 0
     local outlined
+    local reach = { Left = 0, Right = 0, Above = 0, Below = 0 }
     local function anchors() return opts.anchors or ns.Anchors end
 
     local function holder(i, gi)
@@ -155,6 +156,7 @@ local function new(opts)
 
     function self.Build(rows, noStack)
         outlined = nil
+        reach = { Left = 0, Right = 0, Above = 0, Below = 0 }
         local layout = ns.DB.layout
         local plan, stacked = {}, {}
         for i, row in ipairs(rows) do
@@ -188,9 +190,16 @@ local function new(opts)
             for k, m in ipairs(p.list) do
                 draw(i, m, row, anchor, away[k])
                 keep[m.gi] = true
+                local beside = m.side == "Left" or m.side == "Right"
+                local far = (away[k] or 0) + (beside and m.w or m.h) + math.abs(beside and m.offsetX or m.offsetY)
+                reach[m.side] = math.max(reach[m.side], far)
             end
             hideMember(i, keep)
         end
+    end
+
+    function self.Reach()
+        return reach
     end
 
     function self.Update(tracker, now, sight)

@@ -8,7 +8,7 @@ local INTERVAL = 0.1
 local MEMBERS = 5
 local CAPTION = "Preview: the Demo party, 5 members"
 local EMPTY = "Nothing to show: every type is off or hidden."
-local FRAME_W, FRAME_H, FRAME_GAP, ROOM, ROOM_V, PANEL_GAP = 120, 46, 2, 150, 40, 16
+local FRAME_W, FRAME_H, FRAME_GAP, PANEL_GAP = 120, 46, 2, 16
 
 local pane, host, panelHost, panel, rows, source
 local frames, byUnit = {}, {}
@@ -57,17 +57,22 @@ local function partyFrame(i)
     return f
 end
 
-local function placeParty(members, shown, x, y)
+local function bindParty(members, shown)
     wipe(byUnit)
     for i, m in ipairs(members) do
         local f = partyFrame(i)
         local r, g, b = ns.Theme.ClassColor(m.class)
         f.fill:SetColorTexture(r, g, b, 0.55)
         f.name:SetText(m.name)
-        f:ClearAllPoints()
-        f:SetPoint("TOPLEFT", host, "TOPLEFT", x, -(y + (i - 1) * (FRAME_H + FRAME_GAP)))
         f:SetShown(shown)
         byUnit[m.unit] = f
+    end
+end
+
+local function placeParty(count, x, y)
+    for i = 1, count do
+        frames[i]:ClearAllPoints()
+        frames[i]:SetPoint("TOPLEFT", host, "TOPLEFT", x, -(y + (i - 1) * (FRAME_H + FRAME_GAP)))
     end
 end
 
@@ -80,26 +85,19 @@ local function anyGroup(list)
     return false
 end
 
-local function rooms(layout)
-    local used = {}
-    for _, g in ipairs(layout.groups) do
-        if g.shown and #g.types > 0 then used[g.side] = true end
-    end
-    return used.Left and ROOM or 0, used.Right and ROOM or 0, used.Above and ROOM_V or 0, used.Below and ROOM_V or 0
-end
-
 local function rebuild(fresh)
     if not pane or not pane:IsVisible() then return end
     if fresh or not source then source = ns.Demo.Source(MEMBERS) end
     local lines, routed = ns.Display.Route(source.members)
     local party = anyGroup(routed)
     local pw, ph = panel.Build(lines)
-    local left, right, top, bottom = rooms(ns.DB.layout)
-    local partyW = party and left + FRAME_W + right or 0
-    local partyH = party and top + MEMBERS * FRAME_H + (MEMBERS - 1) * FRAME_GAP + bottom or 0
-    local w = math.max(partyW, pw)
-    placeParty(source.members, party, (w - partyW) / 2 + left, top)
+    bindParty(source.members, party)
     if party then rows.Build(routed, true) else rows.Hide() end
+    local reach = party and rows.Reach() or { Left = 0, Right = 0, Above = 0, Below = 0 }
+    local partyW = party and reach.Left + FRAME_W + reach.Right or 0
+    local partyH = party and reach.Above + MEMBERS * FRAME_H + (MEMBERS - 1) * FRAME_GAP + reach.Below or 0
+    local w = math.max(partyW, pw)
+    placeParty(#source.members, (w - partyW) / 2 + reach.Left, reach.Above)
     if #lines == 0 and not party then
         PanelPreview.Stop()
         pane:SetOff(EMPTY)

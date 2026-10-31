@@ -50,11 +50,11 @@ function LayoutModel.NewGroup(types, side)
 end
 
 local function panelLook()
-    return { iconSize = 26, labels = "Glyph", background = "Default", opacity = 90, nameLetters = 5 }
+    return { iconSize = 26, labels = "Icon", background = "None", opacity = 90, nameLetters = 5 }
 end
 
 local function memberLook()
-    return { iconSize = 26, labels = "Glyph", background = "None", opacity = 100, nameLetters = 5 }
+    return { iconSize = 26, labels = "Icon", background = "None", opacity = 100, nameLetters = 5 }
 end
 
 local function defaultClassOrder()
