@@ -13,12 +13,28 @@ local function resolve(member, spellId)
     return ns.Cooldowns.Resolve(spellId, member.spec, member.talents)
 end
 
+local function cached(self, guid, spellId)
+    local m = self.members[guid]
+    if not m then return end
+    local byGuid = self.resolved[guid]
+    if not byGuid then
+        byGuid = {}
+        self.resolved[guid] = byGuid
+    end
+    local r = byGuid[spellId]
+    if r == nil then
+        r = resolve(m, spellId) or false
+        byGuid[spellId] = r
+    end
+    return r or nil
+end
+
 function Tracker.New(clock)
-    return setmetatable({ clock = clock, members = {}, order = {}, entries = {} }, Tracker)
+    return setmetatable({ clock = clock, members = {}, order = {}, entries = {}, resolved = {} }, Tracker)
 end
 
 function Tracker:SetMembers(list)
-    self.members, self.order = {}, {}
+    self.members, self.order, self.resolved = {}, {}, {}
     for _, m in ipairs(list) do
         self.members[m.guid] = m
         self.order[#self.order + 1] = m.guid
@@ -46,8 +62,7 @@ local function commit(e, spent, start)
 end
 
 function Tracker:Find(guid, spellId)
-    local m = self.members[guid]
-    local r = m and resolve(m, spellId)
+    local r = cached(self, guid, spellId)
     if not r then return end
     local byGuid = self.entries[guid]
     return byGuid and byGuid[spellId], r
@@ -65,7 +80,7 @@ end
 function Tracker:Used(guid, spellId, certain)
     local m = self.members[guid]
     if m then spellId = ns.Cooldowns.Canonical(spellId, m) end
-    local r = m and resolve(m, spellId)
+    local r = cached(self, guid, spellId)
     if not r then return end
     local now = self.clock()
     local byGuid = self.entries[guid]
@@ -176,8 +191,7 @@ function Tracker:Restore(snap, serverNow, clockNow)
     local offset = clockNow - serverNow
     for guid, bySpell in pairs(snap or {}) do
         for spellId, s in pairs(bySpell) do
-            local m = self.members[guid]
-            local r = m and resolve(m, spellId)
+            local r = cached(self, guid, spellId)
             if r then
                 local e = {
                     spent = s.spent,

@@ -20,6 +20,25 @@ describe("Tracker", function()
         t:SetMembers(members())
     end)
 
+    it("state and tick reuse the resolved cooldown until the roster changes", function()
+        local real, calls = ns.Cooldowns.Resolve, 0
+        ns.Cooldowns.Resolve = function(...)
+            calls = calls + 1
+            return real(...)
+        end
+        t:Used("A", PS, true)
+        local buf = {}
+        for _ = 1, 5 do
+            t:Tick()
+            t:State("A", PS, buf)
+        end
+        assert.are.equal(1, calls)
+        t:SetMembers(members())
+        t:State("A", PS, buf)
+        ns.Cooldowns.Resolve = real
+        assert.are.equal(2, calls)
+    end)
+
     it("used starts cooldown", function()
         t:Used("A", PS, true)
         local s = t:State("A", PS)
