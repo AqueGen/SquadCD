@@ -29,16 +29,32 @@ function Parts.Label(t)
     return ns.LayoutRules.LABELS[t] or t
 end
 
+local TYPE_SPELLS = {
+    Personal = 45438, Burst = 31884, Racial = 28730, External = 33206, Kick = 1766, Control = 853, Stun = 408,
+    CC = 383121, Group = 62618, Dispel = 527, Purge = 19505, Movement = 77761,
+}
+local STRIPE_W, STRIPE_GAP = 3, 2
+
+function Parts.TypeIcon(t)
+    if t == "Potion" then return C_Item.GetItemIconByID(ns.Potions[1].item) end
+    local spell = ns.Spells[TYPE_SPELLS[t]]
+    return spell and "Interface\\Icons\\" .. spell.icon
+end
+
 function Parts.Mark(parent, size)
-    local mark = parent:CreateTexture(nil, "ARTWORK")
-    mark:SetSize(size, size)
-    local glyph = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    glyph:SetPoint("CENTER", mark, "CENTER", 0, 0)
+    local mark = CreateFrame("Frame", nil, parent)
+    mark:SetSize(STRIPE_W + STRIPE_GAP + size, size)
+    mark.stripe = mark:CreateTexture(nil, "ARTWORK")
+    mark.stripe:SetPoint("TOPLEFT")
+    mark.stripe:SetSize(STRIPE_W, size)
+    mark.icon = mark:CreateTexture(nil, "ARTWORK")
+    mark.icon:SetPoint("LEFT", mark, "LEFT", STRIPE_W + STRIPE_GAP, 0)
+    mark.icon:SetSize(size, size)
+    mark.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     return mark, function(t)
         local style = T.TYPES[t] or T.TYPES.Personal
-        mark:SetColorTexture(style.fill[1], style.fill[2], style.fill[3], 1)
-        glyph:SetText(style.glyph)
-        glyph:SetTextColor(unpack(style.text))
+        mark.stripe:SetColorTexture(style.fill[1], style.fill[2], style.fill[3], 1)
+        mark.icon:SetTexture(Parts.TypeIcon(t))
     end
 end
 
@@ -309,12 +325,12 @@ function Parts.PresetCards(group, opts)
 end
 
 local PLACES = { { value = "panel", text = "Panel", w = 56 }, { value = "member", text = "At party frames", w = 104 }, { value = "off", text = "Off", w = 44 } }
-local ROW_H, NAME_X, PLACE_X, SPLIT_X, ORDER_X = 24, 22, 160, 380, 452
+local ROW_H, NAME_X, PLACE_X, SPLIT_X, ORDER_X = 24, 27, 160, 380, 452
 
 local function newTypeRow(parent)
     local row = CreateFrame("Frame", nil, parent)
     row:SetHeight(ROW_H)
-    row.mark, row.paint = Parts.Mark(row, 14)
+    row.mark, row.paint = Parts.Mark(row, 16)
     row.mark:SetPoint("LEFT", row, "LEFT", 0, 0)
     row.name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     row.name:SetPoint("LEFT", row, "LEFT", NAME_X, 0)
