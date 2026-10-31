@@ -7,12 +7,13 @@ local POLL_STEP, POLL_STEPS = 0.1, 5
 local SELF_TEST_DELAY = 0.5
 local INSET = 1e5
 
-local mode, reason, retry = "unavailable", "self-test has not run", true
+local mode, reason = "unavailable", "self-test has not run"
+local needTest, running, judgeLater, rechecked = true, false, false, false
 local host
 local containers = {}
 local watches = {}
 local active = {}
-local pending, rechecked = false, false
+local pending = false
 local selfTest
 local stats, seen = {}, {}
 
@@ -29,37 +30,41 @@ end
 function Sensor:Read(buffId)
     local slot = self.slots[buffId]
     if not slot then return nil, "error" end
-    local shown, why = readout(pcall(slot.IsShown, slot))
-    if shown ~= nil then return shown end
-    local over, why2 = readout(pcall(slot.IsMouseOver, slot, INSET, -INSET, -INSET, INSET))
-    if over ~= nil then return over end
-    if why == "secret" or why2 == "secret" then return nil, "secret" end
-    return nil, "error"
+    return readout(pcall(slot.IsShown, slot))
+end
+
+function Sensor:HitTest(buffId)
+    local slot = self.slots[buffId]
+    if not slot then return nil, "error" end
+    return readout(pcall(slot.IsMouseOver, slot, INSET, -INSET, -INSET, INSET))
 end
 
 local function container(unit)
-    if containers[unit] then return containers[unit] end
+    local c = containers[unit]
+    if c then return c end
     if not host then
         host = CreateFrame("Frame", nil, UIParent)
         host:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -10000, 10000)
         host:SetSize(1, 1)
         host:EnableMouse(false)
     end
-    local ok, c = pcall(CreateFrame, "AuraContainer", nil, host, "CustomAuraContainerTemplate")
-    if not ok or not c then return nil, "AuraContainer unavailable: " .. tostring(c) end
+    local ok, f = pcall(CreateFrame, "AuraContainer", nil, host, "CustomAuraContainerTemplate")
+    if not ok or not f then return nil, "AuraContainer unavailable: " .. tostring(f) end
+    c = { frame = f, keys = {} }
+    containers[unit] = c
     ok = pcall(function()
-        c:SetPoint("TOPLEFT", host, "TOPLEFT")
-        c:EnableMouse(false)
-        c:SetUnit(unit)
+        f:SetPoint("TOPLEFT", host, "TOPLEFT")
+        f:EnableMouse(false)
+        f:SetUnit(unit)
     end)
-    if not ok then return nil, "AuraContainer setup failed" end
-    containers[unit] = { frame = c, keys = {} }
-    return containers[unit]
+    if not ok then c.broken = "AuraContainer setup failed" end
+    return c
 end
 
 function Sensors.Build(unit, buffIds)
     local c, why = container(unit)
     if not c then return nil, why end
+    if c.broken then return nil, c.broken end
     local wanted, slots = {}, {}
     local ok, err = pcall(function()
         local f = c.frame
@@ -80,13 +85,16 @@ function Sensors.Build(unit, buffIds)
             if not wanted[key] then f:SetAuraSlotEnabled(key, false) end
         end
     end)
-    if not ok then return nil, "aura slot setup failed: " .. tostring(err) end
+    if not ok then
+        c.broken = "aura slot setup failed: " .. tostring(err)
+        return nil, c.broken
+    end
     return setmetatable({ unit = unit, slots = slots }, Sensor)
 end
 
-local function disable(unit)
+local function setEnabled(unit, on)
     local c = containers[unit]
-    if c then pcall(c.frame.SetEnabled, c.frame, false) end
+    if c and not c.broken then pcall(c.frame.SetEnabled, c.frame, on) end
 end
 
 function Sensors.Mode()
@@ -97,44 +105,78 @@ function Sensors.Stats()
     return stats, seen
 end
 
-local function judge(v, why, firstCombat)
-    if v == true then
-        mode, reason, retry = "plain", nil, false
-    elseif why == "secret" then
-        mode, reason, retry = "secret", "aura readout is secret", false
-    elseif firstCombat then
-        return
-    elseif v == false then
-        mode, reason, retry = "unavailable", "self-test did not see the player buff", true
+local function fail(why, retry)
+    mode, reason, needTest = "unavailable", why, retry
+end
+
+local function verdict(buffV, buffWhy, ctrlV, ctrlWhy, when)
+    if buffWhy == "secret" or ctrlWhy == "secret" then
+        mode, reason, needTest = "secret", "aura readout is secret" .. when, false
+    elseif buffWhy or ctrlWhy then
+        fail("aura readout failed" .. when, false)
+    elseif ctrlV then
+        fail("aura readout is always shown (control buff read as present)" .. when, false)
+    elseif buffV then
+        mode, reason, needTest = "plain", nil, false
     else
-        mode, reason, retry = "unavailable", "aura readout failed", false
+        return false
     end
+    return true
+end
+
+local function readSelfTest()
+    local s = selfTest
+    local v, why = s.sensor:Read(s.id)
+    local cv, cwhy = s.sensor:Read(s.control)
+    return v, why, cv, cwhy
+end
+
+local function control(own, id)
+    local mine = { [id] = true }
+    for _, s in pairs(ns.Spells) do
+        if s.buffs and (s.class == nil or s.class == own or s.track == "target") then
+            for _, b in ipairs(s.buffs) do mine[b] = true end
+        end
+    end
+    local best
+    for _, s in pairs(ns.Spells) do
+        for _, b in ipairs(s.buffs or {}) do
+            if not mine[b] and (not best or b < best) then best = b end
+        end
+    end
+    return best
 end
 
 local rebuild
 
+local function finishSelfTest()
+    judgeLater = false
+    running = false
+    local v, why, cv, cwhy = readSelfTest()
+    if not verdict(v, why, cv, cwhy, "") then fail("self-test did not see the player buff", true) end
+    rebuild(true)
+end
+
 local function runSelfTest()
-    retry = false
+    needTest = false
     local aura = C_UnitAuras.GetAuraDataByIndex("player", 1, "HELPFUL")
-    if issecretvalue(aura) or aura == nil then
-        mode, reason, retry = "unavailable", "no readable buff on the player to self-test", true
-        return
-    end
+    if issecretvalue(aura) or aura == nil then return fail("no readable buff on the player to self-test", true) end
     local id = aura.spellId
-    if issecretvalue(id) or type(id) ~= "number" then
-        mode, reason, retry = "unavailable", "player buff id is secret", true
-        return
-    end
-    local sensor, why = Sensors.Build("player", { id })
-    if not sensor then
-        mode, reason = "unavailable", why
-        return
-    end
-    selfTest = { sensor = sensor, id = id }
+    if issecretvalue(id) or type(id) ~= "number" then return fail("player buff id is secret", true) end
+    local _, own = UnitClass("player")
+    if issecretvalue(own) then return fail("player class is secret", true) end
+    local ctrl = control(own, id)
+    local sensor, why = Sensors.Build("player", { id, ctrl })
+    if not sensor then return fail(why, false) end
+    selfTest = { sensor = sensor, id = id, control = ctrl }
+    running = true
     mode, reason = "unavailable", "self-test running"
     C_Timer.After(SELF_TEST_DELAY, function()
-        judge(sensor:Read(id))
-        rebuild(true)
+        if InCombatLockdown() then
+            judgeLater = true
+            return
+        end
+        finishSelfTest()
     end)
 end
 
@@ -170,15 +212,19 @@ local function fire(w, entries)
     end
 end
 
+local function count(t, v, why)
+    local key = why or tostring(v)
+    t[key] = t[key] + 1
+end
+
 local function scan(w)
     if active[w.unit] ~= w then return end
-    local count = stats[w.unit]
+    local s = stats[w.unit]
     for id, entries in pairs(w.map) do
         local v, why = w.sensor:Read(id)
-        if v == nil then
-            count[why] = count[why] + 1
-        else
-            count.plain = count.plain + 1
+        count(s.read, v, why)
+        count(s.hit, w.sensor:HitTest(id))
+        if v ~= nil then
             if v then seen[id] = true end
             if v and w.last[id] == false then fire(w, entries) end
             w.last[id] = v
@@ -193,6 +239,7 @@ end
 
 local roster = {}
 local regen = CreateFrame("Frame")
+local playerWatch = CreateFrame("Frame")
 
 local function watchFrame(unit)
     local f = watches[unit]
@@ -213,14 +260,20 @@ function rebuild(fromSelfTest)
         return
     end
     pending = false
-    if rechecked then
-        retry = false
-        if selfTest then
-            disable("player")
+    local raid = ns.Group.Mode() == "raid"
+    if selfTest and not running then
+        if rechecked then
+            setEnabled("player", false)
             selfTest = nil
+        else
+            setEnabled("player", not raid)
         end
-    elseif retry and not fromSelfTest then
-        runSelfTest()
+    end
+    if needTest and not running and not fromSelfTest and not raid then runSelfTest() end
+    if needTest and not running and not raid then
+        playerWatch:RegisterUnitEvent("UNIT_AURA", "player")
+    else
+        playerWatch:UnregisterAllEvents()
     end
     for unit, w in pairs(active) do
         if w.ticker then w.ticker:Cancel() end
@@ -240,7 +293,10 @@ function rebuild(fromSelfTest)
                     local w = { unit = m.unit, guid = m.guid, map = map, sensor = sensor, last = {} }
                     active[m.unit] = w
                     used[m.unit] = true
-                    stats[m.unit] = stats[m.unit] or { plain = 0, secret = 0, error = 0 }
+                    stats[m.unit] = stats[m.unit] or {
+                        read = { ["true"] = 0, ["false"] = 0, secret = 0, error = 0 },
+                        hit = { ["true"] = 0, ["false"] = 0, secret = 0, error = 0 },
+                    }
                     watchFrame(m.unit):RegisterUnitEvent("UNIT_AURA", m.unit)
                     poll(w)
                 end
@@ -248,9 +304,13 @@ function rebuild(fromSelfTest)
         end
     end
     for unit in pairs(containers) do
-        if unit ~= "player" and not used[unit] then disable(unit) end
+        if unit ~= "player" and not used[unit] then setEnabled(unit, false) end
     end
 end
+
+playerWatch:SetScript("OnEvent", function()
+    if not InCombatLockdown() then rebuild() end
+end)
 
 local previous = ns.Group.OnRoster
 ns.Group.OnRoster = function(list)
@@ -261,13 +321,16 @@ end
 
 regen:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_REGEN_DISABLED" then
-        regen:UnregisterEvent("PLAYER_REGEN_DISABLED")
-        rechecked = true
-        if selfTest then
-            local v, why = selfTest.sensor:Read(selfTest.id)
-            judge(v, why, true)
+        if selfTest and not running and mode == "plain" then
+            local v, why, cv, cwhy = readSelfTest()
+            if verdict(v, why, cv, cwhy, " in combat") then
+                rechecked = true
+                regen:UnregisterEvent("PLAYER_REGEN_DISABLED")
+                pending = true
+            end
         end
-        pending = true
+    elseif judgeLater then
+        finishSelfTest()
     elseif pending then
         rebuild()
     end

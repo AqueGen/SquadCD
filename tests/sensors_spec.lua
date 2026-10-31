@@ -23,12 +23,14 @@ local function world(opts)
 
     local function slotFrame(container, id)
         local s = {}
-        local function value()
+        local function value(override)
+            if override == "error" then error("access denied") end
+            if override ~= nil then return override end
             if w.secret then return SECRET end
             return w.buffs[container.unit] and w.buffs[container.unit][id] or false
         end
-        function s:IsShown() return value() end
-        function s:IsMouseOver() return value() end
+        function s:IsShown() return value(w.shown) end
+        function s:IsMouseOver() return value(w.over) end
         return s
     end
 
@@ -43,6 +45,7 @@ local function world(opts)
         function c:SetAuraSlotEnabled(key, v) self.enabled[key] = v end
         function c:AddAuraSlot(key, filter, options)
             assert(filter == "HELPFUL")
+            if w.slotError then error("UpdateAuraDisplay is nil") end
             local id = next(options.candidateFilters.includeSpellIDs)
             assert(key == "b" .. id)
             self.slots[key] = slotFrame(self, id)
@@ -86,7 +89,7 @@ local function world(opts)
         },
         C_UnitAuras = {
             GetAuraDataByIndex = function(unit, index)
-                if unit == "player" and index == 1 then return { spellId = 17 } end
+                if unit == "player" and index == 1 and w.buffs.player[17] then return { spellId = 17 } end
             end,
         },
         C_SpecializationInfo = {
@@ -110,12 +113,17 @@ local function world(opts)
     return w
 end
 
-local function start(opts)
-    local w = world(opts)
+local function boot(w)
     local ns = helpers.load(FILES, w.stubs)
     helpers.fire("ADDON_LOADED", "Huddle")
     helpers.fire("PLAYER_LOGIN")
     helpers.fire("PLAYER_ENTERING_WORLD")
+    return ns
+end
+
+local function start(opts)
+    local w = world(opts)
+    local ns = boot(w)
     w.flush()
     local calls = {}
     ns.tracker.Used = function(_, guid, spell, certain) calls[#calls + 1] = { "Used", guid, spell, certain } end
@@ -215,9 +223,7 @@ describe("Sensors", function()
 
     it("raid builds no party sensors", function()
         local _, w = start({ mode = "raid" })
-        for _, c in ipairs(w.containers) do
-            assert.are.equal("player", c.unit)
-        end
+        assert.are.equal(0, #w.containers)
         aura(w, "party1", SHIELD_WALL, true)
         assert.are.same({}, w.calls)
     end)
@@ -247,6 +253,99 @@ describe("Sensors", function()
         local out = table.concat(w.printed, "\n")
         assert.truthy(out:find("plain"))
         assert.truthy(out:find("party1"))
+        assert.truthy(out:find("hit%-test"))
         assert.truthy(out:find(tostring(SHIELD_WALL)))
+    end)
+
+    it("secret IsShown is secret even when the hit-test reads plain false", function()
+        local ns, w = start({ mode = "party" })
+        w.shown, w.over = SECRET, false
+        local sensor = ns.Sensors.Build("party1", { SHIELD_WALL })
+        assert.are.same({ nil, "secret" }, { sensor:Read(SHIELD_WALL) })
+        assert.are.same({ false }, { sensor:HitTest(SHIELD_WALL) })
+    end)
+
+    it("read that errors reports error", function()
+        local ns, w = start({ mode = "party" })
+        w.shown = "error"
+        local sensor = ns.Sensors.Build("party1", { SHIELD_WALL })
+        assert.are.same({ nil, "error" }, { sensor:Read(SHIELD_WALL) })
+    end)
+
+    it("always shown readout fails the negative control", function()
+        local w = world({ mode = "party" })
+        w.shown = true
+        local ns = boot(w)
+        w.flush()
+        local mode, reason = ns.Sensors.Mode()
+        assert.are.equal("unavailable", mode)
+        assert.truthy(reason:find("always shown"))
+    end)
+
+    it("combat before the self-test does not switch sensors off", function()
+        local w = world({ mode = "party" })
+        w.buffs.player = {}
+        local ns = boot(w)
+        w.flush()
+        assert.are.equal("unavailable", (ns.Sensors.Mode()))
+        w.combat = true
+        helpers.fire("PLAYER_REGEN_DISABLED")
+        w.combat = false
+        helpers.fire("PLAYER_REGEN_ENABLED")
+        w.buffs.player = { [17] = true }
+        helpers.fire("UNIT_AURA", "player")
+        w.flush()
+        assert.are.equal("plain", (ns.Sensors.Mode()))
+    end)
+
+    it("self-test timer in combat defers the judgement", function()
+        local w = world({ mode = "party" })
+        local ns = boot(w)
+        w.combat = true
+        w.flush()
+        assert.are.equal("unavailable", (ns.Sensors.Mode()))
+        w.combat = false
+        helpers.fire("PLAYER_REGEN_ENABLED")
+        w.flush()
+        assert.are.equal("plain", (ns.Sensors.Mode()))
+    end)
+
+    it("first combat re-check downgrades on error", function()
+        local ns, w = start({ mode = "party" })
+        w.shown = "error"
+        w.combat = true
+        helpers.fire("PLAYER_REGEN_DISABLED")
+        local mode, reason = ns.Sensors.Mode()
+        assert.are.equal("unavailable", mode)
+        assert.truthy(reason:find("in combat"))
+    end)
+
+    it("first combat re-check downgrades on secret", function()
+        local ns, w = start({ mode = "party" })
+        w.secret = true
+        w.combat = true
+        helpers.fire("PLAYER_REGEN_DISABLED")
+        assert.are.equal("secret", (ns.Sensors.Mode()))
+        w.combat = false
+        helpers.fire("PLAYER_REGEN_ENABLED")
+        w.secret = false
+        local calls = #w.calls
+        aura(w, "party1", SHIELD_WALL, true)
+        assert.are.equal(calls, #w.calls)
+    end)
+
+    it("slot setup failure keeps one container per unit", function()
+        local w = world({ mode = "party" })
+        w.slotError = true
+        local ns = boot(w)
+        w.flush()
+        local mode, reason = ns.Sensors.Mode()
+        assert.are.equal("unavailable", mode)
+        assert.truthy(reason:find("aura slot setup failed"))
+        local before = #w.containers
+        assert.is_nil((ns.Sensors.Build("party1", { SHIELD_WALL })))
+        assert.is_nil((ns.Sensors.Build("party1", { SHIELD_WALL })))
+        helpers.fire("GROUP_ROSTER_UPDATE")
+        assert.are.equal(before + 1, #w.containers)
     end)
 end)

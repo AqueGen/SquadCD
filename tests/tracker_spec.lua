@@ -58,11 +58,30 @@ describe("Tracker", function()
     end)
 
     it("external single candidate is certain", function()
-        t:External(PS, "B")
+        t:SetMembers({ members()[1], members()[3] })
+        t:External(PS, "C")
         local s = t:State("A", PS)
         assert.is_false(s.ready)
         assert.is_false(s.maybe)
-        assert.is_true(t:State("B", PS).ready)
+    end)
+
+    it("self-cast external with one caster is certain", function()
+        t:SetMembers({ members()[1], members()[3] })
+        t:External(PS, "A")
+        local s = t:State("A", PS)
+        assert.is_false(s.ready)
+        assert.is_false(s.maybe)
+    end)
+
+    it("external on one of two casters is maybe for both", function()
+        local BOP = 1022
+        t:SetMembers({
+            { guid = "A", unit = "party1", class = "PALADIN", spec = 65, talents = { [BOP] = 1 } },
+            { guid = "B", unit = "party2", class = "PALADIN", spec = 70, talents = { [BOP] = 1 } },
+        })
+        t:External(BOP, "A")
+        assert.is_true(t:State("A", BOP).maybe)
+        assert.is_true(t:State("B", BOP).maybe)
     end)
 
     it("external without target excludes nobody", function()
