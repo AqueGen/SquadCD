@@ -161,6 +161,20 @@ describe("SecretTracks", function()
         assert.same({ 1, 0 }, layer.phases[#layer.phases])
     end)
 
+    it("passes the self-test with a faithful curve", function()
+        ns.SecretTracks.SelfTest()
+        assert.is_true(ns.SecretTracks.Status().on)
+    end)
+
+    it("falls back when the self-test fails", function()
+        C_CurveUtil.EvaluateColorValueFromBoolean = function() return 0 end
+        ns.SecretTracks.SelfTest()
+        local s = ns.SecretTracks.Status()
+        assert.is_false(s.on)
+        assert.truthy(s.why:find("curve"))
+        assert.is_false(ns.SecretTracks.Bind(fakeLayer(), "A", IBF))
+    end)
+
     it("does not bind guids outside the live roster", function()
         assert.is_false(ns.SecretTracks.Bind(fakeLayer(), "Z", IBF))
         assert.is_false(ns.SecretTracks.Bind(fakeLayer(), "P", IBF))

@@ -208,6 +208,38 @@ function SecretTracks.Status()
     return { on = status.on, why = status.why, tracks = n, probes = p }
 end
 
+local SAMPLES = { 0, 1, 48, 127, 254, 255 }
+
+local function faithful()
+    for _, k in ipairs(SAMPLES) do
+        if math.floor(evalBool(true, k / 255, 0) * 255 + 0.5) ~= k then return false end
+        if math.floor(evalBool(false, 0, k / 255) * 255 + 0.5) ~= k then return false end
+    end
+    return true
+end
+
+local function checks()
+    if not (C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean) then return "no curve evaluator" end
+    local ok, good = pcall(faithful)
+    if not ok or not good then return "curve values are not exact" end
+    if C_XMLUtil and C_XMLUtil.GetTemplateInfo then
+        local okT, info = pcall(C_XMLUtil.GetTemplateInfo, "CustomAuraContainerTemplate")
+        if not okT or info == nil then return "no aura container template" end
+    end
+end
+
+function SecretTracks.SelfTest()
+    local why = checks()
+    status.on, status.why = why == nil, why
+    if why then stopTicker() end
+end
+
+function SecretTracks:Enable()
+    SecretTracks.SelfTest()
+end
+
+ns.RegisterModule("SecretTracks", SecretTracks)
+
 frame:SetScript("OnEvent", function()
     if pending then SecretTracks.Rebuild() end
 end)
