@@ -115,4 +115,4 @@ ns.Window.Register("members", function(page)
     })
 
     for gi = 1, MAX_GROUPS do groupEditor(page, gi) end
-end)
+end, { preview = "panel" })

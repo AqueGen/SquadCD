@@ -4,7 +4,7 @@ local helpers = dofile(here .. "/helpers.lua")
 
 local FILES = {
     "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/LayoutGrid.lua",
-    "Logic/LayoutRules.lua", "Logic/Docking.lua", "Game/Inspect.lua", "Game/Group.lua", "UI/Theme.lua", "UI/Panel.lua",
+    "Logic/LayoutRules.lua", "Logic/Docking.lua", "Game/Inspect.lua", "Game/Group.lua", "UI/Theme.lua", "UI/Rows.lua", "UI/Panel.lua",
     "UI/Display.lua", "UI/Demo.lua", "UI/PanelPreview.lua",
 }
 
@@ -21,7 +21,7 @@ end
 
 local function fakeIcon()
     local w = { frame = stub(helpers.newFrame()), buf = {} }
-    function w:SetSpell() end
+    function w:SetSpell(spell) self.spell = spell end
     function w:SetLabel() return 20 end
     function w:Update() end
     function w:SetNext() end
@@ -65,8 +65,14 @@ describe("Panel preview", function()
         ns.DB = ns.Defaults({ version = 2, layout = ns.LayoutModel.Defaults() })
         ns.DB.layout.kickStyle = "Icons"
         ns.Icon = { New = fakeIcon, NewTab = function() return { frame = stub(helpers.newFrame()), text = stub(helpers.newFrame()), Set = function() return 10 end } end }
-        ns.Rows = { Build = function() end, Update = function() end, Hide = function() end }
-        ns.Anchors = { Scan = function() return true end }
+        local stack = stub(helpers.newFrame())
+        ns.Anchors = {
+            Scan = function() return true end,
+            FrameFor = function() return nil, false end,
+            SizeOf = function() return 0, 0 end,
+            Stack = function() return stack end,
+            PlaceStack = function() end,
+        }
         ns.EditMode = { Refresh = function() end, Dragging = function() return false end }
         pane = fakePane()
         ns.PanelPreview.Attach(pane)
@@ -80,17 +86,39 @@ describe("Panel preview", function()
         assert.is_function(pane.scripts.OnUpdate)
     end)
 
+    it("draws the demo party frames with their rows next to the panel", function()
+        local built
+        local make = ns.Rows.New
+        ns.Rows.New = function(opts)
+            local rows = make(opts)
+            local build = rows.Build
+            rows.Build = function(list, noStack)
+                built = { list = list, frames = {} }
+                for _, r in ipairs(list) do built.frames[#built.frames + 1] = opts.anchors.FrameFor(r.member.unit) end
+                return build(list, noStack)
+            end
+            return rows
+        end
+        pane = fakePane()
+        ns.PanelPreview.Attach(pane)
+        ns.PanelPreview.Refresh()
+        assert.are.equal(5, #built.list)
+        assert.are.equal(5, #built.frames)
+        assert.are_not.equal(built.frames[1], built.frames[2])
+        assert.is_nil(ns.Rows.Holder(1))
+    end)
+
     it("follows a settings change", function()
         ns.Display.Changed()
         assert.is_not_nil(pane.fit)
     end)
 
-    it("shows the off line when every type is off", function()
+    it("shows the off line when every type is off, panel and party frames", function()
         local layout = ns.DB.layout
-        while #layout.sections > 0 do ns.LayoutModel.SetPlace(layout, layout.sections[1].types[1], "off") end
+        for _, t in ipairs(ns.LayoutModel.VisibleTypes(layout)) do ns.LayoutModel.SetPlace(layout, t, "off") end
         ns.LayoutModel.Normalize(ns.DB.layout)
         ns.PanelPreview.Refresh()
-        assert.are.equal("The panel is empty: every type is off, hidden or at party frames.", pane.off)
+        assert.are.equal("Nothing to show: every type is off or hidden.", pane.off)
         assert.is_nil(pane.scripts.OnUpdate)
     end)
 

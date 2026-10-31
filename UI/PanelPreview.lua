@@ -7,16 +7,31 @@ ns.PanelPreview = PanelPreview
 local INTERVAL = 0.1
 local MEMBERS = 5
 local CAPTION = "Preview: the Demo party, 5 members"
-local EMPTY = "The panel is empty: every type is off, hidden or at party frames."
+local EMPTY = "Nothing to show: every type is off or hidden."
+local FRAME_W, FRAME_H, FRAME_GAP, ROOM, ROOM_V, PANEL_GAP = 120, 46, 2, 150, 40, 16
 
-local pane, host, panel, source
+local pane, host, panelHost, panel, rows, source
+local frames, byUnit = {}, {}
 local listening = false
 local elapsed = 0
 local sight = { live = false, plain = true, secret = {} }
 
+local spare
+local anchors = {
+    FrameFor = function(unit) return byUnit[unit], false end,
+    SizeOf = function() return FRAME_W, FRAME_H end,
+    Stack = function()
+        spare = spare or CreateFrame("Frame", nil, host, "BackdropTemplate")
+        return spare
+    end,
+    PlaceStack = function() end,
+}
+
 local function update()
     sight.timers = ns.DB.layout.timers
-    panel.Update(source.tracker, GetTime(), sight)
+    local now = GetTime()
+    panel.Update(source.tracker, now, sight)
+    rows.Update(source.tracker, now, sight)
 end
 
 local function tick(_, dt)
@@ -30,16 +45,60 @@ function PanelPreview.Stop()
     if pane then pane:SetScript("OnUpdate", nil) end
 end
 
+local function partyFrame(i)
+    if frames[i] then return frames[i] end
+    local f = CreateFrame("Frame", nil, host)
+    f:SetSize(FRAME_W, FRAME_H)
+    f.fill = f:CreateTexture(nil, "BACKGROUND")
+    f.fill:SetAllPoints(f)
+    f.name = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    f.name:SetPoint("TOP", f, "TOP", 0, -4)
+    frames[i] = f
+    return f
+end
+
+local function placeParty(members, shown)
+    wipe(byUnit)
+    for i, m in ipairs(members) do
+        local f = partyFrame(i)
+        local r, g, b = ns.Theme.ClassColor(m.class)
+        f.fill:SetColorTexture(r, g, b, 0.55)
+        f.name:SetText(m.name)
+        f:ClearAllPoints()
+        f:SetPoint("TOPLEFT", host, "TOPLEFT", ROOM, -(ROOM_V + (i - 1) * (FRAME_H + FRAME_GAP)))
+        f:SetShown(shown)
+        byUnit[m.unit] = f
+    end
+end
+
+local function anyGroup(list)
+    for _, row in ipairs(list) do
+        for _, runs in pairs(row.groups) do
+            if #runs > 0 then return true end
+        end
+    end
+    return false
+end
+
 local function rebuild(fresh)
     if not pane or not pane:IsVisible() then return end
     if fresh or not source then source = ns.Demo.Source(MEMBERS) end
-    local lines = ns.Display.Lines(source.members)
-    local w, h = panel.Build(lines)
-    if #lines == 0 then
+    local lines, routed = ns.Display.Route(source.members)
+    local party = anyGroup(routed)
+    placeParty(source.members, party)
+    if party then rows.Build(routed, true) else rows.Hide() end
+    local pw, ph = panel.Build(lines)
+    if #lines == 0 and not party then
         PanelPreview.Stop()
         pane:SetOff(EMPTY)
         return
     end
+    local partyW = party and 2 * ROOM + FRAME_W + PANEL_GAP or 0
+    local partyH = party and 2 * ROOM_V + MEMBERS * FRAME_H + (MEMBERS - 1) * FRAME_GAP or 0
+    panelHost:ClearAllPoints()
+    panelHost:SetPoint("TOPLEFT", host, "TOPLEFT", partyW, party and -ROOM_V or 0)
+    panelHost:SetSize(math.max(pw, 1), math.max(ph, 1))
+    local w, h = partyW + pw, math.max(partyH, (party and ROOM_V or 0) + ph)
     host:SetSize(w, h)
     pane:SetOff(nil)
     pane:Fit(host, w, h)
@@ -53,7 +112,9 @@ function PanelPreview.Attach(target)
     PanelPreview.Stop()
     pane = target
     host = CreateFrame("Frame", nil, pane.stage)
-    panel = ns.Panel.New({ parent = host })
+    panelHost = CreateFrame("Frame", nil, host)
+    panel = ns.Panel.New({ parent = panelHost })
+    rows = ns.Rows.New({ parent = host, anchors = anchors })
     pane:SetCaption(CAPTION)
     pane:HookScript("OnHide", PanelPreview.Stop)
     if not listening then

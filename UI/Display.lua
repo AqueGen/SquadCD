@@ -94,6 +94,10 @@ function Display.Lines(members)
     return (collect(members))
 end
 
+function Display.Route(members)
+    return collect(members)
+end
+
 local warned = false
 local listeners = {}
 
