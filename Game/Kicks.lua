@@ -3,40 +3,62 @@ local _, ns = ...
 local Kicks = {}
 ns.Kicks = Kicks
 
-local SNAPSHOT_DELAY = 0.3
 local INTERRUPTS = 5
-local SESSION_CURRENT = 1
+local SESSION_OVERALL = 0
+
+local PRIMARY = {
+    [65] = 96231, [66] = 96231, [70] = 96231,
+    [102] = 78675, [103] = 106839, [104] = 106839,
+    [253] = 147362, [254] = 147362, [255] = 187707,
+}
 
 local frame = CreateFrame("Frame")
 local CAST_EVENTS = { "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_CHANNEL_STOP" }
-local roster, baseline = {}, {}
+local roster, baseline, credited = {}, {}, {}
+
+function Kicks.Deltas(before, after)
+    local list = {}
+    for guid, n in pairs(after) do
+        if before[guid] and n > before[guid] then list[#list + 1] = guid end
+    end
+    table.sort(list)
+    return list
+end
 
 function Kicks.Attribute(before, after)
-    local who
-    for guid, n in pairs(after) do
-        if n > (before[guid] or 0) then
-            if who then return nil end
-            who = guid
-        end
-    end
-    return who
+    local list = Kicks.Deltas(before, after)
+    if #list == 1 then return list[1] end
 end
 
 function Kicks.SpellOf(member)
-    local best
+    local function has(id) return ns.Cooldowns.Has(id, member.class, member.spec, member.talents) end
+    local primary = PRIMARY[member.spec]
+    if primary and has(primary) then return primary end
+    local owned, free, gated
     for id, s in pairs(ns.Spells) do
-        if s.type == "Kick" and (not best or id < best)
-            and ns.Cooldowns.Has(id, member.class, member.spec, member.talents) then
-            best = id
+        if s.type == "Kick" and has(id) then
+            local owns = false
+            for _, spec in ipairs(s.specs or {}) do
+                if spec == member.spec then owns = true end
+            end
+            local tier = owns and 1 or (not s.talentGated and 2 or 3)
+            if tier == 1 then
+                owned = (not owned or id < owned) and id or owned
+            elseif tier == 2 then
+                free = (not free or id < free) and id or free
+            else
+                gated = (not gated or id < gated) and id or gated
+            end
         end
     end
-    return best
+    return owned or free or gated
 end
 
 local function snapshot()
     local snap = {}
+    if InCombatLockdown() then return snap end
     for _, m in ipairs(roster) do
-        local ok, src = pcall(C_DamageMeter.GetCombatSessionSourceFromType, SESSION_CURRENT, INTERRUPTS, m.guid)
+        local ok, src = pcall(C_DamageMeter.GetCombatSessionSourceFromType, SESSION_OVERALL, INTERRUPTS, m.guid)
         if ok and not issecretvalue(src) and type(src) == "table" then
             local total = src.totalAmount
             if not issecretvalue(total) and type(total) == "number" then snap[m.guid] = total end
@@ -55,23 +77,26 @@ local function credit(guid)
     end
 end
 
-local function resolve()
+local function settle()
     local after = snapshot()
-    credit(Kicks.Attribute(baseline, after))
+    for _, guid in ipairs(Kicks.Deltas(baseline, after)) do
+        if not credited[guid] then credit(guid) end
+    end
     for guid, n in pairs(after) do baseline[guid] = n end
+    credited = {}
 end
 
 frame:SetScript("OnEvent", function(_, event, unit, _, _, by)
     if event == "PLAYER_REGEN_ENABLED" then
-        for guid, n in pairs(snapshot()) do baseline[guid] = n end
+        settle()
         return
     end
     if issecretvalue(unit) or type(unit) ~= "string" or not unit:find("^nameplate") then return end
-    if not issecretvalue(by) and by ~= nil then
-        credit(by)
-        return
-    end
-    C_Timer.After(SNAPSHOT_DELAY, resolve)
+    local hostile = UnitCanAttack("player", unit)
+    if issecretvalue(hostile) or not hostile then return end
+    if issecretvalue(by) or by == nil then return end
+    credited[by] = true
+    credit(by)
 end)
 
 local previous = ns.Group.OnRoster
@@ -83,5 +108,8 @@ ns.Group.OnRoster = function(list)
         if party then frame:RegisterEvent(event) else frame:UnregisterEvent(event) end
     end
     if party then frame:RegisterEvent("PLAYER_REGEN_ENABLED") else frame:UnregisterEvent("PLAYER_REGEN_ENABLED") end
-    baseline = party and snapshot() or {}
+    local kept = {}
+    for _, m in ipairs(party and list or {}) do kept[m.guid] = baseline[m.guid] end
+    baseline = kept
+    for guid, n in pairs(snapshot()) do baseline[guid] = baseline[guid] or n end
 end

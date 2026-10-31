@@ -51,3 +51,109 @@ describe("OwnCasts", function()
         assert.equal(1, ns.OwnCasts.Stats().secret)
     end)
 end)
+
+describe("Kicks.Deltas", function()
+    local ns
+    before_each(function() ns = helpers.load(FILES) end)
+
+    it("two risers both attributed", function()
+        assert.same({ "A", "B" }, ns.Kicks.Deltas({ A = 0, B = 2 }, { A = 1, B = 3 }))
+    end)
+
+    it("no risers none", function()
+        assert.same({}, ns.Kicks.Deltas({ A = 1 }, { A = 1 }))
+    end)
+
+    it("baseline missing member ignored", function()
+        assert.same({}, ns.Kicks.Deltas({}, { A = 4 }))
+    end)
+end)
+
+describe("Kicks.SpellOf", function()
+    local ns
+    before_each(function() ns = helpers.load(FILES) end)
+
+    local function pick(class, spec, talents)
+        return ns.Kicks.SpellOf({ class = class, spec = spec, talents = talents })
+    end
+
+    it("paladin picks Rebuke", function()
+        assert.equal(96231, pick("PALADIN", 66))
+    end)
+
+    it("feral and guardian pick Skull Bash", function()
+        assert.equal(106839, pick("DRUID", 103))
+        assert.equal(106839, pick("DRUID", 104))
+    end)
+
+    it("balance picks Solar Beam", function()
+        assert.equal(78675, pick("DRUID", 102))
+    end)
+
+    it("survival picks Muzzle, BM and MM pick Counter Shot", function()
+        assert.equal(187707, pick("HUNTER", 255))
+        assert.equal(147362, pick("HUNTER", 253))
+        assert.equal(147362, pick("HUNTER", 254))
+    end)
+
+    it("spec-owned kick beats others", function()
+        assert.equal(15487, pick("PRIEST", 258))
+    end)
+
+    it("falls back when primary talent is absent", function()
+        assert.equal(31935, pick("PALADIN", 66, { [31935] = 1 }))
+    end)
+end)
+
+describe("Kicks events", function()
+    local ns, used, baselineTotals, combat
+    local members = {
+        { guid = "A", class = "PALADIN", spec = 66 },
+        { guid = "B", class = "HUNTER", spec = 255 },
+    }
+
+    before_each(function()
+        baselineTotals = { A = 1, B = 1 }
+        combat = false
+        ns = helpers.load(FILES, {
+            IsInRaid = function() return false end,
+            IsInGroup = function() return true end,
+            InCombatLockdown = function() return combat end,
+            UnitCanAttack = function(_, unit) return unit == "nameplate1" end,
+            C_DamageMeter = { GetCombatSessionSourceFromType = function(_, _, guid)
+                return { totalAmount = baselineTotals[guid] }
+            end },
+        })
+        used = {}
+        ns.tracker = { Used = function(_, guid, id) used[#used + 1] = { guid, id } end }
+        ns.Group.OnRoster(members)
+    end)
+
+    it("regen credits every member whose count rose", function()
+        combat = true
+        helpers.fire("PLAYER_REGEN_DISABLED")
+        combat = false
+        baselineTotals = { A = 2, B = 3 }
+        helpers.fire("PLAYER_REGEN_ENABLED")
+        assert.same({ { "A", 96231 }, { "B", 187707 } }, used)
+        helpers.fire("PLAYER_REGEN_ENABLED")
+        assert.equal(2, #used)
+    end)
+
+    it("interruptedBy credits once and regen skips it", function()
+        helpers.fire("UNIT_SPELLCAST_INTERRUPTED", "nameplate1", "c", 1, "A")
+        baselineTotals = { A = 2, B = 1 }
+        helpers.fire("PLAYER_REGEN_ENABLED")
+        assert.same({ { "A", 96231 } }, used)
+    end)
+
+    it("friendly nameplate ignored", function()
+        helpers.fire("UNIT_SPELLCAST_INTERRUPTED", "nameplate2", "c", 1, "A")
+        assert.equal(0, #used)
+    end)
+
+    it("channel stop without interruptedBy credits nothing", function()
+        helpers.fire("UNIT_SPELLCAST_CHANNEL_STOP", "nameplate1", "c", 1, nil)
+        assert.equal(0, #used)
+    end)
+end)
