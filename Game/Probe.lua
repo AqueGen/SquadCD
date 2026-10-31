@@ -64,6 +64,7 @@ function Probe.Flags()
     print("SquadCD flags: party aura events skipped: " .. counts(live.drops))
     for _, s in ipairs(F.Snapshot()) do
         print(("SquadCD flags: %s now - helpful %s, big defensive %s; keys: %s"):format(s.unit, s.helpful, s.big, counts(s.keys)))
+        if #s.named > 0 then print(("SquadCD flags: %s auras: %s"):format(s.unit, table.concat(s.named, ", "))) end
     end
     local learned = ns.DB.probe and ns.DB.probe.auraKeys or {}
     local n = 0

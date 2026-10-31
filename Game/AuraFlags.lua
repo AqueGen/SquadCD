@@ -153,14 +153,18 @@ end
 
 function AuraFlags.Snapshot()
     local out = {}
-    for _, unit in ipairs({ "party1", "party2", "party3", "party4" }) do
+    for _, unit in ipairs({ "player", "party1", "party2", "party3", "party4" }) do
         if UnitExists(unit) then
-            local s = { unit = unit, keys = {} }
+            local s = { unit = unit, keys = {}, named = {} }
             local list, why = ids(unit, "HELPFUL")
             s.helpful = list and #list or why
             for _, id in ipairs(list or {}) do
                 local key = plain(id) and AuraFlags.Key(unit, id) or "secret id"
                 s.keys[key] = (s.keys[key] or 0) + 1
+                local ok, aura = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, unit, id)
+                if ok and plain(aura) and plain(aura.spellId) then
+                    s.named[#s.named + 1] = aura.spellId .. " " .. (plain(aura.name) and aura.name or "?") .. " " .. key
+                end
             end
             local big, bigWhy = ids(unit, "HELPFUL|BIG_DEFENSIVE")
             s.big = big and #big or bigWhy

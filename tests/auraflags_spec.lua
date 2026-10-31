@@ -78,9 +78,13 @@ describe("AuraFlags.Snapshot", function()
                 IsAuraFilteredOutByInstanceID = function(_, id, filter)
                     return not (id == 5 and (filter == "HELPFUL|BIG_DEFENSIVE" or filter == "HELPFUL|IMPORTANT"))
                 end,
+                GetAuraDataByAuraInstanceID = function(_, id)
+                    if id == 5 then return { spellId = 48792, name = "Icebound Fortitude" } end
+                    if id == 6 then return { spellId = SECRET } end
+                end,
             },
         })
-        assert.same({ { unit = "party1", helpful = 3, big = 1, keys = { ["B-I-"] = 1, ["----"] = 1, ["secret id"] = 1 } } },
-            ns.AuraFlags.Snapshot())
+        assert.same({ { unit = "party1", helpful = 3, big = 1, keys = { ["B-I-"] = 1, ["----"] = 1, ["secret id"] = 1 },
+            named = { "48792 Icebound Fortitude B-I-" } } }, ns.AuraFlags.Snapshot())
     end)
 end)
