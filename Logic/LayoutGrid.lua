@@ -152,11 +152,14 @@ function LayoutGrid.Line(tab, entries, across, right, bottom)
 end
 
 local roleRank = {}
+local classRank = {}
 local index = {}
 
 local function fixed(x, y)
     local rx, ry = roleRank[x] or 0, roleRank[y] or 0
     if rx ~= ry then return rx < ry end
+    local cx, cy = classRank[x] or 0, classRank[y] or 0
+    if cx ~= cy then return cx < cy end
     return index[x] < index[y]
 end
 
@@ -169,16 +172,19 @@ local function readyFirst(x, y)
     return fixed(x, y)
 end
 
-local function rankRoles(states, roleOrder)
+local function rankOf(list, value)
+    for k, v in ipairs(list) do
+        if v == value then return k end
+    end
+    return #list + 1
+end
+
+local function rankRoles(states, roleOrder, classOrder)
     for i, s in ipairs(states) do
         index[s] = i
-        if roleOrder then
-            local rank = #roleOrder + 1
-            for k, r in ipairs(roleOrder) do
-                if r == s.role then rank = k break end
-            end
-            roleRank[s] = rank
-        end
+        if roleOrder then roleRank[s] = rankOf(roleOrder, s.role) end
+        local classes = classOrder and classOrder[s.role]
+        if classes then classRank[s] = rankOf(classes, s.classId) end
     end
 end
 
@@ -186,27 +192,47 @@ local function clearRanks(states)
     for _, s in ipairs(states) do
         index[s] = nil
         roleRank[s] = nil
+        classRank[s] = nil
     end
 end
 
-function LayoutGrid.Sort(states, shape, roleOrder, out)
+function LayoutGrid.Sort(states, shape, roleOrder, out, classOrder)
     out = out or {}
     for i = #states + 1, #out do out[i] = nil end
     for i, s in ipairs(states) do out[i] = s end
-    rankRoles(states, roleOrder)
+    rankRoles(states, roleOrder, classOrder)
     table.sort(out, shape.sort == "ReadyFirst" and readyFirst or fixed)
     clearRanks(states)
     return out
 end
 
-function LayoutGrid.Next(states, roleOrder)
-    rankRoles(states, roleOrder or {})
+function LayoutGrid.Next(states, roleOrder, classOrder)
+    rankRoles(states, roleOrder or {}, classOrder)
     local best
     for i, s in ipairs(states) do
-        if s.ready and not s.dead and not s.unknown and (not best or roleRank[s] < roleRank[states[best]]) then best = i end
+        if s.ready and not s.dead and not s.unknown and (not best or fixed(s, states[best])) then best = i end
     end
     clearRanks(states)
     return best
+end
+
+function LayoutGrid.ClassesIn(order, role)
+    local has = {}
+    for specId, spec in pairs(ns.Specs) do
+        local id = LayoutGrid.ClassId(spec.class)
+        if id and LayoutGrid.RoleOf(specId) == role then has[id] = true end
+    end
+    local out = {}
+    for _, id in ipairs(order) do
+        if has[id] then out[#out + 1] = id end
+    end
+    return out
+end
+
+function LayoutGrid.ClassId(token)
+    for id, t in pairs(ns.Classes) do
+        if t == token then return id end
+    end
 end
 
 function LayoutGrid.Surplus(sparse, keep)

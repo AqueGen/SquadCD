@@ -3,13 +3,7 @@ local addonName, ns = ...
 ns.DEFAULTS = {
     version = 2,
     layout = ns.LayoutModel.Defaults(),
-    placement = {
-        Personal = "Row", Burst = "Row", Racial = "Row", Potion = "Row",
-        External = "Panel", Kick = "Panel", Stun = "Panel", CC = "Panel", Group = "Panel",
-        Dispel = "Off", Purge = "Off", Movement = "Off",
-    },
-    row = { side = "LEFT", size = 24, spacing = 2, max = 8, point = { "CENTER", -360, 120 } },
-    panel = { point = { "CENTER", 0, -200 }, size = 22, locked = true },
+    row = { point = { "CENTER", -360, 120 } },
     spells = {},
     window = {},
     timers = {},
@@ -39,6 +33,8 @@ end
 function ns.Defaults(db)
     ns.LayoutModel.Migrate(db)
     db.layout = ns.LayoutModel.Normalize(db.layout)
+    db.placement, db.panel = nil, nil
+    if type(db.row) == "table" then db.row = { point = db.row.point } end
     local defaults = {}
     for k, v in pairs(ns.DEFAULTS) do
         if k ~= "layout" then defaults[k] = v end

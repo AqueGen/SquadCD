@@ -194,12 +194,12 @@ describe("EditMode", function()
         assert.is_nil(ns.DB.layout.sections[1].pos)
     end)
 
-    it("Reset arrangement is refused in combat", function()
+    it("Reset arrangement in combat goes through Display.Changed", function()
         ns.DB.layout.sections[1].pos = { x = 5, y = 5 }
         combat = true
         E.ResetArrangement()
-        assert.are.same({ x = 5, y = 5 }, ns.DB.layout.sections[1].pos)
-        assert.truthy(printed[1]:find("out of combat"))
+        assert.is_nil(ns.DB.layout.sections[1].pos)
+        assert.are.equal(1, changed)
     end)
 
     describe("with the Kick window docked below the panel", function()

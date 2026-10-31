@@ -311,6 +311,29 @@ describe("LayoutGrid", function()
             assert.are.same({ "tank", "heal", "tank9", "heal9" }, keys(G.Sort(states, shape("Rows", 6, "TopLeft", "ReadyFirst"), ROLES)))
         end)
 
+        it("fixed orders a role by its class order, unlisted classes last", function()
+            local states = {
+                { key = "war", role = "Melee", classId = 1 }, { key = "rog", role = "Melee", classId = 4 },
+                { key = "none", role = "Melee" }, { key = "tank", role = "Tank", classId = 1 },
+            }
+            local classes = { Melee = { 4, 1 }, Tank = {} }
+            assert.are.same({ "tank", "rog", "war", "none" }, keys(G.Sort(states, shape("Rows", 6), ROLES, nil, classes)))
+        end)
+
+        it("without a class order classes keep input order", function()
+            local states = { { key = "war", role = "Melee", classId = 1 }, { key = "rog", role = "Melee", classId = 4 } }
+            assert.are.same({ "war", "rog" }, keys(G.Sort(states, shape("Rows", 6), ROLES)))
+        end)
+
+        it("ready first breaks ties by class order after role", function()
+            local states = {
+                { key = "war", role = "Melee", classId = 1, ready = true, remaining = 0 },
+                { key = "rog", role = "Melee", classId = 4, ready = true, remaining = 0 },
+            }
+            assert.are.same({ "rog", "war" },
+                keys(G.Sort(states, shape("Rows", 6, "TopLeft", "ReadyFirst"), ROLES, nil, { Melee = { 4, 1 } })))
+        end)
+
         it("refills a given table and leaves the input alone", function()
             local a, b = { key = "a", ready = false, remaining = 5 }, { key = "b", ready = true, remaining = 0 }
             local out = { "stale", "stale", "stale" }
@@ -356,6 +379,29 @@ describe("LayoutGrid", function()
         it("a member with an unknown role comes after every known role", function()
             local states = { { ready = true }, { role = "Healer", ready = true } }
             assert.are.equal(2, G.Next(states, ROLES))
+        end)
+
+        it("inside a role the class order decides", function()
+            local states = { { role = "Melee", classId = 1, ready = true }, { role = "Melee", classId = 4, ready = true } }
+            assert.are.equal(2, G.Next(states, ROLES, { Melee = { 4, 1 } }))
+            assert.are.equal(1, G.Next(states, ROLES))
+        end)
+    end)
+
+    describe("ClassesIn", function()
+        it("lists the classes with a spec in the role, in the given order", function()
+            local order = { 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 }
+            assert.are.same({ 12, 11, 10, 6, 2, 1 }, G.ClassesIn(order, "Tank"))
+            assert.are.same({ 13, 11, 10, 7, 5, 2 }, G.ClassesIn(order, "Healer"))
+        end)
+    end)
+
+    describe("ClassId", function()
+        it("maps a class token to the game's class id", function()
+            assert.are.equal(4, G.ClassId("ROGUE"))
+            assert.are.equal(13, G.ClassId("EVOKER"))
+            assert.is_nil(G.ClassId("NOPE"))
+            assert.is_nil(G.ClassId(nil))
         end)
     end)
 

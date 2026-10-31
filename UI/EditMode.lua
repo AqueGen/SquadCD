@@ -297,9 +297,8 @@ function EditMode.TogglePanels()
 end
 
 function EditMode.ResetArrangement()
-    if blocked("Reset arrangement") then return end
     for _, s in ipairs(ns.DB.layout.sections) do s.pos = nil end
-    ns.Display.Rebuild()
+    ns.Display.Changed()
 end
 
 function EditMode.StartMembers()

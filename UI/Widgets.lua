@@ -202,8 +202,8 @@ function Page:Group(title)
     box.title = box:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     box.title:SetPoint("TOPLEFT", PAD, -8)
     box.title:SetTextColor(unpack(T.gold))
-    box.title:SetText(title or "")
-    local group = setmetatable({ page = self, frame = box, items = {}, visible = self.visible }, Group)
+    box.title:SetText(type(title) == "string" and title or "")
+    local group = setmetatable({ page = self, frame = box, items = {}, visible = self.visible, title = title }, Group)
     self.groups[#self.groups + 1] = group
     return group
 end
@@ -235,6 +235,7 @@ function Page:Refresh()
     for index, group in ipairs(self.groups) do
         local shown = not group.visible or group.visible()
         group.frame:SetShown(shown)
+        if shown and type(group.title) == "function" then group.frame.title:SetText(group.title()) end
         local height = shown and LayoutGroup(group) or nil
         group.frame:SetHeight(height or 1)
         blocks[index] = { height = height or 0, shown = shown }

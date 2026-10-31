@@ -71,6 +71,21 @@ describe("LayoutRules", function()
             local _, rows = R.Route(layout, input())
             assert.are.same({ "External", "Personal" }, { rows[1].groups[1][1].type, rows[1].groups[1][2].type })
         end)
+
+        it("order arrows reorder types inside a section and a group, sections keep their list order", function()
+            local M = ns.LayoutModel
+            local layout = M.Defaults()
+            layout.sections = { { id = "a", types = { "Kick" }, shown = true }, { id = "b", types = { "External", "Control" }, shown = true } }
+            M.SetPlace(layout, "Dispel", "member")
+            M.MoveType(layout, "Control", -1)
+            M.MoveType(layout, "Control", -1)
+            for _ = 1, 8 do M.MoveType(layout, "Dispel", -1) end
+            local lines, rows = R.Route(layout, input())
+            local types = {}
+            for i, l in ipairs(lines) do types[i] = l.type end
+            assert.are.same({ "Kick", "Control", "External" }, types)
+            assert.are.same({ "Dispel", "Personal" }, { rows[1].groups[1][1].type, rows[1].groups[1][2].type })
+        end)
     end)
 
     it("order ready first", function()

@@ -11,9 +11,10 @@ local MIN_W, MIN_H = 820, 420
 local TITLE_H, MENU_W, ENTRY_H, GAP, PAD = 28, 150, 20, 4, 8
 local PAGES = {
     { key = "about", label = "What Huddle does" },
-    { key = "layout", label = "Layout" },
+    { key = "presets", label = "Presets and types" },
+    { key = "panels", label = "Panels" },
+    { key = "members", label = "At party frames" },
     { key = "spells", label = "Spells" },
-    { key = "look", label = "Look" },
     { key = "status", label = "Status" },
 }
 
@@ -195,7 +196,7 @@ end
 function Window.Show(key)
     if not ns.DB then return end
     if not frame then Build() end
-    key = key or current or (ns.DB.seenAbout and "layout" or "about")
+    key = key or current or (ns.DB.seenAbout and "presets" or "about")
     ns.DB.seenAbout = true
     if current and pages[current] and current ~= key then
         pages[current].frame:Hide()

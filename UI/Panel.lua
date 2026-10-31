@@ -13,7 +13,7 @@ local UNKNOWN = { ready = true, remaining = 0, recharge = 0, charges = 1, maybe 
 local main
 local windows = {}
 local shown = {}
-local roleOrder = {}
+local roleOrder, classOrder = {}, {}
 local containers, positions = {}, {}
 
 local function newContainer(name)
@@ -77,6 +77,7 @@ local function widgets(c, l, list, bars, size, letters, collapse)
         w.alts, w.bars, w.size, w.letters = alts, bars, size, letters
         for _, a in ipairs(alts) do a.buf = a.buf or {} end
         w.buf.role = Grid.RoleOf(e.member.spec)
+        w.buf.classId = Grid.ClassId(e.member.class)
         l.states[k] = w.buf
         widest = math.max(widest, apply(w, e))
         w.frame:Show()
@@ -166,7 +167,7 @@ end
 
 function Panel.Build(list)
     local layout = ns.DB.layout
-    roleOrder = Model.RoleOrder(layout)
+    roleOrder, classOrder = Model.RoleOrder(layout), layout.classOrder
     local groups, order, sectionOf = {}, {}, {}
     for _, item in ipairs(list) do
         local key = Model.OwnWindow(layout, item.section) and item.section.id or "panel"
@@ -267,8 +268,8 @@ function Panel.Update(tracker, now, sight)
                         for key, v in pairs(states[at]) do w.buf[key] = v end
                     end
                 end
-                local sorted = Grid.Sort(l.states, l.shape, roleOrder, l.sorted)
-                local nextAt = NEXT[l.type] and Grid.Next(sorted, roleOrder)
+                local sorted = Grid.Sort(l.states, l.shape, roleOrder, l.sorted, classOrder)
+                local nextAt = NEXT[l.type] and Grid.Next(sorted, roleOrder, classOrder)
                 for k, buf in ipairs(sorted) do
                     local w = buf.widget
                     w:Update(buf, now, sight.timers)

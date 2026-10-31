@@ -17,6 +17,7 @@ Logic/LayoutGrid.lua
 Logic/LayoutRules.lua
 Logic/Docking.lua
 Logic/MemberEdit.lua
+Logic/Preview.lua
 Logic/Persist.lua
 Game/Inspect.lua
 Game/Group.lua
@@ -35,12 +36,13 @@ UI/Display.lua
 UI/Demo.lua
 UI/WidgetRules.lua
 UI/Widgets.lua
-UI/Picture.lua
+UI/LayoutParts.lua
 UI/EditMode.lua
 UI/MemberChip.lua
 UI/Window.lua
 Pages/About.lua
-Pages/Layout.lua
+Pages/Presets.lua
+Pages/Panels.lua
+Pages/Members.lua
 Pages/Spells.lua
-Pages/Look.lua
 Pages/Status.lua

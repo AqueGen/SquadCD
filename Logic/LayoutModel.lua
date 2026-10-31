@@ -54,12 +54,16 @@ local function memberLook()
     return { iconSize = 26, labels = "Glyph", background = "None", opacity = 100, nameLetters = 5 }
 end
 
-function LayoutModel.Defaults()
+local function defaultClassOrder()
     local classOrder = {}
     for _, role in ipairs(ROLES) do
         classOrder[role] = {}
         for i = 1, CLASS_COUNT do classOrder[role][i] = i end
     end
+    return classOrder
+end
+
+function LayoutModel.Defaults()
     return {
         version = 2,
         overlay = "OnePanel",
@@ -73,13 +77,55 @@ function LayoutModel.Defaults()
         panelShape = shape("Rows", 6, "TopLeft"),
         panelLook = panelLook(),
         memberLook = memberLook(),
-        panel = { point = { "CENTER", 0, -200 }, locked = true },
+        panel = { point = { "CENTER", 0, -200 } },
         timers = true,
         memberFit = true,
         kickStyle = "Bars",
         rolePriority = copy(ROLES),
-        classOrder = classOrder,
+        classOrder = defaultClassOrder(),
     }
+end
+
+local function move(list, from, to)
+    if not list[from] or not list[to] or from == to then return end
+    table.insert(list, to, table.remove(list, from))
+end
+
+function LayoutModel.MoveType(layout, type, step)
+    local order = layout.typeOrder
+    for i, t in ipairs(order) do
+        if t == type then
+            if order[i + step] then order[i], order[i + step] = order[i + step], order[i] end
+            return layout
+        end
+    end
+    return layout
+end
+
+function LayoutModel.MoveRole(layout, from, to)
+    move(layout.rolePriority, from, to)
+    return layout
+end
+
+function LayoutModel.MoveClass(layout, role, shown, from, to)
+    local moved = copy(shown)
+    move(moved, from, to)
+    local isShown = {}
+    for _, c in ipairs(shown) do isShown[c] = true end
+    local next = 0
+    for i, c in ipairs(layout.classOrder[role]) do
+        if isShown[c] then
+            next = next + 1
+            layout.classOrder[role][i] = moved[next]
+        end
+    end
+    return layout
+end
+
+function LayoutModel.ResetPriority(layout)
+    layout.rolePriority = copy(ROLES)
+    layout.classOrder = defaultClassOrder()
+    return layout
 end
 
 function LayoutModel.PlaceOf(layout, type)
@@ -133,6 +179,20 @@ function LayoutModel.SetPlace(layout, type, place)
         local types = layout.groups[1].types
         types[#types + 1] = type
     end
+    return layout
+end
+
+function LayoutModel.AddToSection(layout, id, type)
+    local target
+    for _, s in ipairs(layout.sections) do
+        if s.id == id then target = s end
+    end
+    if not target then return layout end
+    for _, t in ipairs(target.types) do
+        if t == type then return layout end
+    end
+    without(layout, type)
+    target.types[#target.types + 1] = type
     return layout
 end
 
@@ -374,7 +434,7 @@ function LayoutModel.Normalize(layout)
     layout.memberLook = cleanLook(layout.memberLook, d.memberLook, 12, true) or d.memberLook
     local panel = type(layout.panel) == "table" and layout.panel or {}
     local point = type(panel.point) == "table" and #panel.point >= 1 and panel.point or d.panel.point
-    layout.panel = { point = point, locked = bool(panel.locked, true) }
+    layout.panel = { point = point }
 
     local shown = LayoutModel.VisibleTypes(layout)
     local known = {}
@@ -510,7 +570,7 @@ local function migrated(db)
     g.look = memberLook()
     g.look.iconSize = clamp(row.size or 24, 12, 40)
     layout.panelLook.iconSize = clamp(panel.size or 22, 20, 40)
-    layout.panel = { point = copy(panel.point or layout.panel.point), locked = panel.locked ~= false }
+    layout.panel = { point = copy(panel.point or layout.panel.point) }
     return layout
 end
 
