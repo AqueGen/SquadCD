@@ -61,6 +61,15 @@ local function Readout(unit)
         r["true"] + r["false"], r.secret, r.error, s.last and SpellName(s.last) or "none")
 end
 
+local function RaceName(race)
+    if race == nil then return nil end
+    local info = C_CreatureInfo.GetRaceInfo(race)
+    if issecretvalue(info) or info == nil then return nil end
+    local name = info.raceName
+    if issecretvalue(name) then return nil end
+    return name
+end
+
 local function MembersText()
     if ns.Group.Status() == "secret" then return "The party roster is secret right now." end
     if #roster == 0 then return "No party members. Huddle works in a party only." end
@@ -69,7 +78,9 @@ local function MembersText()
         local name = UnitName(m.unit)
         if issecretvalue(name) or name == nil then name = m.unit end
         local spec = ns.Specs[m.spec]
-        local who = Colored(name, T.ClassColor(m.class)) .. " - " .. T.ClassName(m.class) .. (spec and (" " .. spec.name) or "")
+        local race = RaceName(m.race)
+        local who = Colored(name, T.ClassColor(m.class)) .. " - " .. (race and (race .. " ") or "")
+            .. T.ClassName(m.class) .. (spec and (" " .. spec.name) or "")
         local talents = "talents read: yes"
         if not m.talents then
             talents = m.unit == "player" and "talents read: no" or ("talents read: no (" .. Inspecting(m.guid) .. ")")

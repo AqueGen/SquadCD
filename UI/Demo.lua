@@ -88,6 +88,10 @@ function Demo.Start()
 end
 
 function Demo.Stop()
+    if InCombatLockdown() then
+        print("Huddle: demo is available out of combat only.")
+        return
+    end
     running = false
     ns.Display.SetSource(nil)
 end
@@ -98,6 +102,7 @@ end
 
 function Demo.Toggle()
     if running then Demo.Stop() else Demo.Start() end
+    if ns.Window then ns.Window.Refresh() end
 end
 
 function Huddle_Demo()

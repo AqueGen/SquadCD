@@ -4,13 +4,7 @@ local Panel = {}
 ns.Panel = Panel
 
 local T = ns.Theme
-local PAD, LABEL_W, GAP, NAME_H = 6, 64, 4, 11
-
-local LABELS = {
-    Personal = "Defensives", Burst = "Burst", Racial = "Racials", Potion = "Potions",
-    External = "Externals", Kick = "Kicks", Stun = "Stuns", CC = "CC", Group = "Raid CDs",
-    Dispel = "Dispels", Purge = "Purges", Movement = "Movement",
-}
+local PAD, LABEL_W, GAP, NAME_H = 6, 98, 4, 11
 
 local UNKNOWN = { ready = true, remaining = 0, recharge = 0, charges = 1, maybe = false, talentsKnown = true }
 
@@ -63,7 +57,7 @@ function Panel.Build(groups)
     for i, g in ipairs(groups) do
         local l = line(i)
         local top = -PAD - (i - 1) * lineH
-        l.label:SetText(LABELS[g.type] or g.type)
+        l.label:SetText(ns.LayoutRules.LABELS[g.type] or g.type)
         l.label:ClearAllPoints()
         l.label:SetPoint("TOPLEFT", PAD, top - (size - 11) / 2)
         l.label:Show()
@@ -114,6 +108,15 @@ function Panel.Update(tracker, now)
             end
         end
     end
+end
+
+function Panel.SetLocked(locked)
+    if InCombatLockdown() then
+        print("Huddle: the panel can be locked or unlocked out of combat only.")
+        return
+    end
+    ns.DB.panel.locked = locked
+    ns.Display.Rebuild()
 end
 
 function Panel.Hide()

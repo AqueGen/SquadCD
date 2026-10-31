@@ -7,7 +7,7 @@ local T = ns.Theme
 local Window = {}
 
 local DEFAULT_W, DEFAULT_H = 860, 560
-local MIN_W, MIN_H = 790, 420
+local MIN_W, MIN_H = 820, 420
 local TITLE_H, MENU_W, ENTRY_H, GAP, PAD = 28, 150, 20, 4, 8
 local PAGES = {
     { key = "about", label = "What Huddle does" },
@@ -119,8 +119,7 @@ local function Build()
 
     local close = TitleButton(title, "X", 22, title, function() frame:Hide() end)
     unlock = TitleButton(title, "Unlock panel", 100, close, function()
-        ns.DB.panel.locked = not ns.DB.panel.locked
-        ns.Display.Rebuild()
+        ns.Panel.SetLocked(not ns.DB.panel.locked)
     end)
     demo = TitleButton(title, "Demo", 80, unlock, ns.Demo.Toggle)
 
@@ -137,6 +136,7 @@ local function Build()
     signature:SetText("|cFF0057B7Made|r |cFFFFD700in Ukraine|r")
 
     scroll = CreateFrame("ScrollFrame", nil, frame, "UIPanelScrollFrameTemplate")
+    scroll.scrollBarHideable = true
     scroll:SetPoint("TOPLEFT", menu, "TOPRIGHT", PAD, -PAD)
     scroll:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -30, PAD + 12)
     host = CreateFrame("Frame", nil, scroll)
@@ -144,7 +144,6 @@ local function Build()
     scroll:SetScrollChild(host)
     scroll:SetScript("OnSizeChanged", function(_, width)
         host:SetWidth(width)
-        -- Notes rewrap to the new width, so the page has to re-stack
         if current and pages[current] then pages[current]:Refresh() end
     end)
 

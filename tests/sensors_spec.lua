@@ -335,6 +335,20 @@ describe("Sensors", function()
         assert.are.equal(calls, #w.calls)
     end)
 
+    it("readout counts and last seen reset when another member takes the unit", function()
+        local ns, w = start({ mode = "party" })
+        aura(w, "party1", SHIELD_WALL, true)
+        local stats = ns.Sensors.Stats()
+        assert.are.equal(SHIELD_WALL, stats.party1.last)
+        assert.is_true(stats.party1.read["true"] > 0)
+        w.units.party1 = { guid = "D", class = "PRIEST", role = "HEALER" }
+        w.buffs.party1 = {}
+        helpers.fire("GROUP_ROSTER_UPDATE")
+        stats = ns.Sensors.Stats()
+        assert.is_nil(stats.party1.last)
+        assert.are.equal(0, stats.party1.read["true"])
+    end)
+
     it("slot setup failure keeps one container per unit", function()
         local w = world({ mode = "party" })
         w.slotError = true

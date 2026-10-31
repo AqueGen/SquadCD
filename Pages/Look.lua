@@ -37,7 +37,14 @@ ns.Window.Register("look", function(page)
     }))
 
     local panel = page:Group("Group panel")
-    panel:Note("The panel shows in a party or in Demo mode. Unlock it (title bar, or clear Lock panel below), then drag it with the mouse.")
+    panel:Note("The panel shows in a party or in Demo mode. Click Unlock panel in the title bar (or clear Lock panel below), then drag the panel with the mouse; Lock panel fixes it in place. Out of combat only.")
     panel:Slider(With(Setting("panel", "size"), { label = "Icon size", min = 16, max = 48 }))
-    panel:Check(With(Setting("panel", "locked", ns.Window.Refresh), { label = "Lock panel" }))
+    panel:Check({
+        label = "Lock panel",
+        get = function() return ns.DB.panel.locked end,
+        set = function(value)
+            ns.Panel.SetLocked(value)
+            ns.Window.Refresh()
+        end,
+    })
 end)

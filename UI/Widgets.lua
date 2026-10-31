@@ -169,9 +169,9 @@ function Group:Note(spec)
     local text = box:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     text:SetWidth(NOTE_W)
     text:SetJustifyH("LEFT")
+    text:SetSpacing(2)
     text:SetTextColor(unpack(spec.color or T.muted))
     text:SetText(type(spec.text) == "function" and "" or spec.text)
-    -- Wraps to the box on a narrow window, never wider than a comfortable line
     self:Add(text, function()
         if type(spec.text) == "function" then text:SetText(spec.text()) end
         local room = (box:GetWidth() or 0) - 2 * PAD
@@ -197,7 +197,6 @@ function Page:Group(title)
     box:SetBackdrop(T.FLAT)
     box:SetBackdropColor(unpack(T.panel))
     box:SetBackdropBorderColor(unpack(T.border))
-    -- Anchored from the start so notes measure the box's width on the page's first layout
     box:SetPoint("TOPLEFT")
     box:SetPoint("RIGHT", self.frame, "RIGHT", -PAD, 0)
     box.title = box:CreateFontString(nil, "OVERLAY", "GameFontNormal")

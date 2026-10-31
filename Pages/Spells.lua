@@ -2,7 +2,7 @@ local _, ns = ...
 
 local T = ns.Theme
 local Widgets = ns.Widgets
-local TAB_W, TAB_H, TAB_COLUMNS = 90, 24, 7
+local TAB_W, TAB_MIN_W, TAB_H, TAB_COLUMNS = 92, 84, 24, 7
 local ROW_H = 22
 local NAME_X, TYPE_X, CD_X, TAG_X = 48, 250, 360, 420
 local QUESTION = "Interface\\Icons\\INV_Misc_QuestionMark"
@@ -27,7 +27,7 @@ local function Tabs(group, select)
     end
     local _, height = ns.WidgetRules.Grid(count, TAB_COLUMNS, TAB_W, TAB_H)
     return holder, height, function(current)
-        local cellW = math.min(TAB_W, math.floor((group.frame:GetWidth() - 2 * Widgets.PAD) / TAB_COLUMNS))
+        local cellW = math.max(TAB_MIN_W, math.min(TAB_W, math.floor((group.frame:GetWidth() - 2 * Widgets.PAD) / TAB_COLUMNS)))
         local cells = ns.WidgetRules.Grid(count, TAB_COLUMNS, cellW, TAB_H)
         holder:SetSize(TAB_COLUMNS * cellW, height)
         for i, button in ipairs(buttons) do
@@ -106,11 +106,14 @@ ns.Window.Register("spells", function(page)
     Text(header, NAME_X, T.gold):SetText("Spell")
     Text(header, TYPE_X, T.gold):SetText("Type")
     Text(header, CD_X, T.gold):SetText("Cooldown")
-    local rows, shown = {}, 0
+    local rows, shown, filled = {}, 0, nil
     box:Add(list, function() return (shown + 1) * ROW_H end, function()
+        list:SetSize(math.max(box.frame:GetWidth() - 2 * Widgets.PAD, 1), (shown + 1) * ROW_H)
+        if filled == (tab or "All") then return end
+        filled = tab or "All"
         local entries = ns.LayoutRules.Catalog(tab)
         if not tab then table.insert(entries, 1, POTION) end
-        list:SetSize(math.max(box.frame:GetWidth() - 2 * Widgets.PAD, 1), (#entries + 1) * ROW_H)
+        list:SetHeight((#entries + 1) * ROW_H)
         for i, e in ipairs(entries) do
             local row = rows[i]
             if not row then

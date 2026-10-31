@@ -27,12 +27,14 @@ local function Icons()
             table.insert(icons[s.type], "Interface\\Icons\\" .. s.icon)
         end
     end
-    local potion = C_Item.GetItemIconByID(ns.Potions[1].item)
-    icons.Potion = { (issecretvalue(potion) or potion == nil) and QUESTION or potion }
     return icons
 end
 
 local function IconOf(t, i)
+    if t == "Potion" then
+        local potion = C_Item.GetItemIconByID(ns.Potions[1].item)
+        return (issecretvalue(potion) or potion == nil) and QUESTION or potion
+    end
     local list = Icons()[t] or {}
     return list[(i - 1) % math.max(#list, 1) + 1] or QUESTION
 end

@@ -305,7 +305,9 @@ function rebuild(fromSelfTest)
                     local w = { unit = m.unit, guid = m.guid, map = map, sensor = sensor, last = {} }
                     active[m.unit] = w
                     used[m.unit] = true
-                    stats[m.unit] = stats[m.unit] or {
+                    local old = stats[m.unit]
+                    stats[m.unit] = old and old.guid == m.guid and old or {
+                        guid = m.guid,
                         read = { ["true"] = 0, ["false"] = 0, secret = 0, error = 0 },
                         hit = { ["true"] = 0, ["false"] = 0, secret = 0, error = 0 },
                     }

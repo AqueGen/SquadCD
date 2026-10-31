@@ -13,5 +13,5 @@ ns.Window.Register("about", function(page)
     cannot:Note("When the game hides party buffs from addons (secret mode), teammates' defensives and externals are not tracked. Your own row and kicks still work. The Status page shows which mode is on and why.")
 
     local start = page:Group("Getting started")
-    start:Note("Demo (title bar) shows sample rows and the panel. Unlock panel (title bar) lets you drag the panel; Lock panel fixes it in place. Layout picks Row, Panel or Off per spell type; Look sets sizes and the side of the row.")
+    start:Note("Demo (title bar) shows sample rows and the panel. Unlock panel (title bar) lets you drag the panel; Lock panel fixes it in place. Both work out of combat only. Layout picks Row, Panel or Off per spell type; Look sets sizes and the side of the row.")
 end)
