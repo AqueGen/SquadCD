@@ -19,35 +19,25 @@ local function world(opts)
         party2 = { guid = "B", class = "WARRIOR", role = "TANK" },
     }
 
-    local function slotFrame(container, id)
-        local s = {}
-        function s:IsShown()
-            w.reads = (w.reads or 0) + 1
-            if w.secret then return SECRET end
-            return w.debuffs[container.unit] and w.debuffs[container.unit][id] or false
-        end
-        function s:IsMouseOver() return false end
-        return s
-    end
-
     local function container()
-        local c = { slots = {}, enabled = {} }
+        local c = {}
         function c:SetPoint() end
+        function c:SetSize() end
         function c:EnableMouse() end
         function c:SetEnabled(v) self.on = v end
         function c:SetUnit(u)
             if w.combat then w.setUnitCombat = w.setUnitCombat + 1 end
             self.unit = u
         end
-        function c:GetAuraSlotFrame(key) return self.slots[key] end
-        function c:SetAuraSlotEnabled(key, v) self.enabled[key] = v end
-        function c:AddAuraSlot(key, filter, options)
-            assert(not w.combat, "slot added in combat")
+        function c:AddAuraGroup(_, filter, options)
+            assert(not w.combat, "group added in combat")
             w.filters[filter] = (w.filters[filter] or 0) + 1
-            local id = next(options.candidateFilters.includeSpellIDs)
-            self.slots[key] = slotFrame(self, id)
-            self.enabled[key] = true
-            return self.slots[key]
+            self.id = next(options.candidateFilters.includeSpellIDs)
+        end
+        function c:IsMouseOver()
+            w.reads = (w.reads or 0) + 1
+            if w.secret then return SECRET end
+            return w.debuffs[self.unit] and w.debuffs[self.unit][self.id] or false
         end
         w.containers[#w.containers + 1] = c
         return c
@@ -231,7 +221,7 @@ describe("EnemyDebuffs", function()
     it("pool is capped and reused", function()
         local ns, w = start({ mode = "party" })
         local before = #w.containers
-        assert.are.equal(20, before)
+        assert.are.equal(20 * 2, before)
         for i = 1, 25 do add(w, "nameplate" .. i) end
         assert.are.equal(before, #w.containers)
         assert.are.equal(before, #w.containers)

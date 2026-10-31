@@ -13,7 +13,7 @@ function Probe.Data()
     local units = {}
     for _, unit in ipairs(UNITS) do
         local s = stats[unit]
-        if s then units[#units + 1] = { unit = unit, read = s.read, hit = s.hit } end
+        if s then units[#units + 1] = { unit = unit, read = s.read } end
     end
     local ids = {}
     for id in pairs(seen) do ids[#ids + 1] = id end
@@ -33,9 +33,9 @@ function Probe.Run()
     print(("SquadCD probe: group %s, sensors %s%s"):format(d.group, d.mode, d.reason and (" (" .. d.reason .. ")") or ""))
     if d.note then print("SquadCD probe: " .. d.note) end
     for _, u in ipairs(d.units) do
-        local r, h = u.read, u.hit
-        print(("SquadCD probe: %s shown: plain %d (true %d), secret %d, error %d - hit-test: true %d, false %d, secret %d, error %d"):format(
-            u.unit, r["true"] + r["false"], r["true"], r.secret, r.error, h["true"], h["false"], h.secret, h.error))
+        local r = u.read
+        print(("SquadCD probe: %s hit-test: plain %d (true %d), secret %d, error %d"):format(
+            u.unit, r["true"] + r["false"], r["true"], r.secret, r.error))
     end
     print("SquadCD probe: buffs seen since login: " .. (#d.seen > 0 and table.concat(d.seen, ", ") or "none"))
     Probe.Flags()

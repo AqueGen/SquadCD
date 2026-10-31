@@ -114,7 +114,7 @@ ns.Window.Register("status", function(page)
     page:Group("Own casts and kicks"):Note({ color = WHITE, text = OwnText })
     page:Group("Enemy stops and CC"):Note({ color = WHITE, text = DebuffText })
     local probe = page:Group("Probe")
-    probe:Note("Prints the full readout, with hit-test counts, every buff id seen since login and the party aura flag keys, to the chat window.")
+    probe:Note("Prints the full readout, with sensor counts, every buff id seen since login and the party aura flag keys, to the chat window.")
     probe:Button({ text = "Run probe", width = 120, onClick = ns.Probe.Run })
 
     local elapsed = 0

@@ -7,6 +7,8 @@ ns.Sensors = Sensors
 local POLL_STEP, POLL_STEPS = 0.1, 5
 local SELF_TEST_DELAY = 0.5
 local INSET = 1e5
+local STRIDE = 50000
+local PROBE_X = -11
 local OWN_CAST_WINDOW = 3
 
 local mode, reason = "unavailable", "self-test has not run"
@@ -30,85 +32,95 @@ local function readout(ok, v)
     return v
 end
 
+-- The engine lays a present aura out as one STRIDE-wide element and resizes the probe to fit it,
+-- so the probe reaches across the screen only while the aura is up; the hit-test reads that as a plain boolean.
 function Sensor:Read(buffId)
-    local slot = self.slots[buffId]
-    if not slot then return nil, "error" end
-    return readout(pcall(slot.IsShown, slot))
+    local probe = self.probes[buffId]
+    if not probe then return nil, "error" end
+    return readout(pcall(probe.IsMouseOver, probe, INSET, -INSET, 0, 0))
 end
 
-function Sensor:HitTest(buffId)
-    local slot = self.slots[buffId]
-    if not slot then return nil, "error" end
-    return readout(pcall(slot.IsMouseOver, slot, INSET, -INSET, -INSET, INSET))
+local function initElement(b)
+    pcall(b.SetSize, b, 1, 1)
+    pcall(b.SetMouseClickEnabled, b, false)
+    pcall(b.SetMouseMotionEnabled, b, false)
 end
 
-local function container(unit)
-    local c = containers[unit]
-    if c then return c end
+local function newProbe(unit, filter, id)
     if not host then
         host = CreateFrame("Frame", nil, UIParent)
-        host:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -10000, 10000)
+        host:SetPoint("TOPLEFT", UIParent, "TOPLEFT", PROBE_X, 0)
         host:SetSize(1, 1)
         host:EnableMouse(false)
     end
     local ok, f = pcall(CreateFrame, "AuraContainer", nil, host, "CustomAuraContainerTemplate")
     if not ok or not f then return nil, "AuraContainer unavailable: " .. tostring(f) end
-    c = { frame = f, keys = {} }
-    containers[unit] = c
-    ok = pcall(function()
-        f:SetPoint("TOPLEFT", host, "TOPLEFT")
+    local okSetup, err = pcall(function()
+        f:SetSize(1, 1)
+        f:SetPoint("TOPLEFT", UIParent, "TOPLEFT", PROBE_X, 0)
         f:EnableMouse(false)
+        f:AddAuraGroup("a", filter, {
+            maxFrameCount = 1,
+            candidateFilters = { includeSpellIDs = { [id] = true } },
+            initializeFrame = initElement,
+            layout = { elementWidth = STRIDE, elementHeight = 1 },
+        })
         f:SetUnit(unit)
     end)
-    if not ok then c.broken = "AuraContainer setup failed" end
+    if not okSetup then return nil, "aura group setup failed: " .. tostring(err) end
+    return f
+end
+
+local function container(unit)
+    local c = containers[unit]
+    if not c then
+        c = { probes = {} }
+        containers[unit] = c
+    end
     return c
 end
 
 function Sensor:SetUnit(unit)
     self.unit = unit
-    pcall(self.c.frame.SetUnit, self.c.frame, unit)
+    for _, f in pairs(self.probes) do pcall(f.SetUnit, f, unit) end
 end
 
 function Sensor:SetEnabled(on)
-    pcall(self.c.frame.SetEnabled, self.c.frame, on)
+    for _, f in pairs(self.probes) do pcall(f.SetEnabled, f, on) end
 end
 
 function Sensors.Build(unit, buffIds, filter)
     filter = filter or "HELPFUL"
-    local c, why = container(unit)
-    if not c then return nil, why end
+    local c = container(unit)
     if c.broken then return nil, c.broken end
-    local wanted, slots = {}, {}
-    local ok, err = pcall(function()
-        local f = c.frame
-        f:SetEnabled(true)
-        for _, id in ipairs(buffIds) do
-            local key = "b" .. id
-            wanted[key] = true
-            local slot = f:GetAuraSlotFrame(key)
-            if slot then
-                f:SetAuraSlotEnabled(key, true)
-            else
-                slot = f:AddAuraSlot(key, filter, { candidateFilters = { includeSpellIDs = { [id] = true } } })
-                c.keys[key] = true
+    local wanted, probes = {}, {}
+    for _, id in ipairs(buffIds) do
+        local key = filter .. id
+        wanted[key] = true
+        local f = c.probes[key]
+        if not f then
+            local why
+            f, why = newProbe(unit, filter, id)
+            if not f then
+                c.broken = why
+                return nil, why
             end
-            slots[id] = slot
+            c.probes[key] = f
         end
-        for key in pairs(c.keys) do
-            if not wanted[key] then f:SetAuraSlotEnabled(key, false) end
-        end
-    end)
-    if not ok then
-        c.broken = "aura slot setup failed: " .. tostring(err)
-        return nil, c.broken
+        pcall(f.SetEnabled, f, true)
+        probes[id] = f
+    end
+    for key, f in pairs(c.probes) do
+        if not wanted[key] then pcall(f.SetEnabled, f, false) end
     end
     c.filter = filter
-    return setmetatable({ unit = unit, slots = slots, c = c }, Sensor)
+    return setmetatable({ unit = unit, probes = probes, c = c }, Sensor)
 end
 
 local function setEnabled(unit, on)
     local c = containers[unit]
-    if c and not c.broken then pcall(c.frame.SetEnabled, c.frame, on) end
+    if not c then return end
+    for _, f in pairs(c.probes) do pcall(f.SetEnabled, f, on) end
 end
 
 function Sensors.Mode()
@@ -250,7 +262,6 @@ local function scan(w)
         local v, why = nil, "secret"
         if not w.secret[id] then
             v, why = w.sensor:Read(id)
-            count(s.hit, w.sensor:HitTest(id))
         end
         count(s.read, v, why)
         if why == "secret" then w.secret[id] = true end
@@ -340,7 +351,6 @@ function rebuild(fromSelfTest)
                 stats[m.unit] = old and old.guid == m.guid and old or {
                     guid = m.guid,
                     read = { ["true"] = 0, ["false"] = 0, secret = 0, error = 0 },
-                    hit = { ["true"] = 0, ["false"] = 0, secret = 0, error = 0 },
                 }
                 watchFrame(m.unit):RegisterUnitEvent("UNIT_AURA", m.unit)
                 poll(w)
