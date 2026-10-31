@@ -73,6 +73,7 @@ function Display.Rebuild(late)
         pending = true
         return
     end
+    local forced = pending or not late
     pending = false
     local members = source.members
     if #members == 0 then
@@ -81,7 +82,7 @@ function Display.Rebuild(late)
         driver:SetScript("OnUpdate", nil)
         return
     end
-    ns.Anchors.Scan()
+    if not ns.Anchors.Scan() and not forced then return end
     local rows, groups = collect(members)
     ns.Rows.Build(rows)
     ns.Panel.Build(groups)
@@ -105,7 +106,11 @@ function Display.IsLive()
 end
 
 driver:SetScript("OnEvent", function()
-    if pending or #source.members > 0 then Display.Rebuild() end
+    if pending then
+        Display.Rebuild()
+    elseif #source.members > 0 then
+        Display.Rebuild(true)
+    end
 end)
 driver:RegisterEvent("PLAYER_REGEN_ENABLED")
 

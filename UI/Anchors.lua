@@ -75,10 +75,14 @@ local function blizzard(unit)
 end
 
 function Anchors.Scan()
+    local old = found
     found = thirdParty()
+    local changed = false
     for unit in pairs(TOKENS) do
         found[unit] = found[unit] or blizzard(unit)
+        if found[unit] ~= old[unit] then changed = true end
     end
+    return changed
 end
 
 function Anchors.Stack()
