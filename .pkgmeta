@@ -1,0 +1,21 @@
+package-as: SquadCD
+
+enable-nolib-creation: no
+
+manual-changelog:
+  filename: RELEASE_NOTES.md
+  markup-type: markdown
+
+ignore:
+  - README.md
+  - RELEASE_NOTES.md
+  - .gitignore
+  - .gitattributes
+  - .github
+  - .busted
+  - CLAUDE.md
+  - tests
+  - tools
+  - docs
+  - release-please-config.json
+  - .release-please-manifest.json
