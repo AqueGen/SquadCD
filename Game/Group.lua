@@ -89,6 +89,7 @@ function Group.Refresh()
     local party = Group.Mode() == "party"
     local list, why = {}, nil
     if party then list, why = Group.Members() end
+    if why and #current > 0 then list = current end
     current, status = list, why
     for _, event in ipairs(PARTY_EVENTS) do
         if party then frame:RegisterEvent(event) else frame:UnregisterEvent(event) end

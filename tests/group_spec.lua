@@ -130,6 +130,15 @@ describe("Group status", function()
         assert.is_nil(ns.Persist.tracker)
     end)
 
+    it("partial secret roster keeps the previous member list", function()
+        local ns, rosters = start("party")
+        _G.issecretvalue = function(v) return v == "A" end
+        helpers.fire("GROUP_ROSTER_UPDATE")
+        assert.are.equal("secret", ns.Group.Status())
+        assert.are.same({ "P", "A" }, ns.tracker.order)
+        assert.are.equal(2, #rosters[#rosters])
+    end)
+
     it("no player spec yet leaves the spec to the guess", function()
         local units = { player = { guid = "P", class = "PRIEST", role = "NONE" }, party1 = { guid = "A", class = "PRIEST", role = "HEALER" } }
         local ns, rosters = start("party", units, {
