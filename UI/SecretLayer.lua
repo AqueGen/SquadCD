@@ -29,7 +29,7 @@ end
 function Layer.New(icon)
     local f = icon.frame
     local level = f:GetFrameLevel() + 4
-    local self = setmetatable({ icon = icon, slots = {} }, Layer)
+    local self = setmetatable({ icon = icon, slots = {}, displays = {} }, Layer)
     self.root = holder(f, level)
     self.grey = holder(self.root, level + 1)
     self.border = CreateFrame("Frame", nil, self.root, "BackdropTemplate")
@@ -39,13 +39,12 @@ function Layer.New(icon)
     self.border:SetBackdrop({ edgeFile = WHITE, edgeSize = BORDER })
     self.border:SetBackdropBorderColor(T.gold[1], T.gold[2], T.gold[3], 1)
     self.border:SetAlpha(0)
+    self.active = holder(self.root, level + 3)
     self.window = CreateFrame("Frame", nil, self.root)
     self.window:SetPoint("CENTER", f, "CENTER")
     self.window:SetClipsChildren(true)
     self.window:SetFrameLevel(level + 3)
     self.cooling = holder(self.window, level + 3)
-    self.active = holder(self.window, level + 3)
-    self.active:SetAlpha(0)
     for s = 1, 2 do
         local slot = {}
         slot.gate = CreateFrame("StatusBar", nil, self.grey)
@@ -53,18 +52,13 @@ function Layer.New(icon)
         slot.gate:SetMinMaxValues(0, 1)
         slot.gate:SetValue(0)
         slot.cool = bar(self.cooling)
-        slot.act = bar(self.active)
         slot.coolText = slot.cool:CreateFontString(nil, "OVERLAY")
-        slot.actText = slot.act:CreateFontString(nil, "OVERLAY")
-        for _, pair in ipairs({ { slot.cool, slot.coolText }, { slot.act, slot.actText } }) do
-            local b, text = pair[1], pair[2]
-            b:GetStatusBarTexture():SetAlpha(0)
-            b:SetPoint("BOTTOM", self.window, "BOTTOM")
-            text:SetPoint("TOP", b:GetStatusBarTexture(), "TOP")
-            text:SetJustifyH("CENTER")
-            text:SetJustifyV("TOP")
-            text:SetSpacing(SPACING)
-        end
+        slot.cool:GetStatusBarTexture():SetAlpha(0)
+        slot.cool:SetPoint("BOTTOM", self.window, "BOTTOM")
+        slot.coolText:SetPoint("TOP", slot.cool:GetStatusBarTexture(), "TOP")
+        slot.coolText:SetJustifyH("CENTER")
+        slot.coolText:SetJustifyV("TOP")
+        slot.coolText:SetSpacing(SPACING)
         self.slots[s] = slot
     end
     self.root:Hide()
@@ -87,37 +81,67 @@ local function linePitch(fontSize)
     return heights[fontSize]
 end
 
+local function fontSize(size)
+    return math.max(8, math.floor(size * 0.42))
+end
+
 function Layer:SetLook(texture, size)
     self.size = size
     for _, slot in ipairs(self.slots) do
         slot.gate:SetStatusBarTexture(texture)
         slot.gate:GetStatusBarTexture():SetDesaturated(true)
-        for _, text in ipairs({ slot.coolText, slot.actText }) do
-            text:SetFont(T.FONT, math.max(8, math.floor(size * 0.42)), "OUTLINE")
-            text:SetWidth(size)
-        end
+        slot.coolText:SetFont(T.FONT, fontSize(size), "OUTLINE")
+        slot.coolText:SetWidth(size)
     end
-    self.line = linePitch(math.max(8, math.floor(size * 0.42)))
+    self.line = linePitch(fontSize(size))
     self.window:SetSize(size, self.line)
 end
 
-local function strip(b, text, span, line, width)
-    if not span then
-        text:SetText("")
-        b:SetSize(width, line)
-        return
-    end
+function Layer:Configure(cd)
     local labels = {}
-    for k = 1, math.ceil(span) do labels[k] = ns.LayoutRules.FormatRemaining(k) end
-    text:SetText(table.concat(labels, "\n"))
-    b:SetSize(width, span * line)
+    for k = 1, math.ceil(cd) do labels[k] = ns.LayoutRules.FormatRemaining(k) end
+    local text = table.concat(labels, "\n")
+    for _, slot in ipairs(self.slots) do
+        slot.coolText:SetText(text)
+        slot.cool:SetSize(self.size or 1, cd * (self.line or 1))
+    end
 end
 
-function Layer:Configure(cd, dur)
-    for _, slot in ipairs(self.slots) do
-        strip(slot.cool, slot.coolText, cd, self.line or 1, self.size or 1)
-        strip(slot.act, slot.actText, dur, self.line or 1, self.size or 1)
+-- The engine writes the aura's real remaining time (talents included) into a string that must belong to the aura button.
+function Layer:Watch(list)
+    local size = self.size or 1
+    for i, w in ipairs(list) do
+        local d = self.displays[i]
+        local set, sig = {}, table.concat(w.ids, ",")
+        for _, id in ipairs(w.ids) do set[id] = true end
+        if d and d.sig ~= sig then
+            d:SetAuraGroupCandidateFilters("a", { includeSpellIDs = set })
+            d.sig = sig
+        end
+        if not d then
+            d = CreateFrame("AuraContainer", nil, self.active, "CustomAuraContainerTemplate")
+            d:SetPoint("TOPLEFT", self.icon.frame, "TOPLEFT")
+            d:EnableMouse(false)
+            d.sig = sig
+            d:AddAuraGroup("a", "HELPFUL", {
+                maxFrameCount = 1,
+                candidateFilters = { includeSpellIDs = set },
+                initializeFrame = function(b)
+                    pcall(b.SetMouseClickEnabled, b, false)
+                    pcall(b.SetMouseMotionEnabled, b, false)
+                    local text = b:CreateFontString(nil, "OVERLAY")
+                    text:SetFont(T.FONT, fontSize(size), "OUTLINE")
+                    text:SetPoint("CENTER")
+                    b:SetDurationText(text)
+                end,
+                layout = { elementWidth = size, elementHeight = size },
+            })
+            self.displays[i] = d
+        end
+        d:SetUnit(w.unit)
+        d:SetEnabled(true)
     end
+    for i = #list + 1, #self.displays do self.displays[i]:SetEnabled(false) end
 end
 
 function Layer:Write(s, v)
@@ -126,10 +150,6 @@ function Layer:Write(s, v)
     slot.gate:SetValue(v.stamp)
     slot.cool:SetMinMaxValues(v.coolLo, v.coolHi)
     slot.cool:SetValue(v.stamp)
-    if v.actLo then
-        slot.act:SetMinMaxValues(v.actLo, v.actHi)
-        slot.act:SetValue(v.stamp)
-    end
 end
 
 function Layer:SetPhase(active, idle)
@@ -141,6 +161,7 @@ end
 
 function Layer:SetTimers(on)
     self.window:SetShown(on)
+    self.active:SetShown(on)
 end
 
 function Layer:Show(on)

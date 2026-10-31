@@ -49,20 +49,48 @@ describe("SecretLayer", function()
     end
 
     it("builds strips of remaining-time labels", function()
-        local cool, act = lines(layer.slots[1].coolText), lines(layer.slots[1].actText)
+        local cool = lines(layer.slots[1].coolText)
         assert.equal(120, #cool)
         assert.equal("1", cool[1])
         assert.equal("1:00", cool[60])
-        assert.equal(8, #act)
     end)
 
     it("writes slot values to its bars", function()
-        layer:Write(1, { stamp = 0.2, coolLo = 0.1, coolHi = 0.3, actLo = 0.15, actHi = 0.25, gateLo = 0.05, gateHi = 0.06 })
+        layer:Write(1, { stamp = 0.2, coolLo = 0.1, coolHi = 0.3, gateLo = 0.05, gateHi = 0.06 })
         local s = layer.slots[1]
         assert.same({ 0.1, 0.3 }, s.cool.calls.SetMinMaxValues)
         assert.same({ 0.2 }, s.cool.calls.SetValue)
         assert.same({ 0.05, 0.06 }, s.gate.calls.SetMinMaxValues)
-        assert.same({ 0.15, 0.25 }, s.act.calls.SetMinMaxValues)
+    end)
+
+    local function containers()
+        local out = {}
+        for _, o in ipairs(made) do
+            if o.kind == "AuraContainer" then out[#out + 1] = o end
+        end
+        return out
+    end
+
+    it("lets the engine write the active time for each watched unit", function()
+        layer:Watch({ { unit = "party1", ids = { 48707, 410358 } } })
+        local c = containers()
+        assert.equal(1, #c)
+        assert.same({ "party1" }, c[1].calls.SetUnit)
+        local key, filter, options = unpack(c[1].calls.AddAuraGroup)
+        assert.equal("HELPFUL", filter)
+        assert.same({ [48707] = true, [410358] = true }, options.candidateFilters.includeSpellIDs)
+        local button = stub("Button", made)
+        options.initializeFrame(button)
+        assert.equal("CreateFontString", made[#made].kind)
+        assert.equal(made[#made], button.calls.SetDurationText[1])
+    end)
+
+    it("re-points watched displays instead of building new ones", function()
+        layer:Watch({ { unit = "party1", ids = { 48707 } } })
+        layer:Watch({ { unit = "party2", ids = { 48707 } } })
+        local c = containers()
+        assert.equal(1, #c)
+        assert.same({ "party2" }, c[1].calls.SetUnit)
     end)
 
     it("sets phase alphas", function()

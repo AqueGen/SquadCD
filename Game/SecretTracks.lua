@@ -60,8 +60,15 @@ local function sense(guid, unit, spell, ids, now)
     return s
 end
 
-local function configure(t)
-    for layer in pairs(t.layers) do layer:Configure(t.cd, t.dur, t.base.U) end
+local function watchList(t)
+    local list = {}
+    for i, s in ipairs(t.senses) do list[i] = { unit = s.unit, ids = t.ids } end
+    return list
+end
+
+local function dress(t, layer)
+    layer:Configure(t.cd)
+    layer:Watch(watchList(t))
 end
 
 local function startTicker()
@@ -101,8 +108,8 @@ function SecretTracks.Rebuild(list)
                     t.cd, t.dur = w.cd, w.dur
                     t.base = T.NewBase(now, w.cd, w.dur or 0)
                     t.stamps = { 0, 0 }
-                    configure(t)
                 end
+                t.ids = w.ids
                 t.senses = {}
                 if w.kind == "buff" then
                     t.senses[1] = sense(m.guid, m.unit, w.id, w.ids, now)
@@ -111,6 +118,7 @@ function SecretTracks.Rebuild(list)
                         t.senses[#t.senses + 1] = sense(o.guid, o.unit, w.id, w.ids, now)
                     end
                 end
+                for layer in pairs(t.layers) do dress(t, layer) end
                 keep[key] = true
             end
         end
@@ -136,9 +144,6 @@ local function write(t, now, active, idle)
         local step = slot.epoch + math.floor(now - slot.epoch)
         v.stamp = t.stamps[s]
         v.coolLo, v.coolHi = T.Window(step, slot.epoch, base.U, t.cd)
-        if t.dur then
-            v.actLo, v.actHi = T.Window(step, slot.epoch, base.U, t.dur)
-        end
         v.gateLo, v.gateHi = T.Gate(now, slot.epoch, base.U, t.cd)
         for layer in pairs(t.layers) do layer:Write(s, v) end
     end
@@ -190,7 +195,7 @@ function SecretTracks.Bind(layer, guid, spell)
     if not t then return false end
     t.layers[layer] = true
     layer.track = t
-    layer:Configure(t.cd, t.dur, t.base.U)
+    dress(t, layer)
     return true
 end
 

@@ -25,7 +25,8 @@ describe("SecretTracks", function()
 
     local function fakeLayer()
         local l = { writes = {}, phases = {} }
-        function l:Configure(cd, dur, U) self.config = { cd, dur, U } end
+        function l:Configure(cd) self.config = { cd } end
+        function l:Watch(list) self.watch = list end
         function l:Write(slot, v) self.writes[slot] = { stamp = v.stamp, coolLo = v.coolLo, coolHi = v.coolHi, gateLo = v.gateLo } end
         function l:SetPhase(a, i) self.phases[#self.phases + 1] = { a, i } end
         return l
@@ -150,7 +151,9 @@ describe("SecretTracks", function()
         local layer = fakeLayer()
         assert.is_true(ns.SecretTracks.Bind(layer, "A", IBF))
         local t = track("A", IBF)
-        assert.same({ 120, 8, t.base.U }, layer.config)
+        assert.same({ 120 }, layer.config)
+        assert.equal("party1", layer.watch[1].unit)
+        assert.equal(IBF, layer.watch[1].ids[1])
         settle()
         w.lit["party1:" .. IBF] = true
         settle()
