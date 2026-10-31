@@ -213,11 +213,11 @@ local function profiles(page)
     local P, Switch = ns.Profiles, ns.ProfileSwitch
     local group = page:Group("Profiles")
     group:Note({ color = T.text, text = function() return "Active profile: " .. ns.DB.profile end })
-    group:Note("A profile is one panel layout: where the panels sit, their direction and size. Spells and timers are shared by every profile. Each spec of this character can use its own profile; it switches on with the spec.")
+    group:Note("A profile is one panel layout: where the panels sit, their direction and size. Spells and timers are shared by every profile. Each spec of this character can use its own profile; it switches on with the spec. Type a name and press New copy to start a profile from the current layout.")
 
     local bar = CreateFrame("Frame", nil, group.frame)
-    bar:SetSize(560, 22)
-    local input = LibStub("LibVelvet-1.0").Input(bar, 150)
+    bar:SetSize(450, 22)
+    local input = LibStub("LibVelvet-1.0").Input(bar, 120)
     input:SetPoint("LEFT")
     local function typed() return strtrim(input:GetText() or "") end
     local function blocked()
@@ -237,7 +237,7 @@ local function profiles(page)
         end)
         return b
     end
-    local new = button("New from current", 120, input, function()
+    local new = button("New copy", 80, input, function()
         if blocked() then return end
         if P.New(ns.DB, typed()) then
             input:SetText("")
@@ -253,11 +253,11 @@ local function profiles(page)
             print("SquadCD: type a new name. Default keeps its name.")
         end
     end)
-    local delete = button("Delete", 70, rename, function()
+    local delete = button("Delete", 64, rename, function()
         if blocked() then return end
         if P.Delete(ns.DB, ns.DB.profile) then ns.Display.Changed() end
     end)
-    local switch = Widgets.Button(bar, "Switch to...", 90)
+    local switch = Widgets.Button(bar, "Switch to...", 84)
     switch:SetPoint("LEFT", delete, "RIGHT", 6, 0)
     switch:SetScript("OnClick", function(self)
         if not MenuUtil then return end

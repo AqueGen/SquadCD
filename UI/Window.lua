@@ -25,7 +25,7 @@ local PAGES = {
 
 local frame, menu, scroll, host, demo, unlock, pane, handle
 local zoneW, dragFrom
-local pages, builders, entries, previews = {}, {}, {}, {}
+local pages, builders, entries, previews, focuses = {}, {}, {}, {}, {}
 local current
 
 local function Saved()
@@ -162,9 +162,13 @@ local function Build()
     host = CreateFrame("Frame", nil, scroll)
     host:SetSize(1, 1)
     scroll:SetScrollChild(host)
+    -- Group widths settle a frame after the resize; a second pass lays the page out on the real width.
     scroll:SetScript("OnSizeChanged", function(_, width)
         host:SetWidth(width)
         if current and pages[current] then pages[current]:Refresh() end
+        C_Timer.After(0, function()
+            if current and pages[current] and frame:IsShown() then pages[current]:Refresh() end
+        end)
     end)
 
     pane = UI.PreviewPane(frame)
@@ -197,6 +201,7 @@ end
 function Window.Register(key, build, opts)
     builders[key] = build
     previews[key] = opts and opts.preview
+    focuses[key] = opts and opts.focus
 end
 
 function Window.Refresh()
@@ -225,7 +230,10 @@ function Window.Show(key)
     Paint()
     page:Refresh()
     scroll:SetVerticalScroll(0)
-    if pane:IsShown() then ns.PanelPreview.Refresh() end
+    if pane:IsShown() then
+        ns.PanelPreview.SetFocus(focuses[key])
+        ns.PanelPreview.Refresh()
+    end
 end
 
 function Window.Focus(key, groupKey)

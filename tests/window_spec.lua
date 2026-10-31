@@ -19,7 +19,7 @@ local function stub(f)
 end
 
 describe("Settings window preview zone", function()
-    local ns, pane, refreshed, settings, made, cursor
+    local ns, pane, refreshed, settings, made, cursor, focused
     local strings = {}
 
     local function point(f, name)
@@ -76,9 +76,10 @@ describe("Settings window preview zone", function()
         ns.PanelPreview = {
             Attach = function(p) pane = p end,
             Refresh = function() refreshed = refreshed + 1 end,
+            SetFocus = function(f) focused = f end,
         }
         ns.Window.Register("about", function() end)
-        ns.Window.Register("panels", function() end, { preview = "panel" })
+        ns.Window.Register("panels", function() end, { preview = "panel", focus = "panel" })
     end)
 
     it("shows the pane beside the column on a page with a preview", function()
@@ -157,5 +158,10 @@ describe("Settings window preview zone", function()
     it("opens wide enough for the side zone by default", function()
         ns.Window.Show("panels")
         assert.are.equal(1000, settings.width)
+    end)
+
+    it("tells the preview which part the page is about", function()
+        ns.Window.Show("panels")
+        assert.are.equal("panel", focused)
     end)
 end)
