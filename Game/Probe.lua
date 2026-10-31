@@ -6,6 +6,8 @@ ns.Probe = Probe
 
 local SECRET_NOTE = "Party buffs are hidden by the game right now (secret mode); own row and kicks still work"
 local UNITS = { "party1", "party2", "party3", "party4" }
+local GEOMETRY_CONTROL = 45438
+local GEOMETRY_DELAY = 1
 
 function Probe.Data()
     local mode, reason = ns.Sensors.Mode()
@@ -62,10 +64,19 @@ function Probe.Flags()
     print(("SquadCD flags: party auras seen - instance id plain %d, secret %d; keys: %s"):format(
         live.ids.plain, live.ids.secret, counts(live.keys)))
     print("SquadCD flags: party aura events skipped: " .. counts(live.drops))
+    local geometry = {}
     for _, s in ipairs(F.Snapshot()) do
         print(("SquadCD flags: %s now - helpful %s, big defensive %s; keys: %s"):format(s.unit, s.helpful, s.big, counts(s.keys)))
         if #s.named > 0 then print(("SquadCD flags: %s auras: %s"):format(s.unit, table.concat(s.named, ", "))) end
+        if s.spells[1] then geometry[#geometry + 1] = { s.unit, s.spells[1] } end
+        geometry[#geometry + 1] = { s.unit, GEOMETRY_CONTROL }
     end
+    for _, g in ipairs(geometry) do ns.Sensors.Geometry(g[1], g[2]) end
+    C_Timer.After(GEOMETRY_DELAY, function()
+        for _, g in ipairs(geometry) do
+            print(("SquadCD geometry: %s %d - %s"):format(g[1], g[2], ns.Sensors.Geometry(g[1], g[2])))
+        end
+    end)
     local learned = ns.DB.probe and ns.DB.probe.auraKeys or {}
     local n = 0
     for _ in pairs(learned) do n = n + 1 end

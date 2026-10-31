@@ -155,7 +155,7 @@ function AuraFlags.Snapshot()
     local out = {}
     for _, unit in ipairs({ "player", "party1", "party2", "party3", "party4" }) do
         if UnitExists(unit) then
-            local s = { unit = unit, keys = {}, named = {} }
+            local s = { unit = unit, keys = {}, named = {}, spells = {} }
             local list, why = ids(unit, "HELPFUL")
             s.helpful = list and #list or why
             for _, id in ipairs(list or {}) do
@@ -164,6 +164,7 @@ function AuraFlags.Snapshot()
                 local ok, aura = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, unit, id)
                 if ok and plain(aura) and plain(aura.spellId) then
                     s.named[#s.named + 1] = aura.spellId .. " " .. (plain(aura.name) and aura.name or "?") .. " " .. key
+                    s.spells[#s.spells + 1] = aura.spellId
                 end
             end
             local big, bigWhy = ids(unit, "HELPFUL|BIG_DEFENSIVE")

@@ -325,6 +325,17 @@ describe("Sensors", function()
         assert.truthy(out:find("auras secret now false"))
         assert.truthy(out:find("unique key within class"))
         assert.truthy(out:find("57724 none"))
+        w.flush()
+        assert.truthy(table.concat(w.printed, "\n"):find("geometry: party1 45438 %- hit false"))
+    end)
+
+    it("secret verdict names the self-test reads", function()
+        local w = world({ mode = "party" })
+        w.secret = true
+        local ns = boot(w)
+        w.flush()
+        local _, reason = ns.Sensors.Mode()
+        assert.truthy(reason:find("buff 17 secret"))
     end)
 
     it("read that errors reports error", function()

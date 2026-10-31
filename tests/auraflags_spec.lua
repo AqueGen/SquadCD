@@ -85,6 +85,6 @@ describe("AuraFlags.Snapshot", function()
             },
         })
         assert.same({ { unit = "party1", helpful = 3, big = 1, keys = { ["B-I-"] = 1, ["----"] = 1, ["secret id"] = 1 },
-            named = { "48792 Icebound Fortitude B-I-" } } }, ns.AuraFlags.Snapshot())
+            named = { "48792 Icebound Fortitude B-I-" }, spells = { 48792 } } }, ns.AuraFlags.Snapshot())
     end)
 end)

@@ -135,9 +135,29 @@ local function fail(why, retry)
     mode, reason, needTest = "unavailable", why, retry
 end
 
+local loose = {}
+
+function Sensors.Geometry(unit, id)
+    local key = unit .. ":" .. id
+    local f = loose[key]
+    if not f then
+        local why
+        f, why = newProbe(unit, "HELPFUL", id)
+        if not f then return why end
+        loose[key] = f
+        pcall(f.SetEnabled, f, true)
+    end
+    local v, why = readout(pcall(f.IsMouseOver, f, INSET, -INSET, 0, 0))
+    local okW, width = pcall(f.GetWidth, f)
+    local w = not okW and "error" or issecretvalue(width) and "secret" or tostring(width)
+    return ("hit %s, width %s"):format(why or tostring(v), w)
+end
+
 local function verdict(buffV, buffWhy, ctrlV, ctrlWhy, when)
     if buffWhy == "secret" or ctrlWhy == "secret" then
-        mode, reason, needTest = "secret", "aura readout is secret" .. when, false
+        local s = selfTest or {}
+        mode, reason, needTest = "secret", ("aura readout is secret%s (buff %s %s, control %s %s)"):format(
+            when, tostring(s.id), buffWhy or tostring(buffV), tostring(s.control), ctrlWhy or tostring(ctrlV)), false
     elseif buffWhy or ctrlWhy then
         fail("aura readout failed" .. when, false)
     elseif ctrlV then
