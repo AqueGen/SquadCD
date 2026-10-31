@@ -55,6 +55,16 @@ function Widgets.Button(parent, text, width)
     return UI.Button(parent, text, width)
 end
 
+function Widgets.SpellTooltip(owner, id)
+    GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
+    if id == "potion" then
+        GameTooltip:SetItemByID(ns.Potions[1].item)
+    else
+        GameTooltip:SetSpellByID(id)
+    end
+    GameTooltip:Show()
+end
+
 function Widgets.Grip(frame, minW, minH, onDone)
     local grip = CreateFrame("Button", nil, frame)
     grip:SetSize(16, 16)

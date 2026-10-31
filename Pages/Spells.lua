@@ -70,6 +70,12 @@ local function NewRow(list)
     row.type = Text(row, TYPE_X, T.muted)
     row.cd = Text(row, CD_X, T.muted)
     row.tag = Text(row, TAG_X, T.muted)
+    row:EnableMouse(true)
+    local hover = row:CreateTexture(nil, "HIGHLIGHT")
+    hover:SetAllPoints(row)
+    hover:SetColorTexture(unpack(T.hover))
+    row:SetScript("OnEnter", function(self) Widgets.SpellTooltip(self, self.id) end)
+    row:SetScript("OnLeave", GameTooltip_Hide)
     return row
 end
 

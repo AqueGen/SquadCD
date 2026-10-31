@@ -46,6 +46,21 @@ describe("Type mark", function()
         assert.are.same(ns.Theme.TYPES.Kick.text, { mark.glyph.vertex[1], mark.glyph.vertex[2], mark.glyph.vertex[3] })
     end)
 
+    it("shows the game's tooltip for a spell and the potion item", function()
+        local calls = {}
+        _G.GameTooltip = setmetatable({}, { __index = function(_, k)
+            return function(_, ...) calls[#calls + 1] = { k, ... } end
+        end })
+        local owner = region()
+        ns.Widgets.SpellTooltip(owner, 1766)
+        assert.are.same({ "SetOwner", owner, "ANCHOR_RIGHT" }, calls[1])
+        assert.are.same({ "SetSpellByID", 1766 }, calls[2])
+        assert.are.same({ "Show" }, calls[3])
+        calls = {}
+        ns.Widgets.SpellTooltip(owner, "potion")
+        assert.are.same({ "SetItemByID", ns.Potions[1].item }, calls[2])
+    end)
+
     it("has a glyph for every type", function()
         for _, t in ipairs(ns.LayoutRules.TYPES) do
             assert.are.equal("Interface\\AddOns\\SquadCD\\Media\\Types\\" .. t, ns.Icon.TypeIcon(t))
