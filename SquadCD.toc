@@ -25,6 +25,7 @@ Game/Sensors.lua
 Game/EnemyDebuffs.lua
 Game/OwnCasts.lua
 Game/Kicks.lua
+Game/AuraFlags.lua
 Game/Probe.lua
 UI/Theme.lua
 UI/Icon.lua

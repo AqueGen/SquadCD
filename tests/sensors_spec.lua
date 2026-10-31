@@ -4,7 +4,7 @@ local helpers = dofile(here .. "/helpers.lua")
 
 local FILES = {
     "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/Persist.lua",
-    "Game/Inspect.lua", "Game/Group.lua", "Game/Sensors.lua", "Game/Probe.lua",
+    "Game/Inspect.lua", "Game/Group.lua", "Game/Sensors.lua", "Game/AuraFlags.lua", "Game/Probe.lua",
 }
 
 local SECRET = setmetatable({}, { __tostring = function() return "secret" end })
@@ -96,6 +96,17 @@ local function world(opts)
             GetAuraDataByIndex = function(unit, index)
                 if unit == "player" and index == 1 and w.buffs.player[17] then return { spellId = 17 } end
             end,
+            AuraIsBigDefensive = function(id) return id == SHIELD_WALL end,
+            GetPlayerAuraBySpellID = function() return nil end,
+        },
+        C_Spell = {
+            IsExternalDefensive = function(id) return id == PAIN_BUFF end,
+            IsSpellImportant = function() return false end,
+        },
+        C_Secrets = {
+            ShouldAurasBeSecret = function() return false end,
+            HasSecretRestrictions = function() return true end,
+            ShouldSpellAuraBeSecret = function() return false end,
         },
         C_SpecializationInfo = {
             GetSpecialization = function() return 1 end,
@@ -316,6 +327,9 @@ describe("Sensors", function()
         assert.truthy(out:find("party1"))
         assert.truthy(out:find("hit%-test"))
         assert.truthy(out:find(tostring(SHIELD_WALL)))
+        assert.truthy(out:find("auras secret now false"))
+        assert.truthy(out:find("unique key within class"))
+        assert.truthy(out:find("57724 none"))
     end)
 
     it("secret IsShown is secret even when the hit-test reads plain false", function()
