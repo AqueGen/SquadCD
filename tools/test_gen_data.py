@@ -75,8 +75,8 @@ class GenDataTests(unittest.TestCase):
         cooldowns = {200: (0, 300000), 300: (0, 300000), 400: (0, 300000), 500: (0, 300000), 600: (0, 600000)}
         effects = {100: [row(6)], 200: [row(6)], 300: [row(6)], 400: [row(6)], 600: [row(6)]}
         self.assertEqual(
-            [{"item": 10, "buff": 100, "cd": 300}, {"item": 20, "buff": 200, "cd": 300},
-             {"item": 60, "buff": 600, "cd": 300}],
+            [{"item": 10, "spell": 100, "buff": 100, "cd": 300}, {"item": 20, "spell": 200, "buff": 200, "cd": 300},
+             {"item": 60, "spell": 600, "buff": 600, "cd": 300}],
             gen_data.derive_potions([60, 50, 40, 30, 20, 10], item_effects, categories, cooldowns, effects),
         )
 

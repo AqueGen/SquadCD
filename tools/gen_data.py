@@ -100,7 +100,7 @@ def derive_potions(items, item_effects, spell_categories, spell_cooldowns, effec
             else:
                 ms = spell_cooldowns.get(spell, (0, 0))[1]
             if ms > 0:
-                potions.append({"item": item, "buff": buffs[0], "cd": ms / 1000})
+                potions.append({"item": item, "spell": spell, "buff": buffs[0], "cd": ms / 1000})
     return potions
 
 
@@ -227,7 +227,7 @@ def render(catalog, effects, overrides, potions):
     for class_id, token in sorted(tokens.items()):
         out.append("ns.Classes[%d]=%s" % (class_id, lua_str(token)))
     out.append("ns.Potions={" + ",".join(
-        "{item=%d,buff=%d,cd=%s}" % (p["item"], p["buff"], num(p["cd"])) for p in potions) + "}")
+        "{item=%d,spell=%d,buff=%d,cd=%s}" % (p["item"], p["spell"], p["buff"], num(p["cd"])) for p in potions) + "}")
     return "\n".join(out) + "\n"
 
 
