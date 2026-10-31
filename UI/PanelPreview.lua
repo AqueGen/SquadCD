@@ -57,7 +57,7 @@ local function partyFrame(i)
     return f
 end
 
-local function placeParty(members, shown)
+local function placeParty(members, shown, x, y)
     wipe(byUnit)
     for i, m in ipairs(members) do
         local f = partyFrame(i)
@@ -65,7 +65,7 @@ local function placeParty(members, shown)
         f.fill:SetColorTexture(r, g, b, 0.55)
         f.name:SetText(m.name)
         f:ClearAllPoints()
-        f:SetPoint("TOPLEFT", host, "TOPLEFT", ROOM, -(ROOM_V + (i - 1) * (FRAME_H + FRAME_GAP)))
+        f:SetPoint("TOPLEFT", host, "TOPLEFT", x, -(y + (i - 1) * (FRAME_H + FRAME_GAP)))
         f:SetShown(shown)
         byUnit[m.unit] = f
     end
@@ -80,25 +80,36 @@ local function anyGroup(list)
     return false
 end
 
+local function rooms(layout)
+    local used = {}
+    for _, g in ipairs(layout.groups) do
+        if g.shown and #g.types > 0 then used[g.side] = true end
+    end
+    return used.Left and ROOM or 0, used.Right and ROOM or 0, used.Above and ROOM_V or 0, used.Below and ROOM_V or 0
+end
+
 local function rebuild(fresh)
     if not pane or not pane:IsVisible() then return end
     if fresh or not source then source = ns.Demo.Source(MEMBERS) end
     local lines, routed = ns.Display.Route(source.members)
     local party = anyGroup(routed)
-    placeParty(source.members, party)
-    if party then rows.Build(routed, true) else rows.Hide() end
     local pw, ph = panel.Build(lines)
+    local left, right, top, bottom = rooms(ns.DB.layout)
+    local partyW = party and left + FRAME_W + right or 0
+    local partyH = party and top + MEMBERS * FRAME_H + (MEMBERS - 1) * FRAME_GAP + bottom or 0
+    local w = math.max(partyW, pw)
+    placeParty(source.members, party, (w - partyW) / 2 + left, top)
+    if party then rows.Build(routed, true) else rows.Hide() end
     if #lines == 0 and not party then
         PanelPreview.Stop()
         pane:SetOff(EMPTY)
         return
     end
-    local partyW = party and 2 * ROOM + FRAME_W + PANEL_GAP or 0
-    local partyH = party and 2 * ROOM_V + MEMBERS * FRAME_H + (MEMBERS - 1) * FRAME_GAP or 0
+    local gap = party and ph > 0 and PANEL_GAP or 0
     panelHost:ClearAllPoints()
-    panelHost:SetPoint("TOPLEFT", host, "TOPLEFT", partyW, party and -ROOM_V or 0)
+    panelHost:SetPoint("TOPLEFT", host, "TOPLEFT", (w - pw) / 2, -(partyH + gap))
     panelHost:SetSize(math.max(pw, 1), math.max(ph, 1))
-    local w, h = partyW + pw, math.max(partyH, (party and ROOM_V or 0) + ph)
+    local h = partyH + gap + ph
     host:SetSize(w, h)
     pane:SetOff(nil)
     pane:Fit(host, w, h)

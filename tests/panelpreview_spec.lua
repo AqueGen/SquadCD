@@ -108,6 +108,15 @@ describe("Panel preview", function()
         assert.is_nil(ns.Rows.Holder(1))
     end)
 
+    it("stacks the party frames above the panel, with room only on the sides the rows use", function()
+        ns.PanelPreview.Refresh()
+        assert.is_true(pane.fit.h > pane.fit.w)
+        local wide = pane.fit.w
+        for _, g in ipairs(ns.DB.layout.groups) do g.side = "Right" end
+        ns.PanelPreview.Refresh()
+        assert.are.equal(wide, pane.fit.w)
+    end)
+
     it("follows a settings change", function()
         ns.Display.Changed()
         assert.is_not_nil(pane.fit)
