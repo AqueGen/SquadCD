@@ -399,7 +399,7 @@ local AXES = { "Rows", "Columns" }
 local CORNERS = { "TopLeft", "TopRight", "BottomLeft", "BottomRight" }
 local SORTS = { "Fixed", "ReadyFirst" }
 local SIDES = { "Right", "Left", "Above", "Below" }
-local LABELS = { "None", "Glyph", "Short", "Full" }
+local LABELS = { "None", "Icon", "Glyph", "Short", "Full" }
 local BACKGROUNDS = { "Default", "Black", "Slate", "None" }
 
 local function cleanLook(look, fallback, minSize, member)

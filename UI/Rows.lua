@@ -7,7 +7,7 @@ ns.Rows = Rows
 local T = ns.Theme
 local Grid, Model = ns.LayoutGrid, ns.LayoutModel
 local SLOT_W, PAD, ICON_GAP, RING, TAB_GAP, STACK_GAP = 60, 4, 2, 2, 2, 2
-local TAB = { None = 0, Glyph = 11, Short = 30 }
+local TAB = { None = 0, Icon = 16, Glyph = 11, Short = 30 }
 
 local members, slots, active = {}, {}, 0
 local outlined

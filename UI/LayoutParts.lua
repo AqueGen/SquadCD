@@ -15,9 +15,9 @@ local CORNERS = {
     { value = "BottomLeft", text = "Bottom left" }, { value = "BottomRight", text = "Bottom right" },
 }
 local SORTS = { { value = "Fixed", text = "Fixed" }, { value = "ReadyFirst", text = "Ready first" } }
-local LABELS = { { value = "None", text = "None" }, { value = "Glyph", text = "Glyph" }, { value = "Short", text = "Short text" }, { value = "Full", text = "Full text" } }
+local LABELS = { { value = "None", text = "None" }, { value = "Icon", text = "Icon" }, { value = "Glyph", text = "Letter" }, { value = "Short", text = "Short text" }, { value = "Full", text = "Full text" } }
 local BACKGROUNDS = { { value = "Default", text = "Default" }, { value = "Black", text = "Black" }, { value = "Slate", text = "Slate" }, { value = "None", text = "None" } }
-local WIDE = 280
+local WIDE, LABELS_W = 280, 300
 
 function Parts.Edit(fn, ...)
     fn(ns.DB.layout, ...)
@@ -29,17 +29,7 @@ function Parts.Label(t)
     return ns.LayoutRules.LABELS[t] or t
 end
 
-local TYPE_SPELLS = {
-    Personal = 45438, Burst = 31884, Racial = 28730, External = 33206, Kick = 1766, Control = 853, Stun = 408,
-    CC = 383121, Group = 62618, Dispel = 527, Purge = 19505, Movement = 77761,
-}
 local STRIPE_W, STRIPE_GAP = 3, 2
-
-function Parts.TypeIcon(t)
-    if t == "Potion" then return C_Item.GetItemIconByID(ns.Potions[1].item) end
-    local spell = ns.Spells[TYPE_SPELLS[t]]
-    return spell and "Interface\\Icons\\" .. spell.icon
-end
 
 function Parts.Mark(parent, size)
     local mark = CreateFrame("Frame", nil, parent)
@@ -54,7 +44,7 @@ function Parts.Mark(parent, size)
     return mark, function(t)
         local style = T.TYPES[t] or T.TYPES.Personal
         mark.stripe:SetColorTexture(style.fill[1], style.fill[2], style.fill[3], 1)
-        mark.icon:SetTexture(Parts.TypeIcon(t))
+        mark.icon:SetTexture(ns.Icon.TypeIcon(t))
     end
 end
 
@@ -73,8 +63,8 @@ function Parts.Look(group, opts)
     end
     local backdrop = both(opts.visible, opts.backdrop)
     group:Slider({ label = "Icon size", min = opts.member and 12 or 20, max = 40, get = get("iconSize"), set = setting("iconSize"), visible = opts.visible })
-    local labels = opts.member and { LABELS[1], LABELS[2], LABELS[3] } or LABELS
-    group:Segmented({ label = "Type labels", options = labels, width = WIDE, get = get("labels"), set = setting("labels"), visible = opts.visible })
+    local labels = opts.member and { LABELS[1], LABELS[2], LABELS[3], LABELS[4] } or LABELS
+    group:Segmented({ label = "Type labels", options = labels, width = opts.member and WIDE or LABELS_W, get = get("labels"), set = setting("labels"), visible = opts.visible })
     group:Segmented({ label = "Background", options = BACKGROUNDS, width = WIDE, get = get("background"), set = setting("background"), visible = backdrop })
     if opts.member then return end
     group:Slider({ label = "Opacity", min = 0, max = 100, step = 5, format = "%d%%", get = get("opacity"), set = setting("opacity"), visible = backdrop })

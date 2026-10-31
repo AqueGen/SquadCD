@@ -97,7 +97,9 @@ local function fill(c, key, list, layout)
     for i in ipairs(list) do
         local l = c.lines[i]
         local tab
-        if l.labels == "Glyph" then
+        if l.labels == "Icon" then
+            tab = across and { w = ns.Icon.TAB_ICON, h = ns.Icon.TAB_ICON } or { w = ns.Icon.TAB_ICON, h = l.head }
+        elseif l.labels == "Glyph" then
             tab = across and { w = GLYPH_TAB, h = GLYPH_TAB } or { w = GLYPH_TAB, h = l.head }
         elseif l.labels ~= "None" then
             tab = across and { w = labelW + 2 * LABEL_PAD, h = GLYPH_TAB + 2 } or { w = labelW + 2 * LABEL_PAD, h = l.head }

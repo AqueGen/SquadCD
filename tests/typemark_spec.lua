@@ -3,7 +3,7 @@ local here = debug.getinfo(1, "S").source:match("^@(.*)[/\\][^/\\]*$") or "tests
 local helpers = dofile(here .. "/helpers.lua")
 
 local FILES = {
-    "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/LayoutRules.lua", "UI/Theme.lua", "UI/WidgetRules.lua",
+    "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/LayoutRules.lua", "UI/Theme.lua", "UI/Icon.lua", "UI/WidgetRules.lua",
     "UI/Widgets.lua", "UI/LayoutParts.lua",
 }
 for i = #helpers.VELVET, 1, -1 do table.insert(FILES, 1, helpers.VELVET[i]) end
@@ -31,6 +31,7 @@ describe("Type mark", function()
                 return f
             end,
             C_Item = { GetItemIconByID = function(id) return "item:" .. id end },
+            issecretvalue = function() return false end,
             UIParent = setmetatable({}, { __index = function() return function() return 0 end end }),
         })
     end)
@@ -52,12 +53,5 @@ describe("Type mark", function()
         local mark, paint = ns.LayoutParts.Mark(parent, 16)
         paint("Potion")
         assert.are.equal("item:" .. ns.Potions[1].item, mark.icon.texture)
-    end)
-
-    it("has an icon for every type", function()
-        for _, t in ipairs(ns.LayoutRules.TYPES) do
-            assert.is_not_nil(ns.LayoutParts.TypeIcon(t), t)
-        end
-        assert.is_not_nil(ns.LayoutParts.TypeIcon("Control"))
     end)
 end)

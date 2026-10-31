@@ -9,8 +9,8 @@ local E = ns.MemberEdit
 local PAD, ROW_H, BUTTON_H, SPACE, GAP, DISTANCE = 8, 24, 20, 3, 10, 8
 local MIN_SIZE, MAX_SIZE = 12, 40
 local SIDES = { "Left", "Right", "Above", "Below" }
-local LABELS = { "None", "Glyph", "Short" }
-local LABEL_TEXT = { None = "None", Glyph = "Glyph", Short = "Short text" }
+local LABELS = { "None", "Icon", "Glyph", "Short" }
+local LABEL_TEXT = { None = "None", Icon = "Icon", Glyph = "Letter", Short = "Short text" }
 local BACKGROUNDS = { "None", "Default", "Black", "Slate" }
 local CORNERS = { "TopLeft", "TopRight", "BottomLeft", "BottomRight" }
 
