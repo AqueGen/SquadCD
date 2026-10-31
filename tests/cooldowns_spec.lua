@@ -72,4 +72,18 @@ describe("Cooldowns", function()
         assert.is_true(C.Has(498, "PALADIN", 65, nil))
         assert.is_false(C.Has(46968, "MAGE", 73, nil))
     end)
+
+    it("racial needs the race", function()
+        assert.is_true(C.Has(20549, "WARRIOR", 71, nil, 6))
+        assert.is_true(C.Has(20549, "DRUID", 104, {}, 6))
+        assert.is_false(C.Has(20549, "WARRIOR", 71, nil, 2))
+        assert.is_false(C.Has(20549, "WARRIOR", 71, nil, nil))
+    end)
+
+    it("racial classes restriction", function()
+        ns.Spells[-1] = { name = "Test Racial", type = "Racial", specs = {}, cd = 60, races = { 2 }, classes = { "MAGE" }, track = "none" }
+        assert.is_true(C.Has(-1, "MAGE", 64, nil, 2))
+        assert.is_false(C.Has(-1, "WARRIOR", 71, nil, 2))
+        ns.Spells[-1] = nil
+    end)
 end)

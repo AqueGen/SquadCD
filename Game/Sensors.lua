@@ -199,7 +199,7 @@ local function buffMap(member)
         list[#list + 1] = { spell = spell, external = external }
     end
     for spellId, s in pairs(ns.Spells) do
-        if s.buffs and (s.track == "target" or (s.track == "buff" and ns.Cooldowns.Has(spellId, member.class, member.spec, member.talents))) then
+        if s.buffs and (s.track == "target" or (s.track == "buff" and ns.Cooldowns.Has(spellId, member.class, member.spec, member.talents, member.race))) then
             for _, id in ipairs(s.buffs) do add(id, spellId, s.track == "target") end
         end
     end

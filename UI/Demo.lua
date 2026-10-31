@@ -4,9 +4,9 @@ local Demo = {}
 ns.Demo = Demo
 
 local MEMBERS = {
-    { guid = "HuddleDemo1", unit = "player", class = "DEMONHUNTER", spec = 581, name = "Vexhal", own = true },
+    { guid = "HuddleDemo1", unit = "player", class = "DEMONHUNTER", spec = 581, name = "Vexhal", race = 10, own = true },
     { guid = "HuddleDemo2", unit = "party1", class = "PRIEST", spec = 256, name = "Lumenia" },
-    { guid = "HuddleDemo3", unit = "party2", class = "MAGE", spec = 64, name = "Frostwyn", unread = true },
+    { guid = "HuddleDemo3", unit = "party2", class = "MAGE", spec = 64, name = "Frostwyn", race = 2, unread = true },
     { guid = "HuddleDemo4", unit = "party3", class = "PALADIN", spec = 70, name = "Aurik" },
     { guid = "HuddleDemo5", unit = "party4", class = "MONK", spec = 269, name = "Kaito" },
 }
@@ -46,7 +46,7 @@ local function members()
     local list = {}
     for i, m in ipairs(MEMBERS) do
         list[i] = {
-            guid = m.guid, unit = m.unit, class = m.class, spec = m.spec, name = m.name, own = m.own,
+            guid = m.guid, unit = m.unit, class = m.class, spec = m.spec, race = m.race, name = m.name, own = m.own,
             talents = not m.unread and talentsFor(m.class, m.spec) or nil,
         }
     end

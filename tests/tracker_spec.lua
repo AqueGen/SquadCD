@@ -57,6 +57,26 @@ describe("Tracker", function()
         assert.are.equal(2, t:State("C", SEF).charges)
     end)
 
+    it("charge left reports the recharge time", function()
+        t:Used("C", SEF, true)
+        now = 130
+        local s = t:State("C", SEF)
+        assert.is_true(s.ready)
+        assert.are.equal(1, s.charges)
+        assert.are.equal(0, s.remaining)
+        assert.are.equal(60, s.recharge)
+        now = 300
+        assert.are.equal(0, t:State("C", SEF).recharge)
+    end)
+
+    it("State fills a given table", function()
+        local out = {}
+        t:Used("A", PS, true)
+        assert.are.equal(out, t:State("A", PS, out))
+        assert.are.equal(180, out.remaining)
+        assert.are.equal(180, out.recharge)
+    end)
+
     it("external single candidate is certain", function()
         t:SetMembers({ members()[1], members()[3] })
         t:External(PS, "C")

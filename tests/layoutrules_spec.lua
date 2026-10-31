@@ -56,6 +56,33 @@ describe("LayoutRules", function()
         assert.are.same({ "ready", "sure", "maybe" }, keys)
     end)
 
+    it("ready maybe after ready certain, before cooling", function()
+        local states = {
+            { key = "cool", ready = false, remaining = 3, maybe = false },
+            { key = "readyMaybe", ready = true, remaining = 0, maybe = true },
+            { key = "ready", ready = true, remaining = 0, maybe = false },
+            { key = "coolMaybe", ready = false, remaining = 1, maybe = true },
+        }
+        local keys = {}
+        for _, s in ipairs(R.Order(states)) do keys[#keys + 1] = s.key end
+        assert.are.same({ "ready", "readyMaybe", "cool", "coolMaybe" }, keys)
+    end)
+
+    it("order ties keep input order", function()
+        local states = {}
+        for i = 1, 12 do states[i] = { key = i, ready = true, remaining = 0, maybe = false } end
+        local keys = {}
+        for _, s in ipairs(R.Order(states)) do keys[#keys + 1] = s.key end
+        assert.are.same({ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 }, keys)
+    end)
+
+    it("order refills a given table", function()
+        local a, b = { ready = false, remaining = 5 }, { ready = true, remaining = 0 }
+        local out = { "stale", "stale", "stale" }
+        assert.are.equal(out, R.Order({ a, b }, out))
+        assert.are.same({ b, a }, out)
+    end)
+
     it("order keeps input untouched", function()
         local states = { { key = "a", ready = false, remaining = 9 }, { key = "b", ready = true, remaining = 0 } }
         R.Order(states)
@@ -71,16 +98,43 @@ describe("LayoutRules", function()
             end
         end
 
-        it("lists class spells with their type and the potion", function()
-            local list = R.SpellsFor(priest, false, {})
+        it("lists class and race spells with their type and the potion", function()
+            local orcPriest = { guid = "Q", unit = "party1", class = "PRIEST", spec = 258, race = 2 }
+            local list = R.SpellsFor(orcPriest, false, {})
             local pot = has(list, "potion")
             assert.are.equal("Potion", pot.type)
+            assert.is_not_nil(has(list, 20572))
             for _, s in ipairs(list) do
                 if s.id ~= "potion" then
-                    assert.are.equal("PRIEST", ns.Spells[s.id].class)
+                    local spell = ns.Spells[s.id]
+                    if spell.races then
+                        assert.are.equal(2, spell.races[1])
+                    else
+                        assert.are.equal("PRIEST", spell.class)
+                    end
                     assert.are.equal(ns.Spells[s.id].type, s.type)
                 end
             end
+        end)
+
+        it("racials follow the race, one icon per name", function()
+            local orc = { guid = "O", unit = "party2", class = "MAGE", spec = 64, race = 2 }
+            local elf = { guid = "E", unit = "party3", class = "PRIEST", spec = 258, race = 10 }
+            local function racials(m)
+                local out = {}
+                for _, s in ipairs(R.SpellsFor(m, true, {})) do
+                    if s.type == "Racial" then out[#out + 1] = s end
+                end
+                return out
+            end
+            local o = racials(orc)
+            assert.are.equal(1, #o)
+            assert.are.equal("Blood Fury", o[1].name)
+            assert.are.equal(20572, o[1].id)
+            local e = racials(elf)
+            assert.are.equal(1, #e)
+            assert.are.equal("Arcane Torrent", e[1].name)
+            assert.are.equal(0, #racials(priest))
         end)
 
         it("drops disabled spells", function()

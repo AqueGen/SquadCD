@@ -51,6 +51,8 @@ function Group.Members()
         local guid = UnitGUID(unit)
         local _, class = UnitClass(unit)
         local role = UnitGroupRolesAssigned(unit)
+        local _, _, race = UnitRace(unit)
+        if issecretvalue(race) then race = nil end
         if issecretvalue(guid) or issecretvalue(class) or issecretvalue(role) then
             secret = true
         elseif guid and class then
@@ -59,6 +61,7 @@ function Group.Members()
                 guid = guid,
                 unit = unit,
                 class = class,
+                race = race,
                 spec = k and k.spec or Group.GuessSpec(class, role),
                 talents = k and k.talents,
             }

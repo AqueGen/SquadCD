@@ -49,9 +49,20 @@ function Cooldowns.Resolve(spellId, specId, talents)
     }
 end
 
-function Cooldowns.Has(spellId, classToken, specId, talents)
+local function contains(list, v)
+    for _, x in ipairs(list) do
+        if x == v then return true end
+    end
+    return false
+end
+
+function Cooldowns.Has(spellId, classToken, specId, talents, race)
     local s = ns.Spells[spellId]
-    if not s or s.class ~= classToken then return false end
+    if not s then return false end
+    if s.races then
+        return race ~= nil and contains(s.races, race) and (not s.classes or contains(s.classes, classToken))
+    end
+    if s.class ~= classToken then return false end
     local specs = s.specs or {}
     for _, id in ipairs(specs) do
         if id == specId then return true end

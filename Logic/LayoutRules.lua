@@ -15,13 +15,20 @@ function LayoutRules.TypeRank(t)
 end
 
 function LayoutRules.SpellsFor(member, own, enabled)
-    local list = {}
+    local list, racial = {}, {}
     for id, s in pairs(ns.Spells) do
         if enabled[id] ~= false and (own or s.track ~= "none")
-            and ns.Cooldowns.Has(id, member.class, member.spec, member.talents) then
-            list[#list + 1] = { id = id, type = s.type, name = s.name, icon = s.icon }
+            and ns.Cooldowns.Has(id, member.class, member.spec, member.talents, member.race) then
+            local entry = { id = id, type = s.type, name = s.name, icon = s.icon }
+            if s.races then
+                local seen = racial[s.name]
+                if not seen or id < seen.id then racial[s.name] = entry end
+            else
+                list[#list + 1] = entry
+            end
         end
     end
+    for _, entry in pairs(racial) do list[#list + 1] = entry end
     if enabled.potion ~= false then
         list[#list + 1] = { id = "potion", type = "Potion", name = "Potion" }
     end
@@ -47,18 +54,24 @@ function LayoutRules.Split(spells, placement)
     return row, panel
 end
 
-function LayoutRules.Order(states)
-    local keyed = {}
-    for i, s in ipairs(states) do keyed[i] = { s = s, i = i } end
-    table.sort(keyed, function(a, b)
-        local x, y = a.s, b.s
-        if x.ready ~= y.ready then return x.ready end
-        if (x.maybe or false) ~= (y.maybe or false) then return not x.maybe end
-        if x.remaining ~= y.remaining then return x.remaining < y.remaining end
-        return a.i < b.i
-    end)
-    local out = {}
-    for i, k in ipairs(keyed) do out[i] = k.s end
+local index = {}
+
+local function before(x, y)
+    if x.ready ~= y.ready then return x.ready end
+    if (x.maybe or false) ~= (y.maybe or false) then return not x.maybe end
+    if x.remaining ~= y.remaining then return x.remaining < y.remaining end
+    return index[x] < index[y]
+end
+
+function LayoutRules.Order(states, out)
+    out = out or {}
+    for i = #states + 1, #out do out[i] = nil end
+    for i, s in ipairs(states) do
+        out[i] = s
+        index[s] = i
+    end
+    table.sort(out, before)
+    for _, s in ipairs(states) do index[s] = nil end
     return out
 end
 

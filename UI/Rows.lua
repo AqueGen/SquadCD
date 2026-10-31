@@ -102,7 +102,7 @@ function Rows.Update(tracker, now)
         local r = rows[i]
         for k = 1, r.count do
             local icon = r.icons[k]
-            icon:Update(tracker:State(r.guid, icon.spell.id), now)
+            icon:Update(tracker:State(r.guid, icon.spell.id, icon.buf), now)
         end
     end
 end

@@ -4,6 +4,7 @@ local Display = {}
 ns.Display = Display
 
 local INTERVAL = 0.1
+local LATE_RESCAN = 2
 
 local live = { members = {} }
 local source = live
@@ -50,7 +51,16 @@ local function collect(members)
     return rows, groups
 end
 
-function Display.Rebuild()
+local function onUpdate(_, dt)
+    elapsed = elapsed + dt
+    if elapsed < INTERVAL then return end
+    elapsed = 0
+    tick()
+end
+
+local generation = 0
+
+function Display.Rebuild(late)
     if not ns.DB then return end
     if InCombatLockdown() then
         pending = true
@@ -69,11 +79,12 @@ function Display.Rebuild()
     ns.Rows.Build(rows)
     ns.Panel.Build(groups)
     tick()
-    driver:SetScript("OnUpdate", function(_, dt)
-        elapsed = elapsed + dt
-        if elapsed < INTERVAL then return end
-        elapsed = 0
-        tick()
+    driver:SetScript("OnUpdate", onUpdate)
+    if late then return end
+    generation = generation + 1
+    local mine = generation
+    C_Timer.After(LATE_RESCAN, function()
+        if mine == generation and not InCombatLockdown() then Display.Rebuild(true) end
     end)
 end
 

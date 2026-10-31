@@ -66,6 +66,7 @@ local function world(opts)
         UnitGUID = function(u) return w.units[u] and w.units[u].guid end,
         UnitClass = function(u) if w.units[u] then return "x", w.units[u].class, 0 end end,
         UnitGroupRolesAssigned = function(u) return w.units[u] and w.units[u].role or "NONE" end,
+        UnitRace = function(u) if w.units[u] then return "x", "X", w.units[u].race end end,
         UnitExists = function(u) return w.exist[u] == true end,
         UnitCanAttack = function() return not w.friendly end,
         GetTime = function() return w.now or 100 end,

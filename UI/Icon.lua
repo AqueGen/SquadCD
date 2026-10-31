@@ -7,14 +7,22 @@ ns.Icon = Icon
 local T = ns.Theme
 local SWIPE_EPSILON = 0.05
 
+local QUESTION = "Interface\\Icons\\INV_Misc_QuestionMark"
+
+local function usable(v)
+    return issecretvalue(v) or v ~= nil
+end
+
 local function texture(spell)
+    local tex
     if spell.id == "potion" then
-        return C_Item.GetItemIconByID(ns.Potions[1].item)
+        tex = C_Item.GetItemIconByID(ns.Potions[1].item)
+    else
+        tex = C_Spell.GetSpellTexture(spell.id)
+        if not usable(tex) and spell.icon then tex = "Interface\\Icons\\" .. spell.icon end
     end
-    if spell.icon then
-        return "Interface\\Icons\\" .. spell.icon
-    end
-    return C_Spell.GetSpellTexture(spell.id)
+    if usable(tex) then return tex end
+    return QUESTION
 end
 
 local function resolve(spell, member)
@@ -55,13 +63,13 @@ function Icon.New(parent)
     local label = f:CreateFontString(nil, "OVERLAY")
     label:SetPoint("TOP", f, "BOTTOM", 0, -1)
 
-    return setmetatable({ frame = f, tex = tex, cd = cd, time = time, count = count, dot = dot, label = label }, Icon)
+    return setmetatable({ frame = f, tex = tex, cd = cd, time = time, count = count, dot = dot, label = label, buf = {} }, Icon)
 end
 
 function Icon:SetSpell(spell, member, size)
     self.spell, self.member = spell, member
     self.duration, self.maxCharges = resolve(spell, member)
-    self.start, self.state = nil, nil
+    self.start, self.text, self.charges, self.cooling, self.maybe, self.unread = nil, nil, nil, nil, nil, nil
     self.frame:SetSize(size, size)
     self.tex:SetTexture(texture(spell))
     self.time:SetFont(T.FONT, math.max(8, math.floor(size * 0.42)), "OUTLINE")
@@ -80,8 +88,9 @@ end
 function Icon:Update(state, now)
     if not state then return end
     local cooling = not state.ready
-    if cooling then
-        local start = now - (self.duration - state.remaining)
+    local timer = cooling and state.remaining or state.recharge or 0
+    if timer > 0 then
+        local start = now - (self.duration - timer)
         if not self.start or math.abs(start - self.start) > SWIPE_EPSILON then
             self.start = start
             self.cd:SetCooldown(start, self.duration)
@@ -90,16 +99,30 @@ function Icon:Update(state, now)
         self.start = nil
         self.cd:Clear()
     end
-    self.time:SetText(cooling and ns.LayoutRules.FormatRemaining(state.remaining) or "")
-    self.count:SetText(self.maxCharges > 1 and state.charges or "")
-    self.tex:SetDesaturated(cooling)
-    self.tex:SetAlpha(cooling and 0.55 or 1)
-    if state.maybe then
-        self.frame:SetBackdropBorderColor(unpack(T.maybe))
-        self.time:SetTextColor(unpack(T.maybe))
-    else
-        self.frame:SetBackdropBorderColor(unpack(T.border))
-        self.time:SetTextColor(1, 1, 1)
+    local text = timer > 0 and ns.LayoutRules.FormatRemaining(timer) or ""
+    if text ~= self.text then
+        self.text = text
+        self.time:SetText(text)
     end
-    self.dot:SetAlpha(state.talentsKnown == false and 1 or 0)
+    local count = self.maxCharges > 1 and state.charges or ""
+    if count ~= self.charges then
+        self.charges = count
+        self.count:SetText(count)
+    end
+    if cooling ~= self.cooling then
+        self.cooling = cooling
+        self.tex:SetDesaturated(cooling)
+        self.tex:SetAlpha(cooling and 0.55 or 1)
+    end
+    local maybe = state.maybe or false
+    if maybe ~= self.maybe then
+        self.maybe = maybe
+        self.frame:SetBackdropBorderColor(unpack(maybe and T.maybe or T.border))
+        self.time:SetTextColor(unpack(maybe and T.maybe or T.text))
+    end
+    local unread = state.talentsKnown == false
+    if unread ~= self.unread then
+        self.unread = unread
+        self.dot:SetAlpha(unread and 1 or 0)
+    end
 end

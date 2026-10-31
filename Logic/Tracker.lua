@@ -118,7 +118,7 @@ function Tracker:External(spellId, targetGuid, excludeGuid)
     local candidates = {}
     for _, guid in ipairs(self.order) do
         local m = self.members[guid]
-        if guid ~= excludeGuid and ns.Cooldowns.Has(spellId, m.class, m.spec, m.talents) then
+        if guid ~= excludeGuid and ns.Cooldowns.Has(spellId, m.class, m.spec, m.talents, m.race) then
             candidates[#candidates + 1] = guid
         end
     end
@@ -132,19 +132,22 @@ function Tracker:Confirm(guid, spellId)
     self:Used(guid, spellId, true)
 end
 
-function Tracker:State(guid, spellId)
+function Tracker:State(guid, spellId, out)
     local e, r = self:Find(guid, spellId)
     if not r then return end
+    local now = self.clock()
     local spent, start, step = 0, nil, 0
-    if e then spent, start, _, step = project(e, r, self.clock()) end
+    if e then spent, start, _, step = project(e, r, now) end
     local charges = math.max(0, r.charges - spent)
-    return {
-        ready = charges > 0,
-        remaining = charges > 0 and 0 or math.max(0, start + step - self.clock()),
-        charges = charges,
-        maybe = e ~= nil and spent > 0 and e.maybe or false,
-        talentsKnown = r.talentsKnown,
-    }
+    local recharge = start and math.max(0, start + step - now) or 0
+    out = out or {}
+    out.ready = charges > 0
+    out.remaining = charges > 0 and 0 or recharge
+    out.recharge = recharge
+    out.charges = charges
+    out.maybe = e ~= nil and spent > 0 and e.maybe or false
+    out.talentsKnown = r.talentsKnown
+    return out
 end
 
 function Tracker:Snapshot(serverNow, clockNow)

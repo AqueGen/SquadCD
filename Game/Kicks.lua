@@ -31,7 +31,7 @@ function Kicks.Attribute(before, after)
 end
 
 function Kicks.SpellOf(member)
-    local function has(id) return ns.Cooldowns.Has(id, member.class, member.spec, member.talents) end
+    local function has(id) return ns.Cooldowns.Has(id, member.class, member.spec, member.talents, member.race) end
     local primary = PRIMARY[member.spec]
     if primary and has(primary) then return primary end
     local owned, free, gated

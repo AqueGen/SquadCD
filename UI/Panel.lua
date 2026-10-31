@@ -12,7 +12,7 @@ local LABELS = {
     Dispel = "Dispels", Purge = "Purges", Movement = "Movement",
 }
 
-local UNKNOWN = { ready = true, remaining = 0, charges = 1, maybe = false }
+local UNKNOWN = { ready = true, remaining = 0, recharge = 0, charges = 1, maybe = false, talentsKnown = true }
 
 local frame
 local lines, active = {}, 0
@@ -35,7 +35,7 @@ local function line(i)
         label:SetTextColor(unpack(T.muted))
         label:SetJustifyH("LEFT")
         label:SetWidth(LABEL_W - 4)
-        lines[i] = { label = label, icons = {}, entries = {} }
+        lines[i] = { label = label, icons = {}, entries = {}, states = {}, sorted = {}, placed = {} }
     end
     return lines[i]
 end
@@ -68,9 +68,13 @@ function Panel.Build(groups)
         l.label:SetPoint("TOPLEFT", PAD, top - (size - 11) / 2)
         l.label:Show()
         l.top, l.entries = top, g.entries
+        wipe(l.states)
+        wipe(l.placed)
         for k, e in ipairs(g.entries) do
             local icon = l.icons[k] or ns.Icon.New(frame)
             l.icons[k] = icon
+            icon.buf.icon = icon
+            l.states[k] = icon.buf
             icon:SetSpell(e.spell, e.member, size)
             icon:SetLabel(ns.LayoutRules.ShortName(e.member.name or e.member.class, 4), T.ClassColor(e.member.class))
             icon.frame:Show()
@@ -87,19 +91,27 @@ function Panel.Build(groups)
     frame:Show()
 end
 
+local function fallback(buf)
+    for k, v in pairs(UNKNOWN) do buf[k] = v end
+    return buf
+end
+
 function Panel.Update(tracker, now)
     local size = ns.DB.panel.size
     for i = 1, active do
         local l = lines[i]
-        local states = {}
         for k, e in ipairs(l.entries) do
-            local s = tracker:State(e.member.guid, e.spell.id) or UNKNOWN
-            states[k] = { ready = s.ready, remaining = s.remaining, maybe = s.maybe, state = s, icon = l.icons[k] }
+            local buf = l.icons[k].buf
+            if not tracker:State(e.member.guid, e.spell.id, buf) then fallback(buf) end
         end
-        for k, s in ipairs(ns.LayoutRules.Order(states)) do
-            s.icon:Update(s.state, now)
-            s.icon.frame:ClearAllPoints()
-            s.icon.frame:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD + LABEL_W + (k - 1) * (size + GAP), l.top)
+        for k, buf in ipairs(ns.LayoutRules.Order(l.states, l.sorted)) do
+            local icon = buf.icon
+            icon:Update(buf, now)
+            if l.placed[k] ~= icon then
+                l.placed[k] = icon
+                icon.frame:ClearAllPoints()
+                icon.frame:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD + LABEL_W + (k - 1) * (size + GAP), l.top)
+            end
         end
     end
 end

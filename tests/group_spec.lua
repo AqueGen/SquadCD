@@ -5,8 +5,8 @@ local FILES = { "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lu
 
 local function game(mode, units, extra)
     units = units or {
-        player = { guid = "P", class = "PALADIN", role = "TANK" },
-        party1 = { guid = "A", class = "PRIEST", role = "HEALER" },
+        player = { guid = "P", class = "PALADIN", role = "TANK", race = 1 },
+        party1 = { guid = "A", class = "PRIEST", role = "HEALER", race = 10 },
     }
     local stubs = {
         IsInRaid = function() return mode == "raid" end,
@@ -15,6 +15,7 @@ local function game(mode, units, extra)
         UnitGUID = function(u) return units[u] and units[u].guid end,
         UnitClass = function(u) if units[u] then return "x", units[u].class, 0 end end,
         UnitGroupRolesAssigned = function(u) return units[u] and units[u].role or "NONE" end,
+        UnitRace = function(u) if units[u] then return "x", "X", units[u].race end end,
         GetTime = function() return 100 end,
         GetServerTime = function() return 1000000 end,
         C_SpecializationInfo = {
@@ -74,6 +75,18 @@ describe("Group", function()
         helpers.fire("GROUP_ROSTER_UPDATE")
         assert.are.equal(0, loads)
         assert.are.equal(2, #rosters)
+    end)
+
+    it("members carry the race id", function()
+        local _, rosters = start("party")
+        assert.are.equal(1, rosters[1][1].race)
+        assert.are.equal(10, rosters[1][2].race)
+    end)
+
+    it("secret race is left out", function()
+        local _, rosters = start("party", nil, { issecretvalue = function(v) return v == 10 end })
+        assert.are.equal(2, #rosters[1])
+        assert.is_nil(rosters[1][2].race)
     end)
 
     it("solo roster stays empty and does not load", function()
