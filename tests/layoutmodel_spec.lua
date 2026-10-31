@@ -608,6 +608,15 @@ describe("LayoutModel fix round 1", function()
         assert.are.same({ x = 30, y = 40, dockTo = "Kick", side = "Right", offset = -3 }, d.sections[2].pos)
     end)
 
+    it("Normalize renames a section whose id is the reserved panel id", function()
+        local L = load()
+        local d = L.Defaults()
+        d.sections[2].id = "panel"
+        L.Normalize(d)
+        assert.are.equal("Kick", d.sections[1].id)
+        assert.are.equal("s1", d.sections[2].id)
+    end)
+
     it("Normalize drops broken positions and docks to self or unknown windows", function()
         local L = load()
         local d = L.Defaults()

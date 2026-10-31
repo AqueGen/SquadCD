@@ -99,14 +99,18 @@ function Display.IsLive()
     return source == live
 end
 
-driver:SetScript("OnEvent", function()
-    if pending then
+driver:SetScript("OnEvent", function(_, event)
+    if event ~= "PLAYER_REGEN_ENABLED" then
+        Display.Rebuild()
+    elseif pending then
         Display.Rebuild()
     elseif #source.members > 0 then
         Display.Rebuild(true)
     end
 end)
 driver:RegisterEvent("PLAYER_REGEN_ENABLED")
+driver:RegisterEvent("DISPLAY_SIZE_CHANGED")
+driver:RegisterEvent("UI_SCALE_CHANGED")
 
 local previous = ns.Group.OnRoster
 ns.Group.OnRoster = function(list)

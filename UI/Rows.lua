@@ -165,7 +165,7 @@ function Rows.Build(rows)
         if isStack then stacked[#stacked + 1] = { member = row.member, height = math.max(height, layout.memberLook.iconSize) } end
     end
     local stackSlots = layoutStack(stacked)
-    for i = #rows + 1, #members do hideMember(i, {}) end
+    for _, i in ipairs(Grid.Surplus(members, #rows)) do hideMember(i, {}) end
     active = #rows
     for i, row in ipairs(rows) do
         local p = plan[i]

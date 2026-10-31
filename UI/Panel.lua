@@ -18,6 +18,7 @@ local roleOrder = {}
 local function newContainer(name)
     local f = CreateFrame("Frame", name, UIParent, "BackdropTemplate")
     f:SetFrameStrata("MEDIUM")
+    f:SetClampedToScreen(true)
     return { frame = f, lines = {} }
 end
 
@@ -50,31 +51,41 @@ local function hideLine(l)
     l.count = 0
 end
 
-local function widgets(c, l, list, bars, size, letters)
+local function apply(w, e)
+    w.entry = e
+    if w.bars then
+        w:SetEntry(e.spell, e.member)
+        return 0
+    end
+    w:SetSpell(e.spell, e.member, w.size)
+    return w:SetLabel(ns.LayoutRules.ShortName(e.member.name or e.member.class or "?", w.letters), T.ClassColor(e.member.class))
+end
+
+local function widgets(c, l, list, bars, size, letters, collapse)
     local pool = bars and l.bars or l.icons
     local other = bars and l.icons or l.bars
     for _, w in ipairs(other) do w.frame:Hide() end
     local widest = size
     wipe(l.states)
     wipe(l.placed)
-    for k, e in ipairs(list) do
+    local groups = collapse and Grid.ByMember(list) or {}
+    if not collapse then
+        for k, e in ipairs(list) do groups[k] = { e } end
+    end
+    for k, alts in ipairs(groups) do
+        local e = alts[1]
         local w = pool[k] or (bars and ns.KickBars.New(c.frame) or ns.Icon.New(c.frame))
         pool[k] = w
         w.buf.widget = w
-        w.entry = e
+        w.alts, w.bars, w.size, w.letters = alts, bars, size, letters
+        for _, a in ipairs(alts) do a.buf = a.buf or {} end
         w.buf.role = Grid.RoleOf(e.member.spec)
         l.states[k] = w.buf
-        if bars then
-            w:SetEntry(e.spell, e.member)
-        else
-            w:SetSpell(e.spell, e.member, size)
-            local name = ns.LayoutRules.ShortName(e.member.name or e.member.class or "?", letters)
-            widest = math.max(widest, w:SetLabel(name, T.ClassColor(e.member.class)))
-        end
+        widest = math.max(widest, apply(w, e))
         w.frame:Show()
     end
-    for k = #list + 1, #pool do pool[k].frame:Hide() end
-    l.widgets, l.count = pool, #list
+    for k = #groups + 1, #pool do pool[k].frame:Hide() end
+    l.widgets, l.count = pool, #groups
     if bars then return ns.KickBars.W, ns.KickBars.H end
     return widest, size + 1 + NAME_H
 end
@@ -94,9 +105,9 @@ local function fill(c, key, list, layout)
         local l = line(c, i)
         local look = Model.LookOf(layout, item.section)
         local bars = Model.Bars(layout, item.type)
-        local cellW, cellH = widgets(c, l, item.entries, bars, look.iconSize, look.nameLetters)
+        local cellW, cellH = widgets(c, l, item.entries, bars, look.iconSize, look.nameLetters, item.type == "Kick")
         local cells = {}
-        for k = 1, #item.entries do cells[k] = { w = cellW, h = cellH } end
+        for k = 1, l.count do cells[k] = { w = cellW, h = cellH } end
         l.type, l.shape, l.labels = item.type, Model.LineShape(layout, item.section, item.type), look.labels
         local rects, w, h = Grid.Place(cells, l.shape, CELL_GAP)
         l.rects = rects
@@ -216,6 +227,8 @@ local function fallback(buf)
     return buf
 end
 
+local states, cds = {}, {}
+
 function Panel.Update(tracker, now, sight)
     for _, c in ipairs(shown) do
         for i = 1, #c.lines do
@@ -223,10 +236,23 @@ function Panel.Update(tracker, now, sight)
             if (l.count or 0) > 0 then
                 for k = 1, l.count do
                     local w = l.widgets[k]
-                    local buf = w.buf
-                    local e = w.entry
-                    if not tracker:State(e.member.guid, e.spell.id, buf) then fallback(buf) end
-                    buf.unknown = buf.ready and ns.LayoutRules.Unknown(e.spell.id, e.own, sight.plain, sight.secret)
+                    local alts = w.alts
+                    if #alts > 1 then
+                        wipe(states)
+                        wipe(cds)
+                    end
+                    for a = 1, #alts do
+                        local e = alts[a]
+                        local buf = #alts == 1 and w.buf or e.buf
+                        if not tracker:State(e.member.guid, e.spell.id, buf) then fallback(buf) end
+                        buf.unknown = buf.ready and ns.LayoutRules.Unknown(e.spell.id, e.own, sight.plain, sight.secret)
+                        if #alts > 1 then states[a], cds[a] = buf, ns.Spells[e.spell.id] and ns.Spells[e.spell.id].cd or 0 end
+                    end
+                    if #alts > 1 then
+                        local at = Grid.Best(states, cds)
+                        if alts[at] ~= w.entry then apply(w, alts[at]) end
+                        for key, v in pairs(states[at]) do w.buf[key] = v end
+                    end
                 end
                 local sorted = Grid.Sort(l.states, l.shape, roleOrder, l.sorted)
                 local nextAt = NEXT[l.type] and Grid.Next(sorted, roleOrder)

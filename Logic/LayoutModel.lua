@@ -402,7 +402,7 @@ function LayoutModel.Normalize(layout)
         if type(s) == "table" then
             local types = claim(s.types)
             if #types > 0 then
-                local id = type(s.id) == "string" and s.id ~= "" and not ids[s.id] and s.id or nil
+                local id = type(s.id) == "string" and s.id ~= "" and s.id ~= "panel" and not ids[s.id] and s.id or nil
                 if not id then
                     local n = 1
                     while ids["s" .. n] do n = n + 1 end

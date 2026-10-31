@@ -209,6 +209,48 @@ function LayoutGrid.Next(states, roleOrder)
     return best
 end
 
+function LayoutGrid.Surplus(sparse, keep)
+    local out = {}
+    for i in pairs(sparse) do
+        if type(i) == "number" and i > keep then out[#out + 1] = i end
+    end
+    table.sort(out)
+    return out
+end
+
+function LayoutGrid.ByMember(entries)
+    local out, at = {}, {}
+    for _, e in ipairs(entries) do
+        local key = e.member.guid or e.member
+        local k = at[key]
+        if not k then
+            k = #out + 1
+            at[key], out[k] = k, {}
+        end
+        table.insert(out[k], e)
+    end
+    return out
+end
+
+function LayoutGrid.Best(states, cds)
+    local best
+    for i, s in ipairs(states) do
+        if not best then
+            best = i
+        else
+            local b = states[best]
+            if (s.ready or false) ~= (b.ready or false) then
+                if s.ready then best = i end
+            elseif s.remaining ~= b.remaining then
+                if s.remaining < b.remaining then best = i end
+            elseif (cds[i] or 0) < (cds[best] or 0) then
+                best = i
+            end
+        end
+    end
+    return best
+end
+
 function LayoutGrid.MemberStack(groups, side)
     local out, far = {}, nil
     for i, g in ipairs(groups) do
