@@ -102,6 +102,35 @@ describe("Kicks own result", function()
         assert.is_nil(ns.Kicks.FocusCast())
     end)
 
+    it("finds the nameplate of the focus", function()
+        _G.UnitIsUnit = function(a, b) return a == "focus" and b == "nameplate3" end
+        assert.equal("nameplate3", ns.Kicks.FocusPlate())
+        _G.UnitIsUnit = function() return false end
+        assert.is_nil(ns.Kicks.FocusPlate())
+    end)
+
+    it("asks CastAhead for the focus plate's next casts only when it is loaded", function()
+        _G.UnitIsUnit = function(a, b) return a == "focus" and b == "nameplate3" end
+        _G.CastAheadAPI = nil
+        assert.is_nil(ns.Kicks.FocusUpcoming(3))
+        local asked
+        _G.CastAheadAPI = { Upcoming = function(unit, max) asked = { unit, max } return { { spell = 1 } } end }
+        assert.same({ { spell = 1 } }, ns.Kicks.FocusUpcoming(3))
+        assert.same({ "nameplate3", 3 }, asked)
+        _G.CastAheadAPI = nil
+    end)
+
+    it("next casts read as icon, name and seconds, approximate ones with a tilde, the running cast left out", function()
+        _G.C_Spell = { GetSpellName = function(id) return ({ [1] = "Bolt", [2] = "Storm", [3] = "Heal" })[id] end }
+        local text = ns.Kicks.UpcomingText({
+            { spell = 3, icon = 9, at = 104, casting = true },
+            { spell = 1, icon = 7, at = 104.4 },
+            { spell = 2, icon = 8, at = 112, approximate = true },
+        }, 100)
+        assert.equal("|T7:0|t Bolt 4\n|T8:0|t Storm ~12", text)
+        assert.is_nil(ns.Kicks.UpcomingText({}, 100))
+    end)
+
     it("no focus gives nothing", function()
         _G.UnitExists = function() return false end
         assert.is_nil(ns.Kicks.FocusText())

@@ -60,6 +60,7 @@ describe("LayoutModel.Defaults", function()
         assert.is_true(d.kickFocus)
         assert.are.equal(14, d.kickFocusSize)
         assert.is_true(d.kickFocusCast)
+        assert.is_true(d.kickFocusNext)
         assert.are.equal("always", d.showWhen)
         assert.are.same(ALL, d.typeOrder)
         local ids = {}

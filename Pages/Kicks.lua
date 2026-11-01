@@ -67,6 +67,13 @@ local function tracker(page)
         set = function(on) Parts.Edit(function(l) l.kickFocusCast = on end) end,
         visible = function() return kickSection() ~= nil and layout().kickStyle == "Bars" and layout().kickFocus end,
     })
+    group:Check({
+        label = "Show focus next casts",
+        tooltip = "With CastAhead installed: the casts it expects next from your focus target, with seconds until each.",
+        get = function() return layout().kickFocusNext end,
+        set = function(on) Parts.Edit(function(l) l.kickFocusNext = on end) end,
+        visible = function() return kickSection() ~= nil and layout().kickStyle == "Bars" and layout().kickFocus and type(CastAheadAPI) == "table" end,
+    })
     group:Slider({
         label = "Focus size", min = 8, max = 24,
         tooltip = "Text, raid mark and cast bar size in the focus box.",

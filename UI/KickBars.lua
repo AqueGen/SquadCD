@@ -62,8 +62,12 @@ function KickBars.New(parent)
     castName:SetJustifyH("LEFT")
     castName:SetWordWrap(false)
     cast:Hide()
+    local upcoming = box:CreateFontString(nil, "OVERLAY")
+    upcoming:SetFont(T.FONT, 10, "OUTLINE")
+    upcoming:SetPoint("TOPLEFT", box, "BOTTOMLEFT", 0, -2)
+    upcoming:SetJustifyH("LEFT")
     return setmetatable({ frame = f, icon = icon, track = track, fill = fill, name = name, box = box, target = target,
-        cast = cast, spellIcon = spellIcon, castName = castName, value = value, buf = {} }, KickBars)
+        cast = cast, spellIcon = spellIcon, castName = castName, upcoming = upcoming, value = value, buf = {} }, KickBars)
 end
 
 function KickBars:SetEntry(spell, member)
@@ -93,6 +97,7 @@ function KickBars:ShowFocus(show, size, showCast)
         self.castName:SetFont(T.FONT, size, "OUTLINE")
         self.spellIcon:SetSize(size + 6, size + 6)
         self.cast:SetSize(CAST_W, size + 6)
+        self.upcoming:SetFont(T.FONT, size, "OUTLINE")
     end
     local text = show and ns.Kicks.FocusText() or nil
     self.box:SetShown(text and true or false)
@@ -103,15 +108,28 @@ end
 function KickBars:ShowCast(on)
     local duration, spell, icon, channel = nil, nil, nil, false
     if on then duration, spell, icon, channel = ns.Kicks.FocusCast() end
+    self.upcoming:ClearAllPoints()
     if not duration then
         self.cast:Hide()
+        self.upcoming:SetPoint("TOPLEFT", self.box, "BOTTOMLEFT", 0, -2)
         return
     end
+    self.upcoming:SetPoint("TOPLEFT", self.spellIcon, "BOTTOMLEFT", 0, -2)
     local direction = channel and Enum.StatusBarTimerDirection.RemainingTime or Enum.StatusBarTimerDirection.ElapsedTime
     self.cast:SetTimerDuration(duration, Enum.StatusBarInterpolation.Immediate, direction)
     self.castName:SetText(spell or "")
     self.spellIcon:SetTexture(icon)
     self.cast:Show()
+end
+
+-- CastAhead's next casts of the focus under the focus box, refreshed a few times a second for the countdown.
+function KickBars:ShowUpcoming(on, now)
+    if self.upcomingAt and now - self.upcomingAt < 0.2 then return end
+    self.upcomingAt = now
+    local text = on and ns.Kicks.UpcomingText(ns.Kicks.FocusUpcoming(3), now) or nil
+    if text == self.upcomingText then return end
+    self.upcomingText = text
+    self.upcoming:SetText(text or "")
 end
 
 function KickBars:Update(state, now, timers)
@@ -120,6 +138,7 @@ function KickBars:Update(state, now, timers)
     if self.own then
         local l = ns.DB.layout
         self:ShowFocus(l.kickFocus, l.kickFocusSize, l.kickFocusCast)
+        self:ShowUpcoming(l.kickFocus and l.kickFocusNext, now)
         result = ns.Kicks.OwnResult(now)
     else
         result = ns.Kicks.HitResult(self.guid, now)

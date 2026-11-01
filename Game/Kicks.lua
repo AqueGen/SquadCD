@@ -189,6 +189,36 @@ function Kicks.FocusVersion()
     return focusVersion
 end
 
+function Kicks.FocusPlate()
+    for i = 1, 40 do
+        local unit = "nameplate" .. i
+        local ok, same = pcall(UnitIsUnit, "focus", unit)
+        if ok and not issecretvalue(same) and same then return unit end
+    end
+end
+
+-- CastAhead's predictions for the focus plate, when CastAhead is loaded.
+function Kicks.FocusUpcoming(max)
+    if type(CastAheadAPI) ~= "table" or type(CastAheadAPI.Upcoming) ~= "function" then return nil end
+    local plate = Kicks.FocusPlate()
+    if not plate then return nil end
+    local ok, list = pcall(CastAheadAPI.Upcoming, plate, max)
+    return ok and list or nil
+end
+
+function Kicks.UpcomingText(list, now)
+    local lines = {}
+    for _, e in ipairs(list or {}) do
+        if not e.casting then
+            local name = C_Spell.GetSpellName(e.spell) or "?"
+            local icon = e.icon and ("|T" .. e.icon .. ":0|t ") or ""
+            local wait = e.at and ((e.approximate and "~" or "") .. math.floor(math.max(0, e.at - now) + 0.5)) or "?"
+            lines[#lines + 1] = icon .. name .. " " .. wait
+        end
+    end
+    return #lines > 0 and table.concat(lines, "\n") or nil
+end
+
 -- Can party members' targets (marks, names) be read at all under 12.x? Answers decide the kick-target feature.
 local function readout(fn, unit)
     local ok, v = pcall(fn, unit)
