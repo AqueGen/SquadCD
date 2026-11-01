@@ -13,7 +13,6 @@ local pending = false
 local driver = CreateFrame("Frame")
 local elapsed = 0
 
-local NONE = {}
 local sight = {}
 
 local function tick()
@@ -23,7 +22,6 @@ local function tick()
     if isLive then tracker:Tick() end
     sight.live = isLive
     sight.plain = not isLive or ns.Sensors.Mode() == "plain"
-    sight.secret = isLive and ns.EnemyDebuffs.SecretIds() or NONE
     sight.timers = ns.DB.layout.timers
     local now = GetTime()
     ns.Rows.Update(tracker, now, sight)

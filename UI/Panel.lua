@@ -309,7 +309,7 @@ local function new(opts)
                             local e = alts[a]
                             local buf = #alts == 1 and w.buf or e.buf
                             if not tracker:State(e.member.guid, e.spell.id, buf) then fallback(buf) end
-                            buf.unknown = buf.ready and ns.LayoutRules.Unknown(e.spell.id, e.own, sight.plain, sight.secret)
+                            buf.unknown = buf.ready and ns.LayoutRules.Unknown(e.spell.id, e.own, sight.plain)
                             buf.dead = sight.live and dead(e.member.unit)
                             if #alts > 1 then states[a], cds[a] = buf, ns.Spells[e.spell.id] and ns.Spells[e.spell.id].cd or 0 end
                         end

@@ -216,7 +216,7 @@ local function new(opts)
                     local icon = g.icons[k]
                     local state = tracker:State(icon.guid, icon.spell.id, icon.buf)
                     if state then
-                        state.unknown = state.ready and ns.LayoutRules.Unknown(icon.spell.id, icon.own, sight.plain, sight.secret)
+                        state.unknown = state.ready and ns.LayoutRules.Unknown(icon.spell.id, icon.own, sight.plain)
                     end
                     icon:Update(state, now, sight.timers)
                 end

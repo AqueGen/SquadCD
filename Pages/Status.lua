@@ -28,13 +28,6 @@ local function SpellName(id)
     return ns.Spells[id] and ns.Spells[id].name or tostring(id)
 end
 
-local function Names(list)
-    if #list == 0 then return "none" end
-    local out = {}
-    for i, e in ipairs(list) do out[i] = e.name end
-    return table.concat(out, ", ")
-end
-
 local function ModeText()
     local d = ns.Probe.Data()
     local why = ""
@@ -104,8 +97,8 @@ local function OwnText()
 end
 
 local function DebuffText()
-    local s = ns.EnemyDebuffs.Status()
-    return ("Hidden by the game (secret): %s\nNo debuff id, not trackable for others: %s"):format(Names(s.secret), Names(s.noId))
+    local s = ns.SecretTracks.Status()
+    return ("Party stuns and CC are read from enemy nameplates: plates watched %d of %d, probes on them %d."):format(s.plates, s.platePool, s.plateProbes)
 end
 
 ns.Window.Register("status", function(page)

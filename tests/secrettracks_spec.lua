@@ -44,6 +44,8 @@ describe("SecretTracks", function()
             UnitGUID = function(u) return u == "player" and "P" or nil end,
             C_CurveUtil = { EvaluateColorValueFromBoolean = function(b, t, f) if b then return t end return f end },
             C_Timer = { NewTicker = function() return { Cancel = function() end } end, After = function() end },
+            UnitCanAttack = function(_, u) return u:match("^nameplate%d+$") ~= nil end,
+            UnitExists = function(u) return u:match("^nameplate%d+$") ~= nil end,
         })
         ns.Probes = {
             New = function(unit, filter, ids)
@@ -201,5 +203,69 @@ describe("SecretTracks", function()
     it("does not bind guids outside the live roster", function()
         assert.is_false(ns.SecretTracks.Bind(fakeLayer(), "Z", IBF))
         assert.is_false(ns.SecretTracks.Bind(fakeLayer(), "P", IBF))
+    end)
+
+    describe("crowd control on nameplates", function()
+        local KIDNEY = 408
+
+        local function rogues()
+            ns.SecretTracks.Rebuild({
+                member("P", "player", "PALADIN", 66, {}),
+                member("R1", "party1", "ROGUE", 259, {}),
+                member("R2", "party2", "ROGUE", 261, {}),
+            })
+        end
+
+        local function probeOn(unit)
+            for _, p in ipairs(w.made) do
+                if p.unit == unit and p.ids[1] == KIDNEY and p.on then return p end
+            end
+        end
+
+        it("a stun lit on a plate stamps every member who can have it", function()
+            rogues()
+            ns.SecretTracks.PlateAdded("nameplate3")
+            assert.is_not_nil(probeOn("nameplate3"))
+            settle()
+            w.lit["nameplate3:" .. KIDNEY] = true
+            settle()
+            assert.is_not.equal(0, track("R1", KIDNEY).stamps[1])
+            assert.is_not.equal(0, track("R2", KIDNEY).stamps[1])
+        end)
+
+        it("a plate that arrives with the debuff already on stamps nothing", function()
+            rogues()
+            w.lit["nameplate5:" .. KIDNEY] = true
+            ns.SecretTracks.PlateAdded("nameplate5")
+            settle()
+            settle()
+            assert.equal(0, track("R1", KIDNEY).stamps[1])
+        end)
+
+        it("watches 20 plates; the next one waits and takes a freed slot", function()
+            rogues()
+            for i = 1, 21 do ns.SecretTracks.PlateAdded("nameplate" .. i) end
+            assert.is_nil(probeOn("nameplate21"))
+            ns.SecretTracks.PlateRemoved("nameplate4")
+            assert.is_nil(probeOn("nameplate4"))
+            assert.is_not_nil(probeOn("nameplate21"))
+        end)
+
+        it("skips plates the player cannot attack", function()
+            rogues()
+            ns.SecretTracks.PlateAdded("nameplatefriend")
+            assert.is_nil(probeOn("nameplatefriend"))
+        end)
+
+        it("has no active phase: the icon stays on its cooldown look", function()
+            rogues()
+            local layer = fakeLayer()
+            assert.is_true(ns.SecretTracks.Bind(layer, "R1", KIDNEY))
+            ns.SecretTracks.PlateAdded("nameplate3")
+            settle()
+            w.lit["nameplate3:" .. KIDNEY] = true
+            settle()
+            assert.equal(1, layer.phases[#layer.phases])
+        end)
     end)
 end)

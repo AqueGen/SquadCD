@@ -4,7 +4,7 @@ local _, ns = ...
 local SecretTracks = {}
 ns.SecretTracks = SecretTracks
 
-local TICK, SETTLE, OWN_WINDOW = 0.2, 0.3, 3
+local TICK, SETTLE, OWN_WINDOW, PLATES = 0.2, 0.3, 3, 20
 
 local T = ns.SecretTime
 local frame = CreateFrame("Frame")
@@ -12,6 +12,8 @@ local senses, tracks = {}, {}
 local roster = {}
 local pending, ticker, playerGuid = false, nil, nil
 local status = { on = true }
+local plates, plateOf, waiting = {}, {}, {}
+for j = 1, PLATES do plates[j] = {} end
 
 local function evalBool(b, t, f)
     return C_CurveUtil.EvaluateColorValueFromBoolean(b, t, f)
@@ -27,11 +29,12 @@ local function wanted(m)
     local list = {}
     local enabled = ns.DB and ns.DB.spells or {}
     for id, s in pairs(ns.Spells) do
-        if (s.track == "buff" or s.track == "target") and s.buffs and enabled[id] ~= false
+        local ids = s.track == "debuff" and s.debuffs or s.buffs
+        if (s.track == "buff" or s.track == "target" or s.track == "debuff") and ids and enabled[id] ~= false
             and ns.Cooldowns.Has(id, m.class, m.spec, m.talents, m.race, m.pets)
             and ns.Cooldowns.Canonical(id, m) == id then
             local r = ns.Cooldowns.Resolve(id, m.spec, m.talents)
-            list[#list + 1] = { id = id, kind = s.track, ids = s.buffs, cd = r and r.cd or s.cd, dur = s.dur }
+            list[#list + 1] = { id = id, kind = s.track, ids = ids, cd = r and r.cd or s.cd, dur = s.track ~= "debuff" and s.dur or nil }
         end
     end
     if enabled.potion ~= false and ns.Potions[1] then
@@ -57,6 +60,36 @@ local function sense(guid, unit, spell, ids, now)
         s.unit, s.settleUntil, s.primed = unit, now + SETTLE, false
     end
     s.used = true
+    return s
+end
+
+-- A re-pointed probe settles before its edges count, so a mob that arrives already stunned stamps nothing.
+local function aim(s, unit, now)
+    if s.unit ~= unit then
+        s.unit = unit
+        if unit then
+            ns.Probes.Point(s.probe, unit)
+            s.settleUntil, s.primed = now + SETTLE, false
+        end
+    end
+    s.off = unit == nil
+    ns.Probes.Enable(s.probe, unit ~= nil)
+end
+
+local function plateSense(j, spell, ids, now)
+    local key = "plate" .. j .. ":" .. spell
+    local s = senses[key]
+    if not s then
+        local probe, why = ns.Probes.New("nameplate" .. j, "HARMFUL", ids)
+        if not probe then
+            status.on, status.why = false, why
+            return nil
+        end
+        s = { probe = probe, plate = j, unit = "nameplate" .. j, settleUntil = now + SETTLE }
+        senses[key] = s
+    end
+    s.used = true
+    aim(s, plates[j].unit, now)
     return s
 end
 
@@ -111,8 +144,11 @@ function SecretTracks.Rebuild(list)
                 end
                 t.ids = w.ids
                 t.senses = {}
+                t.kind = w.kind
                 if w.kind == "buff" then
                     t.senses[1] = sense(m.guid, m.unit, w.id, w.ids, now)
+                elseif w.kind == "debuff" then
+                    for j = 1, PLATES do t.senses[#t.senses + 1] = plateSense(j, w.id, w.ids, now) end
                 else
                     for _, o in ipairs(roster) do
                         t.senses[#t.senses + 1] = sense(o.guid, o.unit, w.id, w.ids, now)
@@ -157,7 +193,9 @@ function SecretTracks.Tick(now)
         if idx then t.stamps[idx] = 0 end
     end
     for _, s in pairs(senses) do
-        if s.used then
+        if s.off then
+            s.ready = false
+        elseif s.used then
             local ok, v = pcall(ns.Probes.Lit, s.probe)
             if ok then s.cur, s.read = v, true end
             s.ready = s.primed and now >= s.settleUntil
@@ -174,13 +212,56 @@ function SecretTracks.Tick(now)
                 if not masked then
                     t.stamps[w] = evalBool(s.cur, evalBool(s.prev, t.stamps[w], code), t.stamps[w])
                 end
-                idle = evalBool(s.cur, 0, idle)
+                if t.kind ~= "debuff" then idle = evalBool(s.cur, 0, idle) end
             end
         end
         if next(t.layers) then write(t, now, idle) end
     end
     for _, s in pairs(senses) do
-        if s.used then s.prev, s.primed = s.cur, s.read end
+        if s.used and not s.off then s.prev, s.primed = s.cur, s.read end
+    end
+end
+
+local function point(j, unit)
+    plates[j].unit = unit
+    local now = GetTime()
+    for _, s in pairs(senses) do
+        if s.plate == j and s.used then aim(s, unit, now) end
+    end
+end
+
+local function plain(fn, ...)
+    local ok, v = pcall(fn, ...)
+    return ok and not issecretvalue(v) and v or nil
+end
+
+function SecretTracks.PlateAdded(unit)
+    if plateOf[unit] or plain(UnitCanAttack, "player", unit) ~= true then return end
+    for j = 1, PLATES do
+        if not plates[j].unit then
+            plateOf[unit], waiting[unit] = j, nil
+            point(j, unit)
+            return
+        end
+    end
+    waiting[unit] = true
+end
+
+function SecretTracks.PlateRemoved(unit)
+    waiting[unit] = nil
+    local j = plateOf[unit]
+    if not j then return end
+    plateOf[unit] = nil
+    point(j, nil)
+    local queued = {}
+    for u in pairs(waiting) do queued[#queued + 1] = u end
+    table.sort(queued)
+    for _, u in ipairs(queued) do
+        waiting[u] = nil
+        if plain(UnitExists, u) == true then
+            SecretTracks.PlateAdded(u)
+            if plateOf[u] then return end
+        end
     end
 end
 
@@ -216,12 +297,14 @@ function SecretTracks.Unbind(layer)
 end
 
 function SecretTracks.Status()
-    local n, p = 0, 0
+    local n, p, onPlates, watched = 0, 0, 0, 0
     for _ in pairs(tracks) do n = n + 1 end
     for _, s in pairs(senses) do
         if s.used then p = p + 1 end
+        if s.used and s.plate and not s.off then onPlates = onPlates + 1 end
     end
-    return { on = status.on, why = status.why, tracks = n, probes = p }
+    for _ in pairs(plateOf) do watched = watched + 1 end
+    return { on = status.on, why = status.why, tracks = n, probes = p, plates = watched, platePool = PLATES, plateProbes = onPlates }
 end
 
 local SAMPLES = { 0, 1, 48, 127, 254, 255 }
@@ -252,14 +335,25 @@ end
 
 function SecretTracks:Enable()
     SecretTracks.SelfTest()
+    for i = 1, 40 do
+        if plain(UnitExists, "nameplate" .. i) == true then SecretTracks.PlateAdded("nameplate" .. i) end
+    end
 end
 
 ns.RegisterModule("SecretTracks", SecretTracks)
 
-frame:SetScript("OnEvent", function()
-    if pending then SecretTracks.Rebuild() end
+frame:SetScript("OnEvent", function(_, event, unit)
+    if event == "NAME_PLATE_UNIT_ADDED" then
+        SecretTracks.PlateAdded(unit)
+    elseif event == "NAME_PLATE_UNIT_REMOVED" then
+        SecretTracks.PlateRemoved(unit)
+    elseif pending then
+        SecretTracks.Rebuild()
+    end
 end)
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+frame:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+frame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
 
 local previous = ns.Group.OnRoster
 ns.Group.OnRoster = function(list)

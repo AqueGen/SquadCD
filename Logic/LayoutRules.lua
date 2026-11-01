@@ -108,17 +108,12 @@ end
 
 local POTION = { track = "buff", buffs = {} }
 
-function LayoutRules.Unknown(spellId, own, plain, secret)
+function LayoutRules.Unknown(spellId, own, plain)
     if own then return false end
     local s = spellId == "potion" and POTION or ns.Spells[spellId]
     if not s then return false end
     if s.track == "buff" or s.track == "target" then return not plain or not s.buffs end
-    if s.track == "debuff" then
-        for _, id in ipairs(s.debuffs or {}) do
-            if not secret[id] then return false end
-        end
-        return true
-    end
+    if s.track == "debuff" then return not plain or not s.debuffs end
     return false
 end
 
