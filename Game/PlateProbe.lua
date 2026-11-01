@@ -160,3 +160,59 @@ ns.Slash("plateprobe", function(rest)
     if not PlateProbe.Start(ids, "Plate probe: " .. table.concat(names, ", ")) then return end
     print("SquadCD plateprobe: watching " .. table.concat(names, ", ") .. " (" .. table.concat(ids, ", ") .. "); /scd plateprobe off to stop")
 end)
+
+-- One buff on one unit, for checking whether the engine sees a given aura id (some are hidden from the aura bar).
+local aura = {}
+
+function PlateProbe.Aura(unit, id)
+    if aura.ticker then aura.ticker:Cancel() end
+    if aura.probe then ns.Probes.Enable(aura.probe, false) end
+    if not unit then
+        if aura.frame then aura.frame:Hide() end
+        return true
+    end
+    local p, why = ns.Probes.New(unit, "HELPFUL", { id })
+    if not p then
+        print("SquadCD auraprobe: " .. tostring(why))
+        return false
+    end
+    aura.probe = p
+    if not aura.frame then
+        local f = CreateFrame("Frame", "SquadCDAuraProbe", UIParent, "BackdropTemplate")
+        f:SetSize(220, 64)
+        f:SetPoint("CENTER", UIParent, "CENTER", 0, 260)
+        f:SetBackdrop(ns.Theme.FLAT)
+        f:SetBackdropColor(0, 0, 0, 0.85)
+        f.square = f:CreateTexture(nil, "ARTWORK")
+        f.square:SetSize(40, 40)
+        f.square:SetPoint("LEFT", 12, 0)
+        f.square:SetColorTexture(LIT[1], LIT[2], LIT[3], 1)
+        f.text = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        f.text:SetPoint("LEFT", f.square, "RIGHT", 10, 0)
+        f.text:SetPoint("RIGHT", -8, 0)
+        f.text:SetJustifyH("LEFT")
+        aura.frame = f
+    end
+    aura.frame.text:SetText(("%s on %s\n%s"):format(id, unit, C_Spell.GetSpellName(id) or ""))
+    aura.frame:Show()
+    aura.ticker = C_Timer.NewTicker(TICK, function()
+        local ok, lit = pcall(ns.Probes.Lit, aura.probe)
+        if ok then aura.frame.square:SetAlpha(C_CurveUtil.EvaluateColorValueFromBoolean(lit, 1, DIM)) end
+    end)
+    return true
+end
+
+ns.Slash("auraprobe", function(rest)
+    if rest == "off" then
+        PlateProbe.Aura(nil)
+        return
+    end
+    local unit, id = (rest or ""):match("^(%S+)%s+(%d+)$")
+    if not unit then
+        print("SquadCD auraprobe: /scd auraprobe <unit> <spell id>, for example /scd auraprobe party1 188592; /scd auraprobe off")
+        return
+    end
+    if PlateProbe.Aura(unit, tonumber(id)) then
+        print(("SquadCD auraprobe: watching %s on %s; the square lights while the buff is on"):format(id, unit))
+    end
+end)
