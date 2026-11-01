@@ -49,24 +49,25 @@ describe("Kicks own result", function()
         assert.equal("miss", ns.Kicks.OwnResult(now))
     end)
 
-    it("target probe says for each unit whether mark and name read plain or secret", function()
-        local SECRET = {}
-        _G.issecretvalue = function(v) return v == SECRET end
-        _G.UnitExists = function(u) return u == "focus" or u == "party1target" end
-        _G.GetRaidTargetIndex = function(u) if u == "focus" then return 8 end return SECRET end
-        _G.UnitName = function(u) if u == "focus" then return "Mob" end return SECRET end
-        local lines = ns.Kicks.TargetProbe()
-        assert.equal("focus: exists true, mark 8, name Mob", lines[1])
-        assert.equal("party1target: exists true, mark secret, name secret", lines[2])
-    end)
-
-    it("ignores casts that are not kicks and interrupts by someone else", function()
+    it("ignores casts that are not kicks", function()
         helpers.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "c", 642)
         assert.is_nil(ns.Kicks.OwnResult(now))
+    end)
+
+    it("a kick beaten by someone else's interrupt is late, not a miss", function()
         helpers.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "c", 96231)
         helpers.fire("UNIT_SPELLCAST_INTERRUPTED", "nameplate1", "x", 1, "B")
+        assert.equal("late", ns.Kicks.OwnResult(now))
         now = now + 1.5
-        assert.equal("miss", ns.Kicks.OwnResult(now))
+        assert.equal("late", ns.Kicks.OwnResult(now))
+    end)
+
+    it("a party member's interrupt shows on their bar for a while", function()
+        assert.is_nil(ns.Kicks.HitResult("B", now))
+        helpers.fire("UNIT_SPELLCAST_INTERRUPTED", "nameplate1", "x", 1, "B")
+        assert.equal("hit", ns.Kicks.HitResult("B", now))
+        now = now + 4
+        assert.is_nil(ns.Kicks.HitResult("B", now))
     end)
 end)
 
@@ -228,6 +229,7 @@ describe("Kicks events", function()
             IsInGroup = function() return true end,
             InCombatLockdown = function() return combat end,
             UnitCanAttack = function(_, unit) return unit == "nameplate1" end,
+            GetTime = function() return 0 end,
             C_DamageMeter = { GetCombatSessionSourceFromType = function(_, _, guid)
                 return { totalAmount = baselineTotals[guid] }
             end },

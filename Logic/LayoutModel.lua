@@ -179,12 +179,31 @@ function LayoutModel.MoveWithin(layout, kind, index, type, step)
     return layout
 end
 
+-- Up and Down move a type among the types shown in the same place; the others keep their slots.
 function LayoutModel.MoveInOrder(layout, type, step)
-    LayoutModel.MoveType(layout, type, step)
+    local order = layout.typeOrder
     local place, at = LayoutModel.PlaceOf(layout, type)
+    local from
+    for i, t in ipairs(order) do
+        if t == type then from = i end
+    end
+    local to = from and from + step
+    while to and order[to] and LayoutModel.PlaceOf(layout, order[to]) ~= place do to = to + step end
+    if not (to and order[to]) then return layout end
+    order[from], order[to] = order[to], order[from]
     local s = place == "panel" and layout.sections[at]
     if s and #s.types == 1 then LayoutModel.MoveSection(layout, s.id, step) end
     return layout
+end
+
+function LayoutModel.OrderBlocks(layout)
+    local blocks = { { place = "panel", types = {} }, { place = "member", types = {} }, { place = "off", types = {} } }
+    local byPlace = { panel = blocks[1], member = blocks[2], off = blocks[3] }
+    for _, t in ipairs(layout.typeOrder) do
+        local b = byPlace[LayoutModel.PlaceOf(layout, t)]
+        if b then b.types[#b.types + 1] = t end
+    end
+    return blocks
 end
 
 function LayoutModel.MoveRole(layout, from, to)

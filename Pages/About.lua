@@ -16,6 +16,6 @@ ns.Window.Register("about", function(page)
 
     local start = page:Group("Getting started")
     start:Note("Presets and types: pick a ready layout (Preview, then Apply or Cancel), set where each type shows and its order, and the role and class priority. The Layout wizard walks through the same steps.")
-    start:Note("Panels: one panel or a window per section, each section's types, shape and look. At party frames: the member groups and their look.")
+    start:Note("Panels: one panel or a window per section, each section's types, shape and look. Party frames: the member groups and their look.")
     start:Note("Demo (title bar or Presets and types) shows sample members. Move the panels (title bar or Panels) lets you drag and dock the panels; Done or Esc ends.")
 end)
