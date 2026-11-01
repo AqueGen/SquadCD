@@ -400,6 +400,17 @@ describe("LayoutGrid", function()
             local sorted = G.Sort(states, { sort = "Fixed" }, ROLES, nil, nil, { "Cy" })
             assert.are.same({ "Cy", "Ann", "Bo" }, { sorted[1].name, sorted[2].name, sorted[3].name })
         end)
+
+        it("kick lines put the shorter cooldown before role and class, after the queue", function()
+            local states = {
+                { role = "Tank", name = "Ann", cd = 15, ready = true },
+                { role = "Melee", name = "Bo", cd = 15, ready = true },
+                { role = "Ranged", name = "Cy", cd = 12, ready = true },
+            }
+            assert.are.equal(3, G.Next(states, ROLES, nil, {}))
+            assert.are.equal(2, G.Next(states, ROLES, nil, { "Bo" }))
+            assert.are.equal(1, G.Next(states, ROLES))
+        end)
     end)
 
     describe("ClassesIn", function()

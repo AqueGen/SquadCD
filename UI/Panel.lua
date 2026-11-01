@@ -56,6 +56,7 @@ local function widgets(c, l, list, bars, size, letters, collapse)
         w.buf.role = Grid.RoleOf(e.member.spec)
         w.buf.classId = Grid.ClassId(e.member.class)
         w.buf.name = e.member.name
+        w.buf.cd = ns.Spells[e.spell.id] and ns.Spells[e.spell.id].cd
         l.states[k] = w.buf
         widest = math.max(widest, apply(w, e))
         w.frame:Show()

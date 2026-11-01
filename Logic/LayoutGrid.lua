@@ -155,11 +155,14 @@ end
 local roleRank = {}
 local classRank = {}
 local queueRank = {}
+local cdRank = {}
 local index = {}
 
 local function fixed(x, y)
     local qx, qy = queueRank[x] or math.huge, queueRank[y] or math.huge
     if qx ~= qy then return qx < qy end
+    local dx, dy = cdRank[x] or 0, cdRank[y] or 0
+    if dx ~= dy then return dx < dy end
     local rx, ry = roleRank[x] or 0, roleRank[y] or 0
     if rx ~= ry then return rx < ry end
     local cx, cy = classRank[x] or 0, classRank[y] or 0
@@ -186,9 +189,10 @@ end
 local function rankRoles(states, roleOrder, classOrder, queue)
     for i, s in ipairs(states) do
         index[s] = i
-        if queue and s.name then
+        if queue then
+            cdRank[s] = s.cd
             for k, name in ipairs(queue) do
-                if name == s.name then queueRank[s] = k end
+                if s.name and name == s.name then queueRank[s] = k end
             end
         end
         if roleOrder then roleRank[s] = rankOf(roleOrder, s.role) end
@@ -203,10 +207,11 @@ local function clearRanks(states)
         roleRank[s] = nil
         classRank[s] = nil
         queueRank[s] = nil
+        cdRank[s] = nil
     end
 end
 
--- queue: member names that go first, in that order (the kick queue); everyone else follows role and class order.
+-- queue: member names that go first, in that order (the kick queue); everyone else follows the shorter cooldown, then role and class order.
 function LayoutGrid.Sort(states, shape, roleOrder, out, classOrder, queue)
     out = out or {}
     for i = #states + 1, #out do out[i] = nil end
