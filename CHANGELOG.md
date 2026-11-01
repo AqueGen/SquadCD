@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/AqueGen/SquadCD/compare/v0.2.0...v0.2.1) (2026-11-01)
+
+
+### Bug Fixes
+
+* CC icons no longer error on enemy plate slots without a mob ([51d0a05](https://github.com/AqueGen/SquadCD/commit/51d0a05a767de47536dc063c8975632e9d51dc38))
+
 ## [0.2.0](https://github.com/AqueGen/SquadCD/compare/v0.1.0...v0.2.0) (2026-11-01)
 
 
