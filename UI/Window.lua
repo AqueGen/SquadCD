@@ -19,6 +19,7 @@ local PAGES = {
     { key = "presets", label = "Presets and types" },
     { key = "panels", label = "Panels" },
     { key = "members", label = "At party frames" },
+    { key = "kicks", label = "Kicks" },
     { key = "spells", label = "Spells" },
     { key = "status", label = "Status" },
     { key = "profiles", label = "Profiles" },

@@ -88,7 +88,46 @@ function LayoutModel.Defaults()
         showWhen = "always",
         rolePriority = copy(ROLES),
         classOrder = defaultClassOrder(),
+        kickQueue = {},
     }
+end
+
+function LayoutModel.MoveInQueue(layout, name, step)
+    local q = layout.kickQueue
+    for i, n in ipairs(q) do
+        if n == name then
+            if q[i + step] then q[i], q[i + step] = q[i + step], q[i] end
+            return layout
+        end
+    end
+    return layout
+end
+
+-- The queue keeps names of members not in the group now; the shown list puts the current group in queue order first.
+function LayoutModel.QueueFor(layout, names)
+    local present, out = {}, {}
+    for _, n in ipairs(names) do present[n] = true end
+    for _, n in ipairs(layout.kickQueue) do
+        if present[n] then
+            out[#out + 1] = n
+            present[n] = nil
+        end
+    end
+    for _, n in ipairs(names) do
+        if present[n] then out[#out + 1] = n end
+    end
+    return out
+end
+
+function LayoutModel.SetQueue(layout, names)
+    local kept, seen = {}, {}
+    for _, n in ipairs(names) do seen[n] = true end
+    for _, n in ipairs(names) do kept[#kept + 1] = n end
+    for _, n in ipairs(layout.kickQueue) do
+        if not seen[n] then kept[#kept + 1] = n end
+    end
+    layout.kickQueue = kept
+    return layout
 end
 
 local function move(list, from, to)
@@ -639,6 +678,14 @@ function LayoutModel.Normalize(layout)
         end
         layout.classOrder[role] = out
     end
+    local queue, named = {}, {}
+    for _, n in ipairs(type(layout.kickQueue) == "table" and layout.kickQueue or {}) do
+        if type(n) == "string" and n ~= "" and not named[n] then
+            named[n] = true
+            queue[#queue + 1] = n
+        end
+    end
+    layout.kickQueue = queue
     return layout
 end
 
