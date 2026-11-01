@@ -232,6 +232,13 @@ function LayoutGrid.Next(states, roleOrder, classOrder, queue)
     return best
 end
 
+function LayoutGrid.AllCooling(states)
+    for _, s in ipairs(states) do
+        if s.ready or s.dead then return false end
+    end
+    return #states > 0
+end
+
 function LayoutGrid.ClassesIn(order, role)
     local has = {}
     for specId, spec in pairs(ns.Specs) do

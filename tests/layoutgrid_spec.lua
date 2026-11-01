@@ -401,6 +401,13 @@ describe("LayoutGrid", function()
             assert.are.same({ "Cy", "Ann", "Bo" }, { sorted[1].name, sorted[2].name, sorted[3].name })
         end)
 
+        it("all cooling only when every live member's kick is on cooldown", function()
+            assert.is_true(G.AllCooling({ { ready = false }, { ready = false } }))
+            assert.is_false(G.AllCooling({ { ready = false }, { ready = true } }))
+            assert.is_false(G.AllCooling({ { ready = false }, { ready = false, dead = true } }))
+            assert.is_false(G.AllCooling({}))
+        end)
+
         it("kick lines put the shorter cooldown before role and class, after the queue", function()
             local states = {
                 { role = "Tank", name = "Ann", cd = 15, ready = true },

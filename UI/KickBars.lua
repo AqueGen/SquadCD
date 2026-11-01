@@ -10,8 +10,9 @@ local ICON, GAP, TRACK_W, TRACK_H, LETTERS = 20, 2, 130, 16, 10
 local FOCUS_GAP, CAST_W = 10, 160
 local CAST = { 1, 0.7, 0, 1 }
 local TRACK = { 0.114, 0.125, 0.145, 1 }
-local RESULT = { hit = { 0.2, 0.8, 0.3 }, miss = { 0.85, 0.2, 0.2 }, cast = { 0.9, 0.9, 0.9 } }
-local RESULT_TEXT = { hit = "kicked", miss = "missed", cast = "..." }
+local RESULT = { hit = { 0.2, 0.8, 0.3 }, late = { 0.95, 0.8, 0.2 }, miss = { 0.45, 0.45, 0.45 }, cast = { 0.9, 0.9, 0.9 } }
+local RESULT_TEXT = { hit = "kicked", late = "late", miss = "no hit", cast = "..." }
+local DOWN = { 0.9, 0.15, 0.15, 1 }
 KickBars.W, KickBars.H = ICON + GAP + TRACK_W, ICON
 
 function KickBars.New(parent)
@@ -72,9 +73,10 @@ function KickBars:SetEntry(spell, member)
     self.name:SetText(self.who)
     self.name:SetTextColor(1, 1, 1)
     self.own = member.unit == "player"
+    self.guid = member.guid
     self.classColor = { T.ClassColor(member.class) }
     self.fill:SetColorTexture(self.classColor[1], self.classColor[2], self.classColor[3], 0.85)
-    self.text, self.share, self.next, self.result, self.focus = nil, nil, nil, nil, nil
+    self.text, self.share, self.next, self.down, self.result, self.focus = nil, nil, nil, nil, nil, nil
     self.box:Hide()
     self.cast:Hide()
 end
@@ -114,16 +116,19 @@ end
 
 function KickBars:Update(state, now, timers)
     self.icon:Update(state, now, false)
+    local result
     if self.own then
         local l = ns.DB.layout
         self:ShowFocus(l.kickFocus, l.kickFocusSize, l.kickFocusCast)
-        local result = ns.Kicks.OwnResult(now)
-        if result ~= self.result then
-            self.result = result
-            local c = RESULT[result] or self.classColor
-            self.fill:SetColorTexture(c[1], c[2], c[3], 0.85)
-            self.text = nil
-        end
+        result = ns.Kicks.OwnResult(now)
+    else
+        result = ns.Kicks.HitResult(self.guid, now)
+    end
+    if result ~= self.result then
+        self.result = result
+        local c = RESULT[result] or self.classColor
+        self.fill:SetColorTexture(c[1], c[2], c[3], 0.85)
+        self.text = nil
     end
     local cooling = not state.ready
     local unknown = not cooling and state.unknown or false
@@ -135,18 +140,23 @@ function KickBars:Update(state, now, timers)
         self.fill:SetWidth(math.max(1, share * (TRACK_W - 2)))
     end
     local text = self.result and RESULT_TEXT[self.result]
-        or cooling and (timers ~= false and ns.LayoutRules.FormatRemaining(state.remaining) or "") or unknown and "?" or "ready"
+        or cooling and (timers ~= false and ns.LayoutRules.FormatRemaining(state.remaining) or "") or unknown and "?"
+        or self.own and self.next and "your turn" or "ready"
     if text ~= self.text then
         self.text = text
         self.value:SetText(text)
     end
 end
 
-function KickBars:SetNext(on)
-    if on == self.next then return end
-    self.next = on
+-- down: every kick on the line is cooling, so the party needs a stun or a knockback instead.
+function KickBars:SetNext(on, down)
+    if on == self.next and down == self.down then return end
+    self.next, self.down = on, down
+    self.text = nil
     if on then
         self.track:SetBackdropBorderColor(unpack(T.gold))
+    elseif down then
+        self.track:SetBackdropBorderColor(unpack(DOWN))
     else
         self.track:SetBackdropBorderColor(0, 0, 0, 0)
     end

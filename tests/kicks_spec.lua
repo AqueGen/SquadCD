@@ -107,13 +107,25 @@ describe("Kicks own result", function()
         assert.is_nil(ns.Kicks.FocusText())
     end)
 
-    it("ignores casts that are not kicks and interrupts by someone else", function()
+    it("ignores casts that are not kicks", function()
         helpers.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "c", 642)
         assert.is_nil(ns.Kicks.OwnResult(now))
+    end)
+
+    it("a kick beaten by someone else's interrupt is late, not a miss", function()
         helpers.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "c", 96231)
         helpers.fire("UNIT_SPELLCAST_INTERRUPTED", "nameplate1", "x", 1, "B")
+        assert.equal("late", ns.Kicks.OwnResult(now))
         now = now + 1.5
-        assert.equal("miss", ns.Kicks.OwnResult(now))
+        assert.equal("late", ns.Kicks.OwnResult(now))
+    end)
+
+    it("a party member's interrupt shows on their bar for a while", function()
+        assert.is_nil(ns.Kicks.HitResult("B", now))
+        helpers.fire("UNIT_SPELLCAST_INTERRUPTED", "nameplate1", "x", 1, "B")
+        assert.equal("hit", ns.Kicks.HitResult("B", now))
+        now = now + 4
+        assert.is_nil(ns.Kicks.HitResult("B", now))
     end)
 end)
 
@@ -275,6 +287,7 @@ describe("Kicks events", function()
             IsInGroup = function() return true end,
             InCombatLockdown = function() return combat end,
             UnitCanAttack = function(_, unit) return unit == "nameplate1" end,
+            GetTime = function() return 0 end,
             C_DamageMeter = { GetCombatSessionSourceFromType = function(_, _, guid)
                 return { totalAmount = baselineTotals[guid] }
             end },

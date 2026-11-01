@@ -116,10 +116,19 @@ end)
 local WAIT, SHOW = 1, 3
 local own
 
+local hits = {}
+
 function Kicks.OwnResult(now)
     if not own or now - own.at > SHOW then return nil end
     if own.hit then return "hit" end
+    if own.late then return "late" end
     return now - own.at > WAIT and "miss" or "cast"
+end
+
+-- A party member's interrupt seen on an enemy unit, shown on their bar like your own hit.
+function Kicks.HitResult(guid, now)
+    local at = guid and hits[guid]
+    if at and now - at <= SHOW then return "hit" end
 end
 
 local ownEvents = CreateFrame("Frame")
@@ -130,9 +139,13 @@ ownEvents:SetScript("OnEvent", function(_, event, unit, _, spellId, by)
         if issecretvalue(spellId) then return end
         local s = ns.Spells[spellId]
         if s and s.type == "Kick" then own = { at = GetTime(), hit = false } end
-    elseif own and not own.hit and not issecretvalue(by) and by ~= nil and by == UnitGUID("player") then
-        if GetTime() - own.at <= WAIT then own.hit = true end
+        return
     end
+    if issecretvalue(by) or by == nil then return end
+    local now = GetTime()
+    hits[by] = now
+    if not own or own.hit or now - own.at > WAIT then return end
+    if by == UnitGUID("player") then own.hit = true else own.late = true end
 end)
 
 local MARK_ICON = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%d:0|t "

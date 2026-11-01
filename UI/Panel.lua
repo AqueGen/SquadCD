@@ -323,11 +323,12 @@ local function new(opts)
                     end
                     local queue = l.type == "Kick" and kickQueue or nil
                     local sorted = Grid.Sort(l.states, l.shape, roleOrder, l.sorted, classOrder, queue)
-                    local nextAt = NEXT[l.type] and Grid.Next(sorted, roleOrder, classOrder, queue)
+                    local nextAt = NEXT[l.type] and #sorted > 1 and Grid.Next(sorted, roleOrder, classOrder, queue)
+                    local down = l.type == "Kick" and Grid.AllCooling(sorted)
                     for k, buf in ipairs(sorted) do
                         local w = buf.widget
                         w:Update(buf, now, sight.timers)
-                        w:SetNext(k == nextAt)
+                        w:SetNext(k == nextAt, down)
                         if l.placed[k] ~= w then
                             l.placed[k] = w
                             local at = l.cells[k]
