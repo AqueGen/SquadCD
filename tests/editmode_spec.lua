@@ -72,7 +72,14 @@ describe("EditMode", function()
             Positions = function()
                 local out = { panel = { x = 100, y = 100 } }
                 local kick = ns.DB.layout.sections[1]
-                if containers[2] then out.Kick = kick.pos or { x = 100, y = 100, dockTo = "panel", side = "Below", offset = 0 } end
+                if containers[2] and containers[2].key == "Kick" then out.Kick = kick.pos or { x = 100, y = 100, dockTo = "panel", side = "Below", offset = 0 } end
+                local focusDefault = {
+                    focus = { x = 306, y = 100, dockTo = "panel", side = "Right", offset = 0 },
+                    focuscast = { x = 306, y = 126, dockTo = "focus", side = "Below", offset = 0 },
+                }
+                for _, c in ipairs(containers) do
+                    if focusDefault[c.key] then out[c.key] = ns.DB.layout.focusPos[c.key] or focusDefault[c.key] end
+                end
                 return out
             end,
         }
@@ -244,6 +251,45 @@ describe("EditMode", function()
         E.ResetArrangement()
         assert.is_nil(ns.DB.layout.sections[1].pos)
         assert.are.equal(1, changed)
+    end)
+
+    describe("with the focus box right of the panel and its cast below it", function()
+        local function drop(key, dx, dy)
+            E.StartPanels()
+            local frame
+            for _, c in ipairs(containers) do
+                if c.key == key then frame = c.frame end
+            end
+            for _, f in ipairs(created) do
+                if f.parentFrame == frame and f.scripts.OnMouseDown then f.scripts.OnMouseDown(f, "LeftButton") end
+            end
+            cursorX, cursorY = cursorX + dx, cursorY - dy
+            local driver, update = scriptOf("OnUpdate")
+            update(driver, 0.01)
+            mouseDown = false
+            update(driver, 0.01)
+        end
+
+        before_each(function()
+            containers[2] = { key = "focus", frame = panelFrame(306, 700, 180, 20), name = "Focus target" }
+            containers[3] = { key = "focuscast", frame = panelFrame(306, 674, 180, 20), name = "Focus cast" }
+        end)
+
+        it("dragging any focus piece moves all of them and keeps them docked together", function()
+            drop("focuscast", 0, 300)
+            local pos = ns.DB.layout.focusPos
+            assert.are.same({ x = 306, y = 400 }, pos.focus)
+            assert.are.same({ x = 306, y = 426, dockTo = "focus", side = "Below", offset = 0 }, pos.focuscast)
+            assert.are.equal("Custom", ns.DB.layout.focusArrange)
+        end)
+
+        it("an Alt-drag moves one piece alone", function()
+            alt = true
+            drop("focuscast", 0, 300)
+            local pos = ns.DB.layout.focusPos
+            assert.are.same({ x = 306, y = 100, dockTo = "panel", side = "Right", offset = 0 }, pos.focus)
+            assert.are.same({ x = 306, y = 426 }, pos.focuscast)
+        end)
     end)
 
     describe("with the Kick window docked below the panel", function()

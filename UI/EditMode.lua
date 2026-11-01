@@ -172,7 +172,11 @@ local function begin(key)
     end
     if not at then return end
     local moving = {}
-    if key ~= "panel" or IsAltKeyDown() then
+    if ns.FocusPieces.NAMES[key] and not IsAltKeyDown() then
+        for _, r in ipairs(list) do
+            if ns.FocusPieces.NAMES[r.id] then moving[r.id] = true end
+        end
+    elseif key ~= "panel" or IsAltKeyDown() then
         moving[key] = true
     else
         for _, cluster in ipairs(D.Group(list)) do

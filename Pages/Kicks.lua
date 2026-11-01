@@ -80,7 +80,7 @@ local function focusGroup(page)
     local group = page:Group("Focus target")
     group.key = "focus"
     local function on() return kickSection() ~= nil and layout().kickFocus end
-    group:Note({ text = "Your focus target, its cast and the casts it is expected to make next, next to the kick tracker. Drag each piece with Move the panels.", visible = function() return kickSection() ~= nil end })
+    group:Note({ text = "Your focus target, its cast and the casts it is expected to make next, next to the kick tracker. In Move the panels a drag moves all three together, Alt-drag moves one piece.", visible = function() return kickSection() ~= nil end })
     group:Check({
         label = "Show focus target",
         tooltip = "Raid mark and name of your focus target.",
