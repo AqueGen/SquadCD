@@ -32,6 +32,7 @@ Game/Kicks.lua
 Game/SecretTracks.lua
 Game/AuraFlags.lua
 Game/Probe.lua
+Game/PlateProbe.lua
 UI/Theme.lua
 UI/ActiveOverlay.lua
 UI/Icon.lua

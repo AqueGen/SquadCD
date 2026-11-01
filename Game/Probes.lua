@@ -54,6 +54,12 @@ function Probes.Point(p, unit)
     pcall(p.SetUnit, p, unit)
 end
 
+function Probes.Filter(p, ids)
+    local set = {}
+    for _, id in ipairs(ids) do set[id] = true end
+    pcall(p.SetAuraGroupCandidateFilters, p, "a", { includeSpellIDs = set })
+end
+
 function Probes.Enable(p, on)
     pcall(p.SetEnabled, p, on)
 end
