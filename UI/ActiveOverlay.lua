@@ -16,31 +16,37 @@ function Overlay.New(parent, level)
     local root = CreateFrame("Frame", nil, parent)
     root:SetAllPoints(parent)
     root:SetFrameLevel(level)
-    return setmetatable({ root = root, displays = {}, parts = {}, timers = true }, Overlay)
+    return setmetatable({ root = root, pools = {}, displays = {}, list = {}, timers = true }, Overlay)
 end
 
 local function textSize(size)
     return math.max(10, math.floor(size * 0.5))
 end
 
+-- The engine locks the aura button's regions right after initializeFrame (tainted SetTexture on them is forbidden),
+-- so every look gets its own set of displays, dressed once.
+function Overlay:Swap()
+    local key = tostring(self.texture) .. ":" .. tostring(self.size) .. ":" .. tostring(self.timers)
+    if self.pools[key] and self.pools[key] == self.displays then return end
+    for _, d in ipairs(self.displays) do d:SetEnabled(false) end
+    self.pools[key] = self.pools[key] or {}
+    self.displays = self.pools[key]
+    self:Watch(self.list)
+end
+
 function Overlay:SetLook(texture, size)
-    self.texture = texture
-    if size ~= self.size then
-        for _, d in ipairs(self.displays) do d:SetEnabled(false) end
-        self.displays, self.parts = {}, {}
-        self.size = size
-    end
-    for _, p in ipairs(self.parts) do p.icon:SetTexture(texture) end
+    self.texture, self.size = texture, size
+    self:Swap()
 end
 
 function Overlay:SetTimers(on)
     if on == self.timers then return end
     self.timers = on
-    for _, p in ipairs(self.parts) do p.text:SetAlpha(on and 1 or 0) end
+    self:Swap()
 end
 
 -- Everything here lives on the engine's aura button, which exists only while the aura is on: no Lua reads of secret state.
-function Overlay:Dress(b)
+function Overlay:Dress(b, look)
     pcall(b.SetMouseClickEnabled, b, false)
     pcall(b.SetMouseMotionEnabled, b, false)
     local halo = b:CreateTexture(nil, "BACKGROUND", nil, -1)
@@ -53,15 +59,15 @@ function Overlay:Dress(b)
     frame:SetVertexColor(FRAME[1], FRAME[2], FRAME[3])
     frame:SetAllPoints(b)
     local icon = b:CreateTexture(nil, "ARTWORK")
-    icon:SetTexture(self.texture)
+    icon:SetTexture(look.texture)
     icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     icon:SetPoint("TOPLEFT", b, "TOPLEFT", INSET, -INSET)
     icon:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -INSET, INSET)
     local text = b:CreateFontString(nil, "OVERLAY")
-    text:SetFont(T.FONT, textSize(self.size or 1), "THICKOUTLINE")
+    text:SetFont(T.FONT, textSize(look.size), "THICKOUTLINE")
     text:SetTextColor(1, 1, 1)
     text:SetPoint("CENTER")
-    text:SetAlpha(self.timers and 1 or 0)
+    text:SetAlpha(look.timers and 1 or 0)
     b:SetDurationText(text)
     local breath = halo:CreateAnimationGroup()
     breath:SetLooping("BOUNCE")
@@ -71,12 +77,12 @@ function Overlay:Dress(b)
     fade:SetDuration(BREATH)
     fade:SetSmoothing("IN_OUT")
     breath:Play()
-    pcall(b.HookScript, b, "OnShow", function() breath:Play() end)
-    self.parts[#self.parts + 1] = { icon = icon, text = text }
+    pcall(b.HookScript, b, "OnShow", function() pcall(breath.Play, breath) end)
 end
 
 function Overlay:Watch(list)
-    local size = self.size or 1
+    self.list = list
+    local look = { texture = self.texture, size = self.size or 1, timers = self.timers }
     for i, w in ipairs(list) do
         local d = self.displays[i]
         local set, sig = {}, table.concat(w.ids, ",")
@@ -93,8 +99,8 @@ function Overlay:Watch(list)
             d:AddAuraGroup("a", "HELPFUL", {
                 maxFrameCount = 1,
                 candidateFilters = { includeSpellIDs = set },
-                initializeFrame = function(b) self:Dress(b) end,
-                layout = { elementWidth = size, elementHeight = size },
+                initializeFrame = function(b) self:Dress(b, look) end,
+                layout = { elementWidth = look.size, elementHeight = look.size },
             })
             self.displays[i] = d
         end

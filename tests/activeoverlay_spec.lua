@@ -87,14 +87,34 @@ describe("ActiveOverlay", function()
         assert.same({ false }, containers()[2].calls.SetEnabled)
     end)
 
-    it("follows a new spell texture on buttons already built", function()
-        button()
-        local icon
+    local function last(kind)
+        local found
         for _, o in ipairs(made) do
-            if o.kind == "CreateTexture" then icon = o end
+            if o.kind == kind then found = o end
         end
+        return found
+    end
+
+    it("never touches a dressed button again: a new texture gets its own display", function()
+        button()
+        local icon = last("CreateTexture")
         overlay:SetLook("other", 30)
-        assert.same({ "other" }, icon.calls.SetTexture)
+        assert.same({ "tex" }, icon.calls.SetTexture)
+        local c = containers()
+        assert.equal(2, #c)
+        assert.same({ false }, c[1].calls.SetEnabled)
+        local _, _, options = unpack(c[2].calls.AddAuraGroup)
+        options.initializeFrame(stub("Button", made))
+        assert.same({ "other" }, last("CreateTexture").calls.SetTexture)
+    end)
+
+    it("goes back to the display already built for a look", function()
+        overlay:Watch({ { unit = "party1", ids = { 48707 } } })
+        overlay:SetLook("other", 30)
+        overlay:SetLook("tex", 30)
+        local c = containers()
+        assert.equal(2, #c)
+        assert.same({ true }, c[1].calls.SetEnabled)
     end)
 
     it("rebuilds displays when the icon size changes", function()
@@ -108,13 +128,13 @@ describe("ActiveOverlay", function()
         assert.same({ elementWidth = 40, elementHeight = 40 }, options.layout)
     end)
 
-    it("hides the time text when timers are off", function()
+    it("hides the time text when timers are off, on a display of its own", function()
         button()
+        local shown = last("CreateFontString")
         overlay:SetTimers(false)
-        local text
-        for _, o in ipairs(made) do
-            if o.kind == "CreateFontString" then text = o end
-        end
-        assert.same({ 0 }, text.calls.SetAlpha)
+        assert.same({ 1 }, shown.calls.SetAlpha)
+        local _, _, options = unpack(containers()[2].calls.AddAuraGroup)
+        options.initializeFrame(stub("Button", made))
+        assert.same({ 0 }, last("CreateFontString").calls.SetAlpha)
     end)
 end)
