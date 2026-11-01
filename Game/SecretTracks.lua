@@ -95,7 +95,10 @@ end
 
 local function watchList(t)
     local list = {}
-    for i, s in ipairs(t.senses) do list[i] = { unit = s.unit, ids = t.ids } end
+    if t.kind == "debuff" then return list end
+    for _, s in ipairs(t.senses) do
+        if s.unit then list[#list + 1] = { unit = s.unit, ids = t.ids } end
+    end
     return list
 end
 
