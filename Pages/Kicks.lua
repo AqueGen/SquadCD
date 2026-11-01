@@ -60,6 +60,13 @@ local function tracker(page)
         set = function(on) Parts.Edit(function(l) l.kickFocus = on end) end,
         visible = function() return kickSection() ~= nil and layout().kickStyle == "Bars" end,
     })
+    group:Slider({
+        label = "Focus size", min = 8, max = 24,
+        tooltip = "Text and raid mark size in the focus box.",
+        get = function() return layout().kickFocusSize end,
+        set = function(v) Parts.Edit(function(l) l.kickFocusSize = v end) end,
+        visible = function() return kickSection() ~= nil and layout().kickStyle == "Bars" and layout().kickFocus end,
+    })
     group:Check({
         label = "Own window",
         get = function() return kickSection() ~= nil and kickSection().ownWindow end,

@@ -61,10 +61,15 @@ function KickBars:SetEntry(spell, member)
 end
 
 -- Your focus in a box right of your own kick bar, so the party sees which mob is yours.
-function KickBars:ShowFocus(show)
-    local key = show and ns.Kicks.FocusVersion() or -1
+function KickBars:ShowFocus(show, size)
+    local key = show and ns.Kicks.FocusVersion() + size / 100 or -1
     if key == self.focus then return end
     self.focus = key
+    if show and size ~= self.focusSize then
+        self.focusSize = size
+        self.target:SetFont(T.FONT, size, "OUTLINE")
+        self.box:SetHeight(size + 6)
+    end
     local text = show and ns.Kicks.FocusText() or nil
     self.box:SetShown(text and true or false)
     self.target:SetText(text or "")
@@ -73,7 +78,7 @@ end
 function KickBars:Update(state, now, timers)
     self.icon:Update(state, now, false)
     if self.own then
-        self:ShowFocus(ns.DB.layout.kickFocus)
+        self:ShowFocus(ns.DB.layout.kickFocus, ns.DB.layout.kickFocusSize)
         local result = ns.Kicks.OwnResult(now)
         if result ~= self.result then
             self.result = result
