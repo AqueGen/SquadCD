@@ -60,28 +60,30 @@ describe("Kicks own result", function()
         assert.equal("party1target: exists true, mark secret, name secret", lines[2])
     end)
 
-    it("focus gives a plain mark and name as they are", function()
+    it("focus text is the mark icon and the full name", function()
         _G.UnitExists = function(u) return u == "focus" end
         _G.GetRaidTargetIndex = function() return 8 end
-        _G.UnitName = function() return "Mob" end
-        assert.same({ 8, "Mob", false }, { ns.Kicks.Focus() })
+        _G.UnitName = function() return "Felonious Mage" end
+        assert.equal("|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_8:0|t Felonious Mage", ns.Kicks.FocusText())
     end)
 
-    it("focus inside an instance drops the secret mark and passes the secret name on for display", function()
-        local SECRET = {}
-        _G.issecretvalue = function(v) return v == SECRET end
+    it("focus text without a mark is the name alone", function()
         _G.UnitExists = function(u) return u == "focus" end
-        _G.GetRaidTargetIndex = function() return SECRET end
-        _G.UnitName = function() return SECRET end
-        local mark, name, secret = ns.Kicks.Focus()
-        assert.is_nil(mark)
-        assert.equal(SECRET, name)
-        assert.is_true(secret)
+        _G.GetRaidTargetIndex = function() return nil end
+        _G.UnitName = function() return "Felonious Mage" end
+        assert.equal("Felonious Mage", ns.Kicks.FocusText())
+    end)
+
+    it("focus version moves on focus change and raid mark change", function()
+        local v = ns.Kicks.FocusVersion()
+        helpers.fire("PLAYER_FOCUS_CHANGED")
+        helpers.fire("RAID_TARGET_UPDATE")
+        assert.equal(v + 2, ns.Kicks.FocusVersion())
     end)
 
     it("no focus gives nothing", function()
         _G.UnitExists = function() return false end
-        assert.is_nil(ns.Kicks.Focus())
+        assert.is_nil(ns.Kicks.FocusText())
     end)
 
     it("ignores casts that are not kicks and interrupts by someone else", function()

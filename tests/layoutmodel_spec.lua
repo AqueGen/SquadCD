@@ -57,6 +57,7 @@ describe("LayoutModel.Defaults", function()
         assert.is_true(d.timers)
         assert.is_true(d.memberFit)
         assert.are.equal("Bars", d.kickStyle)
+        assert.is_true(d.kickFocus)
         assert.are.equal("always", d.showWhen)
         assert.are.same(ALL, d.typeOrder)
         local ids = {}
@@ -766,7 +767,7 @@ describe("LayoutModel fix round 1", function()
         d.groups[1].offsetX, d.groups[1].offsetY = 9999, -9999
         d.groups[1].look = { iconSize = 3, labels = "Full" }
         d.sections[1].look = { iconSize = 3 }
-        d.overlay, d.kickStyle, d.groups[1].side = "x", "y", "z"
+        d.overlay, d.kickStyle, d.groups[1].side, d.kickFocus = "x", "y", "z", "yes"
         L.Normalize(d)
         assert.are.same({ iconSize = 20, labels = "Icon", background = "None", opacity = 100, nameLetters = 3 }, d.panelLook)
         assert.are.same({ iconSize = 40, labels = "Short", background = "None", opacity = 0, nameLetters = 6 }, d.memberLook)
@@ -779,6 +780,7 @@ describe("LayoutModel fix round 1", function()
         assert.are.equal(20, d.sections[1].look.iconSize)
         assert.are.equal("OnePanel", d.overlay)
         assert.are.equal("Bars", d.kickStyle)
+        assert.is_true(d.kickFocus)
         assert.are.equal("Left", d.groups[1].side)
     end)
 

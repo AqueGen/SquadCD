@@ -135,14 +135,27 @@ ownEvents:SetScript("OnEvent", function(_, event, unit, _, spellId, by)
     end
 end)
 
--- Inside instances the focus mark and name are secret: the mark is dropped, the name still goes to FontString:SetText.
-function Kicks.Focus()
+local MARK_ICON = "|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_%d:0|t "
+
+-- Inside instances the focus mark and name are secret; format and concatenation keep them secret and FontString:SetText draws them (checked in game).
+function Kicks.FocusText()
     local ok, has = pcall(UnitExists, "focus")
     if not ok or issecretvalue(has) or not has then return nil end
-    local okMark, mark = pcall(GetRaidTargetIndex, "focus")
     local okName, name = pcall(UnitName, "focus")
-    if not okName then name = nil end
-    return okMark and not issecretvalue(mark) and mark or nil, name, issecretvalue(name)
+    local okMark, mark = pcall(GetRaidTargetIndex, "focus")
+    name = okName and name or "?"
+    if okMark and mark then return MARK_ICON:format(mark) .. name end
+    return name
+end
+
+local focusVersion = 0
+local focusEvents = CreateFrame("Frame")
+focusEvents:RegisterEvent("PLAYER_FOCUS_CHANGED")
+focusEvents:RegisterEvent("RAID_TARGET_UPDATE")
+focusEvents:SetScript("OnEvent", function() focusVersion = focusVersion + 1 end)
+
+function Kicks.FocusVersion()
+    return focusVersion
 end
 
 -- Can party members' targets (marks, names) be read at all under 12.x? Answers decide the kick-target feature.

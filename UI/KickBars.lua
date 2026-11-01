@@ -10,7 +10,6 @@ local ICON, GAP, TRACK_W, TRACK_H, LETTERS = 20, 2, 130, 16, 10
 local TRACK = { 0.114, 0.125, 0.145, 1 }
 local RESULT = { hit = { 0.2, 0.8, 0.3 }, miss = { 0.85, 0.2, 0.2 }, cast = { 0.9, 0.9, 0.9 } }
 local RESULT_TEXT = { hit = "kicked", miss = "missed", cast = "..." }
-local MARK, MARKS = 12, "Interface\\TargetingFrame\\UI-RaidTargetingIcons"
 KickBars.W, KickBars.H = ICON + GAP + TRACK_W, ICON
 
 function KickBars.New(parent)
@@ -27,24 +26,25 @@ function KickBars.New(parent)
     local fill = track:CreateTexture(nil, "ARTWORK")
     fill:SetPoint("TOPLEFT", 1, -1)
     fill:SetHeight(TRACK_H - 2)
-    local mark = track:CreateTexture(nil, "OVERLAY")
-    mark:SetSize(MARK, MARK)
-    mark:SetPoint("LEFT", track, "LEFT", 2, 0)
-    mark:SetTexture(MARKS)
-    mark:Hide()
     local name = track:CreateFontString(nil, "OVERLAY")
     name:SetFont(T.FONT, 10, "OUTLINE")
     name:SetPoint("LEFT", track, "LEFT", 4, 0)
     local value = track:CreateFontString(nil, "OVERLAY")
     value:SetFont(T.FONT, 10, "OUTLINE")
     value:SetPoint("RIGHT", track, "RIGHT", -4, 0)
-    local target = track:CreateFontString(nil, "OVERLAY")
+    local box = CreateFrame("Frame", nil, f, "BackdropTemplate")
+    box:SetHeight(TRACK_H)
+    box:SetPoint("LEFT", track, "RIGHT", GAP, 0)
+    box:SetBackdrop(T.FLAT)
+    box:SetBackdropColor(unpack(TRACK))
+    box:SetBackdropBorderColor(0, 0, 0, 0)
+    local target = box:CreateFontString(nil, "OVERLAY")
     target:SetFont(T.FONT, 10, "OUTLINE")
-    target:SetPoint("LEFT", name, "RIGHT", 3, 0)
-    target:SetPoint("RIGHT", value, "LEFT", -4, 0)
-    target:SetJustifyH("LEFT")
+    target:SetPoint("LEFT", track, "RIGHT", GAP + 4, 0)
     target:SetWordWrap(false)
-    return setmetatable({ frame = f, icon = icon, track = track, fill = fill, mark = mark, name = name, target = target, value = value, buf = {} }, KickBars)
+    box:SetPoint("RIGHT", target, "RIGHT", 4, 0)
+    box:Hide()
+    return setmetatable({ frame = f, icon = icon, track = track, fill = fill, name = name, box = box, target = target, value = value, buf = {} }, KickBars)
 end
 
 function KickBars:SetEntry(spell, member)
@@ -57,30 +57,23 @@ function KickBars:SetEntry(spell, member)
     self.classColor = { T.ClassColor(member.class) }
     self.fill:SetColorTexture(self.classColor[1], self.classColor[2], self.classColor[3], 0.85)
     self.text, self.share, self.next, self.result, self.focus = nil, nil, nil, nil, nil
-    self.mark:Hide()
-    self.target:SetText("")
-    self.name:ClearAllPoints()
-    self.name:SetPoint("LEFT", self.track, "LEFT", 4, 0)
+    self.box:Hide()
 end
 
--- Your focus: its raid mark and name next to your own kick bar, so the party sees which mob is yours.
-function KickBars:ShowFocus()
-    local index, target, secret = ns.Kicks.Focus()
-    local key = secret and "secret" or tostring(index) .. ":" .. tostring(target)
-    if key == self.focus and not secret then return end
+-- Your focus in a box right of your own kick bar, so the party sees which mob is yours.
+function KickBars:ShowFocus(show)
+    local key = show and ns.Kicks.FocusVersion() or -1
+    if key == self.focus then return end
     self.focus = key
-    self.mark:SetShown(index ~= nil)
-    if index then SetRaidTargetIconTexture(self.mark, index) end
-    self.name:ClearAllPoints()
-    self.name:SetPoint("LEFT", self.track, "LEFT", index and MARK + 4 or 4, 0)
-    self.name:SetText(target and (self.who .. " >") or self.who)
-    self.target:SetText(secret and target or target and ns.LayoutRules.ShortName(target, LETTERS) or "")
+    local text = show and ns.Kicks.FocusText() or nil
+    self.box:SetShown(text and true or false)
+    self.target:SetText(text or "")
 end
 
 function KickBars:Update(state, now, timers)
     self.icon:Update(state, now, false)
     if self.own then
-        self:ShowFocus()
+        self:ShowFocus(ns.DB.layout.kickFocus)
         local result = ns.Kicks.OwnResult(now)
         if result ~= self.result then
             self.result = result

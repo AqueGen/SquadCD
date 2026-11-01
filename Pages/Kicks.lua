@@ -54,6 +54,13 @@ local function tracker(page)
     })
     group:Note({ text = "Bars: one bar per member that fills as the kick comes back. Icons: one icon per member.", visible = function() return kickSection() ~= nil end })
     group:Check({
+        label = "Show focus target",
+        tooltip = "Your focus target's raid mark and name in a box right of your own kick bar.",
+        get = function() return layout().kickFocus end,
+        set = function(on) Parts.Edit(function(l) l.kickFocus = on end) end,
+        visible = function() return kickSection() ~= nil and layout().kickStyle == "Bars" end,
+    })
+    group:Check({
         label = "Own window",
         get = function() return kickSection() ~= nil and kickSection().ownWindow end,
         set = function(on) editSection(function(_, s) s.ownWindow = on end) end,

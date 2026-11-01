@@ -85,6 +85,7 @@ function LayoutModel.Defaults()
         timers = true,
         memberFit = true,
         kickStyle = "Bars",
+        kickFocus = true,
         showWhen = "always",
         rolePriority = copy(ROLES),
         classOrder = defaultClassOrder(),
@@ -562,6 +563,7 @@ function LayoutModel.Normalize(layout)
     layout.showWhen = oneOf(layout.showWhen, { "always", "group" }, d.showWhen)
     layout.split = bool(layout.split, d.split)
     layout.timers = bool(layout.timers, d.timers)
+    layout.kickFocus = bool(layout.kickFocus, d.kickFocus)
     layout.memberFit = bool(layout.memberFit, d.memberFit)
     layout.panelShape = cleanShape(layout.panelShape, d.panelShape, {})
     layout.panelShape.typeOrder = nil
