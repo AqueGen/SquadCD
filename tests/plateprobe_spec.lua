@@ -65,6 +65,18 @@ describe("PlateProbe", function()
         assert.is_nil(w.tick)
     end)
 
+    it("watches one buff on one unit and switches it off again", function()
+        _G.C_Spell = { GetSpellName = function() return "Fire Elemental" end }
+        ns.Theme = { FLAT = {} }
+        local function any() return setmetatable({}, { __index = function() return any end }) end
+        _G.CreateFrame = any
+        assert.is_true(ns.PlateProbe.Aura("party1", 188592))
+        local p = w.made[#w.made]
+        assert.same({ "party1", "HELPFUL", 188592 }, { p.unit, p.filter, p.ids[1] })
+        ns.PlateProbe.Aura(nil)
+        assert.is_false(p.on)
+    end)
+
     it("stops the ticker and switches the probes off", function()
         ns.PlateProbe.Start({ 30283 })
         ns.PlateProbe.Stop()
