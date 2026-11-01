@@ -82,7 +82,7 @@ local function groupEditor(page, gi)
 end
 
 ns.Window.Register("members", function(page)
-    local top = page:Group("At party frames")
+    local top = page:Group("Party frames")
     top:Note("Member groups are blocks of icons next to every party frame (Blizzard, EllesmereUI, or a stack of names when neither shows). Each group can hold any type.")
     top:Button({
         text = "Edit at party frames", width = 160,

@@ -256,10 +256,10 @@ end
 Parts.PRESETS = {
     { name = "Everything together, horizontal", hint = "One panel, types side by side" },
     { name = "Everything together, vertical", hint = "One panel, types stacked" },
-    { name = "At party frames, left + panel", hint = "Defensives, burst, racials left of each frame" },
-    { name = "At party frames, right + panel", hint = "Defensives, burst, racials right of each frame" },
-    { name = "At party frames, below + panel", hint = "For party frames in a row" },
-    { name = "At party frames, above + panel", hint = "For party frames in a row" },
+    { name = "Party frames left + panel", hint = "Defensives, burst, racials left of each frame" },
+    { name = "Party frames right + panel", hint = "Defensives, burst, racials right of each frame" },
+    { name = "Party frames below + panel", hint = "For party frames in a row" },
+    { name = "Party frames above + panel", hint = "For party frames in a row" },
 }
 local COLUMNS, CARD_GAP, CARD_H, THUMB_W, THUMB_H = 3, 8, 132, 120, 62
 local CARD_FILL = { 20 / 255, 22 / 255, 27 / 255, 0.9 }
@@ -402,8 +402,9 @@ function Parts.PresetCards(group, opts)
     end)
 end
 
-local PLACES = { { value = "panel", text = "Panel", w = 56 }, { value = "member", text = "At party frames", w = 104 }, { value = "off", text = "Off", w = 44 } }
-local ROW_H, NAME_X, PLACE_X, SPLIT_X, ORDER_X = 24, 27, 160, 380, 452
+local PLACES = { { value = "panel", text = "Panel", w = 56 }, { value = "member", text = "Party frames", w = 104 }, { value = "off", text = "Off", w = 44 } }
+local ROW_H, BLOCK_H, NAME_X, PLACE_X, SPLIT_X, ORDER_X = 24, 22, 27, 160, 380, 452
+local BLOCK_NAMES = { panel = "In the panel", member = "At the party frames", off = "Off" }
 
 local function newTypeRow(parent)
     local row = CreateFrame("Frame", nil, parent)
@@ -439,8 +440,8 @@ end
 
 function Parts.TypesTable(page)
     local Model = ns.LayoutModel
-    local group = page:Group("Types: where they show and their order")
-    group:Note("Panel: a section of the group panel (Panels page). At party frames: next to each member's party frame (At party frames page). Off: not shown. Split shows stuns and crowd control as two types.")
+    local group = page:Group("Cooldown types")
+    group:Note("Choose where each type shows: Panel (Panels page), Party frames (next to each party frame, Party frames page) or Off. Split shows stuns and crowd control as two types.")
     local holder = CreateFrame("Frame", nil, group.frame)
     local header = CreateFrame("Frame", nil, holder)
     header:SetPoint("TOPLEFT")
@@ -451,10 +452,14 @@ function Parts.TypesTable(page)
         s:SetTextColor(unpack(T.gold))
         s:SetText(h[1])
     end
+    local titles = {}
+    for i = 1, 3 do
+        titles[i] = holder:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        titles[i]:SetTextColor(unpack(T.gold))
+    end
     local rows = {}
     for i = 1, #ns.LayoutRules.TYPES do
         local row = newTypeRow(holder)
-        row:SetPoint("TOPLEFT", holder, "TOPLEFT", 0, -(18 + (i - 1) * ROW_H))
         row:SetPoint("RIGHT", holder, "RIGHT")
         for _, b in ipairs(row.places) do
             b:SetScript("OnClick", function(self)
@@ -476,32 +481,47 @@ function Parts.TypesTable(page)
         end)
         rows[i] = row
     end
-    local count = 0
-    group:Add(holder, function() return 18 + count * ROW_H end, function()
+    local height = 18
+    group:Add(holder, function() return height end, function()
         local layout = ns.DB.layout
-        local order = layout.typeOrder
-        count = #order
-        holder:SetSize(math.max((group.frame:GetWidth() or 0) - 2 * Widgets.PAD, 300), 18 + count * ROW_H)
-        for i, row in ipairs(rows) do
-            local t = order[i]
-            row:SetShown(t ~= nil)
-            if t then
+        local y, used = 18, 0
+        for bi, block in ipairs(Model.OrderBlocks(layout)) do
+            local title = titles[bi]
+            title:SetShown(#block.types > 0)
+            if #block.types > 0 then
+                title:ClearAllPoints()
+                title:SetPoint("BOTTOMLEFT", holder, "TOPLEFT", 0, -(y + BLOCK_H - 4))
+                title:SetText(BLOCK_NAMES[block.place])
+                y = y + BLOCK_H
+            end
+            for i, t in ipairs(block.types) do
+                used = used + 1
+                local row = rows[used]
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT", holder, "TOPLEFT", 0, -y)
+                row:SetPoint("RIGHT", holder, "RIGHT")
+                row:Show()
+                y = y + ROW_H
                 row.type = t
                 row.paint(t)
                 row.name:SetText(Parts.Label(t))
-                local place = Model.PlaceOf(layout, t)
-                for _, b in ipairs(row.places) do Widgets.PaintChoice(b, b.value == place) end
+                for _, b in ipairs(row.places) do Widgets.PaintChoice(b, b.value == block.place) end
                 local merged = t == "Control" or t == "Stun" or t == "CC"
                 row.split:SetShown(merged)
                 row.split:SetChecked(layout.split)
-                row.number:SetText(i)
-                row.number:SetTextColor(unpack(place == "off" and T.muted or T.text))
+                local ordered = block.place ~= "off"
+                row.number:SetText(ordered and i or "")
+                row.up:SetShown(ordered)
+                row.down:SetShown(ordered)
                 row.up:SetEnabled(i > 1)
                 row.up:SetAlpha(i > 1 and 1 or 0.35)
-                row.down:SetEnabled(i < count)
-                row.down:SetAlpha(i < count and 1 or 0.35)
+                row.down:SetEnabled(i < #block.types)
+                row.down:SetAlpha(i < #block.types and 1 or 0.35)
             end
         end
+        for i = used + 1, #rows do rows[i]:Hide() end
+        height = y
+        holder:SetSize(math.max((group.frame:GetWidth() or 0) - 2 * Widgets.PAD, 300), y)
     end)
-    group:Note("Up and Down set the order of types inside every panel section and member group. A type alone in its panel section moves its whole section past the next section in the panel; sections in their own window keep their place.")
+    group:Note("Up and Down order the types inside the panel and inside the party frame groups separately. A type alone in its panel section moves its whole section past the next section in the panel; sections in their own window keep their place.")
 end

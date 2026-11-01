@@ -81,7 +81,7 @@ builders[3] = function(page)
         get = function() return nearest(ns.DB.layout.memberLook.iconSize) end,
         set = function(v) Parts.Edit(function(layout) layout.memberLook.iconSize = v end) end,
     })
-    size:Note("Exact sizes are on the Panels and At party frames pages.")
+    size:Note("Exact sizes are on the Panels and Party frames pages.")
     local position = page:Group("Position")
     position:Note("Move the panels hides the wizard and outlines every panel. Drag a panel where you want it, click Done, and the wizard comes back here.")
     position:Button({
