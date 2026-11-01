@@ -284,8 +284,13 @@ describe("EditMode", function()
             assert.are.same({ x = 100, y = 156 }, kickPos())
         end)
 
+        it("a plain drag of a window takes it off the panel alone", function()
+            drop("Kick", 0, 300)
+            assert.are.same({ "TOPLEFT", 100, -100 }, ns.DB.layout.panel.point)
+            assert.are.same({ x = 100, y = 456 }, kickPos())
+        end)
+
         it("snaps a window flush to the right of the panel and docks it", function()
-            alt = true
             drop("Kick", 210, -53)
             assert.are.same({ x = 306, y = 100, dockTo = "panel", side = "Right", offset = 0 }, kickPos())
         end)
