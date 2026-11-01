@@ -137,7 +137,7 @@ function Tracker:External(spellId, targetGuid, excludeGuid)
     local candidates = {}
     for _, guid in ipairs(self.order) do
         local m = self.members[guid]
-        if guid ~= excludeGuid and ns.Cooldowns.Has(spellId, m.class, m.spec, m.talents, m.race) then
+        if guid ~= excludeGuid and ns.Cooldowns.Has(spellId, m.class, m.spec, m.talents, m.race, m.pets) then
             candidates[#candidates + 1] = guid
         end
     end

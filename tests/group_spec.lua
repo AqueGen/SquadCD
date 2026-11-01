@@ -7,12 +7,15 @@ local FILES = { "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/Cooldown
 local function game(mode, units, extra)
     units = units or {
         player = { guid = "P", class = "PALADIN", role = "TANK", race = 1 },
-        party1 = { guid = "A", class = "PRIEST", role = "HEALER", race = 10 },
+        party1 = mode ~= "solo" and { guid = "A", class = "PRIEST", role = "HEALER", race = 10 } or nil,
     }
     local stubs = {
         IsInRaid = function() return mode == "raid" end,
         IsInGroup = function() return mode ~= "solo" end,
         IsInInstance = function() return false, "none" end,
+        CanInspect = function() return false end,
+        UnitIsConnected = function() return true end,
+        C_Timer = { After = function() end },
         UnitGUID = function(u) return units[u] and units[u].guid end,
         UnitClass = function(u) if units[u] then return "x", units[u].class, 0 end end,
         UnitGroupRolesAssigned = function(u) return units[u] and units[u].role or "NONE" end,
@@ -24,6 +27,8 @@ local function game(mode, units, extra)
             GetSpecializationInfo = function() return 66 end,
         },
         C_ClassTalents = { GetActiveConfigID = function() return nil end },
+        C_SpellBook = { IsSpellKnown = function() return false end },
+        Enum = { SpellBookSpellBank = { Player = 0, Pet = 1 } },
     }
     for k, v in pairs(extra or {}) do stubs[k] = v end
     return stubs
@@ -48,6 +53,20 @@ describe("Group", function()
         assert.is_nil(ns.Group.GuessSpec("PRIEST", "HEALER"))
         assert.is_nil(ns.Group.GuessSpec("MAGE", "TANK"))
         assert.is_nil(ns.Group.GuessSpec("PALADIN", "NONE"))
+    end)
+
+    it("the player's member carries the current pet's spells; party members leave it unknown", function()
+        local units = {
+            player = { guid = "P", class = "WARLOCK", role = "DAMAGER", race = 1 },
+            party1 = { guid = "A", class = "WARLOCK", role = "DAMAGER", race = 1 },
+        }
+        local _, rosters = start("party", units, {
+            C_SpellBook = { IsSpellKnown = function(id, bank) return bank == 1 and id == 19647 end },
+            C_SpecializationInfo = { GetSpecialization = function() return 2 end, GetSpecializationInfo = function() return 266 end },
+        })
+        local list = rosters[#rosters]
+        assert.are.same({ [19647] = true }, list[1].pets)
+        assert.is_nil(list[2].pets)
     end)
 
     it("raid roster idles", function()
@@ -90,11 +109,56 @@ describe("Group", function()
         assert.is_nil(rosters[1][2].race)
     end)
 
-    it("solo roster stays empty and does not load", function()
+    it("solo roster with show always holds the player only and does not load", function()
         local ns, rosters = start("solo")
         assert.are.equal("solo", ns.Group.Mode())
-        assert.are.same({}, rosters[1])
+        assert.are.equal(1, #rosters[1])
+        assert.are.equal("P", rosters[1][1].guid)
+        assert.are.equal(66, rosters[1][1].spec)
+        assert.are.same({ "P" }, ns.tracker.order)
         assert.is_nil(ns.Persist.tracker)
+    end)
+
+    it("solo roster with show always follows the player's spec change", function()
+        local spec = 66
+        local ns, rosters = start("solo", nil, {
+            C_SpecializationInfo = { GetSpecialization = function() return 1 end, GetSpecializationInfo = function() return spec end },
+        })
+        spec = 70
+        helpers.fire("PLAYER_SPECIALIZATION_CHANGED", "player")
+        assert.are.equal(70, rosters[#rosters][1].spec)
+        assert.are.equal(70, ns.tracker.members.P.spec)
+    end)
+
+    it("solo roster with show only in a group stays empty", function()
+        local ns = helpers.load(FILES, game("solo"))
+        helpers.fire("ADDON_LOADED", "SquadCD")
+        ns.DB.layout.showWhen = "group"
+        local rosters = {}
+        ns.Group.OnRoster = function(list) rosters[#rosters + 1] = list end
+        helpers.fire("PLAYER_LOGIN")
+        helpers.fire("PLAYER_ENTERING_WORLD")
+        assert.are.same({}, rosters[1])
+        helpers.fire("PLAYER_SPECIALIZATION_CHANGED", "player")
+        assert.are.equal(1, #rosters)
+    end)
+
+    it("changing showWhen and refreshing switches the solo list at once", function()
+        local ns, rosters = start("solo")
+        ns.DB.layout.showWhen = "group"
+        ns.Group.Refresh()
+        assert.are.same({}, rosters[#rosters])
+        assert.are.same({}, ns.tracker.order)
+        ns.DB.layout.showWhen = "always"
+        ns.Group.Refresh()
+        assert.are.equal("P", rosters[#rosters][1].guid)
+    end)
+
+    it("party roster ignores showWhen", function()
+        local ns, rosters = start("party")
+        ns.DB.layout.showWhen = "group"
+        ns.Group.Refresh()
+        assert.are.equal(2, #rosters[#rosters])
     end)
 end)
 
@@ -269,6 +333,35 @@ describe("Inspect results", function()
         assert.is_nil(ns.Inspect.state.queue.A)
         helpers.fire("GROUP_ROSTER_UPDATE")
         assert.is_nil(ns.Inspect.state.queue.A)
+    end)
+
+    it("inspects party members outside a dungeon too", function()
+        local extra = inspectGame()
+        extra.IsInInstance = function() return false, "none" end
+        extra.C_SpecializationInfo = {
+            GetSpecialization = function() return 2 end,
+            GetSpecializationInfo = function() return 66 end,
+            GetInspectSpecialization = function() return 256 end,
+        }
+        start("party", units, extra)
+        timers[#timers]()
+        assert.are.same({ "party1" }, sent)
+    end)
+
+    it("reads talents from an inspect the player opened", function()
+        local extra = inspectGame()
+        extra.IsInInstance = function() return false, "none" end
+        extra.CanInspect = function() return false end
+        extra.InspectFrame = { IsShown = function() return true end }
+        extra.C_SpecializationInfo = {
+            GetSpecialization = function() return 2 end,
+            GetSpecializationInfo = function() return 66 end,
+            GetInspectSpecialization = function() return 256 end,
+        }
+        local _, rosters = start("party", units, extra)
+        valid = true
+        helpers.fire("INSPECT_READY", "A")
+        assert.are.same({ [394207] = 1 }, rosters[#rosters][2].talents)
     end)
 
     it("stale unit at INSPECT_READY is a failed try and re-resolves the unit", function()

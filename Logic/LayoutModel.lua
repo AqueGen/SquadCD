@@ -50,11 +50,11 @@ function LayoutModel.NewGroup(types, side)
 end
 
 local function panelLook()
-    return { iconSize = 26, labels = "Glyph", background = "Default", opacity = 90, nameLetters = 5 }
+    return { iconSize = 26, labels = "Icon", background = "None", opacity = 90, nameLetters = 5 }
 end
 
 local function memberLook()
-    return { iconSize = 26, labels = "Glyph", background = "None", opacity = 100, nameLetters = 5 }
+    return { iconSize = 26, labels = "Icon", background = "None", opacity = 100, nameLetters = 5 }
 end
 
 local function defaultClassOrder()
@@ -84,6 +84,7 @@ function LayoutModel.Defaults()
         timers = true,
         memberFit = true,
         kickStyle = "Bars",
+        showWhen = "always",
         rolePriority = copy(ROLES),
         classOrder = defaultClassOrder(),
     }
@@ -117,6 +118,23 @@ function LayoutModel.MoveSection(layout, id, step)
     if other then
         local list, i = layout.sections, slots[at]
         list[i], list[other] = list[other], list[i]
+    end
+    return layout
+end
+
+-- Reorders a type inside one container only: layout.groups[index] or layout.sections[index].
+function LayoutModel.MoveWithin(layout, kind, index, type, step)
+    local c = layout[kind] and layout[kind][index]
+    if not c then return layout end
+    local order = LayoutModel.TypeOrder(layout, c)
+    for i, t in ipairs(order) do
+        if t == type then
+            if order[i + step] then
+                order[i], order[i + step] = order[i + step], order[i]
+                c.order = order
+            end
+            return layout
+        end
     end
     return layout
 end
@@ -253,9 +271,7 @@ function LayoutModel.SetSplit(layout, split)
     local function containers(list)
         for _, c in ipairs(list) do
             c.types = remap(c.types, split, placed)
-            if c.shape and c.shape.typeOrder then
-                c.shape.typeOrder = remap(c.shape.typeOrder, split, {})
-            end
+            if c.order then c.order = remap(c.order, split, {}) end
         end
     end
     containers(layout.sections)
@@ -289,8 +305,7 @@ function LayoutModel.TypeOrder(layout, container)
             out[#out + 1] = t
         end
     end
-    local override = container.shape and container.shape.typeOrder
-    for _, t in ipairs(override or {}) do add(t) end
+    for _, t in ipairs(container.order or {}) do add(t) end
     for _, t in ipairs(layout.typeOrder) do add(t) end
     for _, t in ipairs(container.types) do add(t) end
     return out
@@ -398,7 +413,7 @@ local AXES = { "Rows", "Columns" }
 local CORNERS = { "TopLeft", "TopRight", "BottomLeft", "BottomRight" }
 local SORTS = { "Fixed", "ReadyFirst" }
 local SIDES = { "Right", "Left", "Above", "Below" }
-local LABELS = { "None", "Glyph", "Short", "Full" }
+local LABELS = { "None", "Icon", "Glyph", "Short", "Full" }
 local BACKGROUNDS = { "Default", "Black", "Slate", "None" }
 
 local function cleanLook(look, fallback, minSize, member)
@@ -423,14 +438,18 @@ local function cleanShape(s, fallback, known)
         origin = oneOf(s.origin, CORNERS, base.origin),
         sort = oneOf(s.sort, SORTS, base.sort),
     }
-    if type(s.typeOrder) == "table" then
-        out.typeOrder = {}
-        local seen = {}
-        for _, t in ipairs(s.typeOrder) do
-            if known[t] and not seen[t] then
-                seen[t] = true
-                out.typeOrder[#out.typeOrder + 1] = t
-            end
+    return out
+end
+
+-- order replaced shape.typeOrder; an old saved shape.typeOrder is read once and moved.
+local function cleanOrder(c, known)
+    local list = c.order or type(c.shape) == "table" and c.shape.typeOrder
+    if type(list) ~= "table" then return nil end
+    local out, seen = {}, {}
+    for _, t in ipairs(list) do
+        if known[t] and not seen[t] then
+            seen[t] = true
+            out[#out + 1] = t
         end
     end
     return out
@@ -452,6 +471,7 @@ function LayoutModel.Normalize(layout)
     layout.version = 2
     layout.overlay = oneOf(layout.overlay, { "OnePanel", "Windows" }, d.overlay)
     layout.kickStyle = oneOf(layout.kickStyle, { "Bars", "Icons" }, d.kickStyle)
+    layout.showWhen = oneOf(layout.showWhen, { "always", "group" }, d.showWhen)
     layout.split = bool(layout.split, d.split)
     layout.timers = bool(layout.timers, d.timers)
     layout.memberFit = bool(layout.memberFit, d.memberFit)
@@ -503,6 +523,7 @@ function LayoutModel.Normalize(layout)
                 sections[#sections + 1] = {
                     id = id, types = types, shown = bool(s.shown, true), ownWindow = bool(s.ownWindow, false),
                     shape = cleanShape(s.shape, nil, known),
+                    order = cleanOrder(s, known),
                     look = cleanLook(s.look, layout.panelLook, 20),
                     pos = cleanPos(s.pos),
                 }
@@ -538,6 +559,7 @@ function LayoutModel.Normalize(layout)
                 types = claim(g.types),
                 side = oneOf(g.side, SIDES, "Left"),
                 shape = cleanShape(g.shape, newGroupShape(), known),
+                order = cleanOrder(g, known),
                 look = cleanLook(g.look, layout.memberLook, 12, true),
                 shown = bool(g.shown, true),
                 offsetX = num(g.offsetX, -400, 400, 4),

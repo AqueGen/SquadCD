@@ -6,6 +6,7 @@ local Model = ns.LayoutModel
 
 local OVERLAY = { { value = "OnePanel", text = "One panel" }, { value = "Windows", text = "A window per section" } }
 local KICKS = { { value = "Bars", text = "Bars" }, { value = "Icons", text = "Icons" } }
+local SHOW_WHEN = { { value = "always", text = "Always" }, { value = "group", text = "Only in a group" } }
 
 local function layout()
     return ns.DB.layout
@@ -32,14 +33,16 @@ local function sectionEditor(page, i)
         for k, t in ipairs(section().types) do names[k] = Parts.Label(t) end
         return "Section " .. i .. ": " .. table.concat(names, ", ")
     end)
+    group.key = "section:" .. i
     group.visible = function() return section() ~= nil end
     local function edit(fn)
         local s = section()
         if s then Parts.Edit(function(l) fn(l, s) end) end
     end
-    group:Note("Click a type to turn it off.")
+    group:Note("Click a type to move it left or right, or to turn it off.")
     Parts.Types(group, {
-        get = function() return section() and section().types or {} end,
+        get = function() return section() and Model.TypeOrder(layout(), section()) or {} end,
+        move = function(t, step) Parts.Edit(Model.MoveWithin, "sections", i, t, step) end,
         remove = function(t) Parts.Edit(Model.SetPlace, t, "off") end,
         choices = function()
             local s, out = section(), {}
@@ -94,6 +97,15 @@ end
 
 ns.Window.Register("panels", function(page)
     local panels = page:Group("Panels")
+    panels.key = "panels"
+    panels:Segmented({
+        label = "Show cooldowns", options = SHOW_WHEN, width = 260, get = get("showWhen"),
+        set = function(value)
+            Parts.Edit(function(l) l.showWhen = value end)
+            ns.Group.Refresh()
+        end,
+    })
+    panels:Note("Always: your own cooldowns show even without a group, at your frame if one is shown. Only in a group: nothing shows until you join a party.")
     panels:Segmented({ label = "Sections show in", options = OVERLAY, width = 260, get = get("overlay"), set = set("overlay") })
     panels:Note("One panel: every section stacks in one panel, a section can still get its own window. A window per section: each section is its own panel.")
     panels:Button({
@@ -108,6 +120,7 @@ ns.Window.Register("panels", function(page)
     panels:Note("Bars: one bar per member that fills as the kick comes back. Icons: one icon per member.")
 
     local look = page:Group("Panel look and shape")
+    look.key = "look"
     look:Note("Every section and window with \"Same as the panel\" uses these.")
     Parts.Look(look, {
         get = function() return layout().panelLook end,
@@ -121,4 +134,4 @@ ns.Window.Register("panels", function(page)
     local intro = page:Group("Sections")
     intro:Note("One block per section: its types, own window, shape and look. Add a type to a section here, or set a type to Panel on the Presets and types page to give it a section of its own.")
     for i = 1, #ns.LayoutRules.TYPES do sectionEditor(page, i) end
-end)
+end, { preview = "panel", focus = "panel" })

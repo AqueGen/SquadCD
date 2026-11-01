@@ -6,12 +6,10 @@ ns.Sensors = Sensors
 
 local POLL_STEP, POLL_STEPS = 0.1, 5
 local SELF_TEST_DELAY = 0.5
-local INSET = 1e5
 local OWN_CAST_WINDOW = 3
 
 local mode, reason = "unavailable", "self-test has not run"
 local needTest, running, judgeLater, rechecked = true, false, false, false
-local host
 local containers = {}
 local watches = {}
 local active = {}
@@ -31,84 +29,65 @@ local function readout(ok, v)
 end
 
 function Sensor:Read(buffId)
-    local slot = self.slots[buffId]
-    if not slot then return nil, "error" end
-    return readout(pcall(slot.IsShown, slot))
+    local probe = self.probes[buffId]
+    if not probe then return nil, "error" end
+    return readout(pcall(ns.Probes.Lit, probe))
 end
 
-function Sensor:HitTest(buffId)
-    local slot = self.slots[buffId]
-    if not slot then return nil, "error" end
-    return readout(pcall(slot.IsMouseOver, slot, INSET, -INSET, -INSET, INSET))
+local function newProbe(unit, filter, id)
+    return ns.Probes.New(unit, filter, { id })
 end
 
 local function container(unit)
     local c = containers[unit]
-    if c then return c end
-    if not host then
-        host = CreateFrame("Frame", nil, UIParent)
-        host:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -10000, 10000)
-        host:SetSize(1, 1)
-        host:EnableMouse(false)
+    if not c then
+        c = { probes = {} }
+        containers[unit] = c
     end
-    local ok, f = pcall(CreateFrame, "AuraContainer", nil, host, "CustomAuraContainerTemplate")
-    if not ok or not f then return nil, "AuraContainer unavailable: " .. tostring(f) end
-    c = { frame = f, keys = {} }
-    containers[unit] = c
-    ok = pcall(function()
-        f:SetPoint("TOPLEFT", host, "TOPLEFT")
-        f:EnableMouse(false)
-        f:SetUnit(unit)
-    end)
-    if not ok then c.broken = "AuraContainer setup failed" end
     return c
 end
 
 function Sensor:SetUnit(unit)
     self.unit = unit
-    pcall(self.c.frame.SetUnit, self.c.frame, unit)
+    for _, f in pairs(self.probes) do ns.Probes.Point(f, unit) end
 end
 
 function Sensor:SetEnabled(on)
-    pcall(self.c.frame.SetEnabled, self.c.frame, on)
+    for _, f in pairs(self.probes) do ns.Probes.Enable(f, on) end
 end
 
 function Sensors.Build(unit, buffIds, filter)
     filter = filter or "HELPFUL"
-    local c, why = container(unit)
-    if not c then return nil, why end
+    local c = container(unit)
     if c.broken then return nil, c.broken end
-    local wanted, slots = {}, {}
-    local ok, err = pcall(function()
-        local f = c.frame
-        f:SetEnabled(true)
-        for _, id in ipairs(buffIds) do
-            local key = "b" .. id
-            wanted[key] = true
-            local slot = f:GetAuraSlotFrame(key)
-            if slot then
-                f:SetAuraSlotEnabled(key, true)
-            else
-                slot = f:AddAuraSlot(key, filter, { candidateFilters = { includeSpellIDs = { [id] = true } } })
-                c.keys[key] = true
+    local wanted, probes = {}, {}
+    for _, id in ipairs(buffIds) do
+        local key = filter .. id
+        wanted[key] = true
+        local f = c.probes[key]
+        if not f then
+            local why
+            f, why = newProbe(unit, filter, id)
+            if not f then
+                c.broken = why
+                return nil, why
             end
-            slots[id] = slot
+            c.probes[key] = f
         end
-        for key in pairs(c.keys) do
-            if not wanted[key] then f:SetAuraSlotEnabled(key, false) end
-        end
-    end)
-    if not ok then
-        c.broken = "aura slot setup failed: " .. tostring(err)
-        return nil, c.broken
+        pcall(f.SetEnabled, f, true)
+        probes[id] = f
+    end
+    for key, f in pairs(c.probes) do
+        if not wanted[key] then pcall(f.SetEnabled, f, false) end
     end
     c.filter = filter
-    return setmetatable({ unit = unit, slots = slots, c = c }, Sensor)
+    return setmetatable({ unit = unit, probes = probes, c = c }, Sensor)
 end
 
 local function setEnabled(unit, on)
     local c = containers[unit]
-    if c and not c.broken then pcall(c.frame.SetEnabled, c.frame, on) end
+    if not c then return end
+    for _, f in pairs(c.probes) do pcall(f.SetEnabled, f, on) end
 end
 
 function Sensors.Mode()
@@ -123,9 +102,29 @@ local function fail(why, retry)
     mode, reason, needTest = "unavailable", why, retry
 end
 
+local loose = {}
+
+function Sensors.Geometry(unit, id)
+    local key = unit .. ":" .. id
+    local f = loose[key]
+    if not f then
+        local why
+        f, why = newProbe(unit, "HELPFUL", id)
+        if not f then return why end
+        loose[key] = f
+        pcall(f.SetEnabled, f, true)
+    end
+    local v, why = readout(pcall(ns.Probes.Lit, f))
+    local okW, width = pcall(f.GetWidth, f)
+    local w = not okW and "error" or issecretvalue(width) and "secret" or tostring(width)
+    return ("hit %s, width %s"):format(why or tostring(v), w)
+end
+
 local function verdict(buffV, buffWhy, ctrlV, ctrlWhy, when)
     if buffWhy == "secret" or ctrlWhy == "secret" then
-        mode, reason, needTest = "secret", "aura readout is secret" .. when, false
+        local s = selfTest or {}
+        mode, reason, needTest = "secret", ("aura readout is secret%s (buff %s %s, control %s %s)"):format(
+            when, tostring(s.id), buffWhy or tostring(buffV), tostring(s.control), ctrlWhy or tostring(ctrlV)), false
     elseif buffWhy or ctrlWhy then
         fail("aura readout failed" .. when, false)
     elseif ctrlV then
@@ -202,7 +201,7 @@ local function buffMap(member, own)
         list[#list + 1] = { spell = spell, external = external }
     end
     for spellId, s in pairs(ns.Spells) do
-        if s.buffs and (s.track == "target" or (not own and s.track == "buff" and ns.Cooldowns.Has(spellId, member.class, member.spec, member.talents, member.race))) then
+        if s.buffs and (s.track == "target" or (not own and s.track == "buff" and ns.Cooldowns.Has(spellId, member.class, member.spec, member.talents, member.race, member.pets))) then
             for _, id in ipairs(s.buffs) do add(id, spellId, s.track == "target") end
         end
     end
@@ -250,7 +249,6 @@ local function scan(w)
         local v, why = nil, "secret"
         if not w.secret[id] then
             v, why = w.sensor:Read(id)
-            count(s.hit, w.sensor:HitTest(id))
         end
         count(s.read, v, why)
         if why == "secret" then w.secret[id] = true end
@@ -340,7 +338,6 @@ function rebuild(fromSelfTest)
                 stats[m.unit] = old and old.guid == m.guid and old or {
                     guid = m.guid,
                     read = { ["true"] = 0, ["false"] = 0, secret = 0, error = 0 },
-                    hit = { ["true"] = 0, ["false"] = 0, secret = 0, error = 0 },
                 }
                 watchFrame(m.unit):RegisterUnitEvent("UNIT_AURA", m.unit)
                 poll(w)

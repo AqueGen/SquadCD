@@ -6,34 +6,10 @@ ns.Panel = Panel
 
 local T = ns.Theme
 local Grid, Model = ns.LayoutGrid, ns.LayoutModel
-local PAD, LINE_GAP, CELL_GAP, NAME_H, GLYPH_TAB, LABEL_PAD = 6, 6, 2, 11, 11, 3
+local PAD, LINE_GAP, CELL_GAP, NAME_H, GLYPH_TAB, ICON_TAB, LABEL_PAD = 6, 6, 2, 11, 11, 16, 3
 local NEXT = { Kick = true, Control = true, Stun = true, CC = true, External = true, Group = true }
 
 local UNKNOWN = { ready = true, remaining = 0, recharge = 0, charges = 1, maybe = false, talentsKnown = true }
-
-local main
-local windows = {}
-local shown = {}
-local roleOrder, classOrder = {}, {}
-local containers, positions = {}, {}
-
-local function newContainer(name)
-    local f = CreateFrame("Frame", name, UIParent, "BackdropTemplate")
-    f:SetFrameStrata("MEDIUM")
-    f:SetClampedToScreen(true)
-    return { frame = f, lines = {} }
-end
-
-local function mainContainer()
-    if main then return main end
-    main = newContainer("SquadCDPanel")
-    return main
-end
-
-local function window(i)
-    windows[i] = windows[i] or newContainer(nil)
-    return windows[i]
-end
 
 local function line(c, i)
     if not c.lines[i] then
@@ -107,7 +83,7 @@ local function fill(c, key, list, layout)
         local cellW, cellH = widgets(c, l, item.entries, bars, look.iconSize, look.nameLetters, item.type == "Kick")
         local cells = {}
         for k = 1, l.count do cells[k] = { w = cellW, h = cellH } end
-        l.type, l.shape, l.labels = item.type, Model.LineShape(layout, item.section, item.type), look.labels
+        l.type, l.shape, l.labels, l.section = item.type, Model.LineShape(layout, item.section, item.type), look.labels, item.section
         local rects, w, h = Grid.Place(cells, l.shape, CELL_GAP)
         l.rects = rects
         l.head = bars and ns.KickBars.H or look.iconSize
@@ -121,7 +97,9 @@ local function fill(c, key, list, layout)
     for i in ipairs(list) do
         local l = c.lines[i]
         local tab
-        if l.labels == "Glyph" then
+        if l.labels == "Icon" then
+            tab = across and { w = ICON_TAB, h = ICON_TAB } or { w = ICON_TAB, h = l.head }
+        elseif l.labels == "Glyph" then
             tab = across and { w = GLYPH_TAB, h = GLYPH_TAB } or { w = GLYPH_TAB, h = l.head }
         elseif l.labels ~= "None" then
             tab = across and { w = labelW + 2 * LABEL_PAD, h = GLYPH_TAB + 2 } or { w = labelW + 2 * LABEL_PAD, h = l.head }
@@ -162,77 +140,6 @@ local function nameOf(section)
     return table.concat(names, ", ")
 end
 
-function Panel.Build(list)
-    local layout = ns.DB.layout
-    roleOrder, classOrder = Model.RoleOrder(layout), layout.classOrder
-    local groups, order, sectionOf = {}, {}, {}
-    for _, item in ipairs(list) do
-        local key = Model.OwnWindow(layout, item.section) and item.section.id or "panel"
-        if not groups[key] then
-            groups[key] = {}
-            order[#order + 1] = key
-            sectionOf[key] = item.section
-        end
-        table.insert(groups[key], item)
-    end
-    wipe(shown)
-    local sizes, frames, nextWindow = {}, {}, 1
-    for _, key in ipairs(order) do
-        local c
-        if key == "panel" then
-            c = mainContainer()
-        else
-            c = window(nextWindow)
-            nextWindow = nextWindow + 1
-        end
-        local w, h = fill(c, key, groups[key], layout)
-        sizes[key], frames[key] = { w = w, h = h }, c
-        shown[#shown + 1] = c
-    end
-    if not groups.panel and main then main.frame:Hide() end
-    for i = nextWindow, #windows do windows[i].frame:Hide() end
-
-    local scr = ns.Docking.Screen()
-    local loose = {}
-    for _, key in ipairs(order) do
-        if key ~= "panel" and not sectionOf[key].pos then loose[#loose + 1] = sizes[key] end
-    end
-    local _, blockW, blockH = Grid.PlaceSections(loose, layout.panelShape, ns.Docking.GAP)
-    positions = { panel = ns.Docking.FromPoint(layout.panel.point, sizes.panel or { w = blockW, h = blockH }, scr) }
-    local chain = layout.panelShape.axis == "Columns" and "Right" or "Below"
-    local previous = sizes.panel and "panel" or nil
-    for _, key in ipairs(order) do
-        if key ~= "panel" then
-            positions[key] = sectionOf[key].pos
-                or { x = positions.panel.x, y = positions.panel.y, dockTo = previous, side = previous and chain, offset = previous and 0 }
-            previous = key
-        end
-    end
-    local rects = ns.Docking.Resolve(positions, sizes, scr)
-    wipe(containers)
-    for _, key in ipairs(order) do
-        local c = frames[key]
-        local r = rects[key]
-        local f = c.frame
-        local look = key == "panel" and layout.panelLook or Model.LookOf(layout, sectionOf[key])
-        T.Backdrop(f, look)
-        f:EnableMouse(false)
-        f:SetSize(r.w, r.h)
-        f:ClearAllPoints()
-        f:SetPoint("TOPLEFT", UIParent, "TOPLEFT", r.x, -r.y)
-        f:Show()
-        containers[#containers + 1] = { key = key, frame = f, name = key == "panel" and "Panel" or nameOf(sectionOf[key]) }
-    end
-end
-
-function Panel.Containers()
-    return containers
-end
-
-function Panel.Positions()
-    return positions
-end
-
 local function fallback(buf)
     for k, v in pairs(UNKNOWN) do buf[k] = v end
     return buf
@@ -246,53 +153,199 @@ end
 
 local states, cds = {}, {}
 
-function Panel.Update(tracker, now, sight)
-    for _, c in ipairs(shown) do
-        for i = 1, #c.lines do
-            local l = c.lines[i]
-            if (l.count or 0) > 0 then
-                for k = 1, l.count do
-                    local w = l.widgets[k]
-                    local alts = w.alts
-                    if #alts > 1 then
-                        wipe(states)
-                        wipe(cds)
-                    end
-                    for a = 1, #alts do
-                        local e = alts[a]
-                        local buf = #alts == 1 and w.buf or e.buf
-                        if not tracker:State(e.member.guid, e.spell.id, buf) then fallback(buf) end
-                        buf.unknown = buf.ready and ns.LayoutRules.Unknown(e.spell.id, e.own, sight.plain, sight.secret)
-                        buf.dead = sight.live and dead(e.member.unit)
-                        if #alts > 1 then states[a], cds[a] = buf, ns.Spells[e.spell.id] and ns.Spells[e.spell.id].cd or 0 end
-                    end
-                    if #alts > 1 then
-                        local at = Grid.Best(states, cds)
-                        if alts[at] ~= w.entry then apply(w, alts[at]) end
-                        for key, v in pairs(states[at]) do w.buf[key] = v end
-                    end
+local function new(opts)
+    local self = {}
+    local preview = opts.parent ~= UIParent
+    local main
+    local windows = {}
+    local shown = {}
+    local roleOrder, classOrder = {}, {}
+    local containers, positions = {}, {}
+
+    local function newContainer(name)
+        local f = CreateFrame("Frame", name, opts.parent, "BackdropTemplate")
+        if not preview then
+            f:SetFrameStrata("MEDIUM")
+            f:SetClampedToScreen(true)
+        end
+        return { frame = f, lines = {} }
+    end
+
+    local function mainContainer()
+        if main then return main end
+        main = newContainer(opts.named and "SquadCDPanel" or nil)
+        return main
+    end
+
+    local function window(i)
+        windows[i] = windows[i] or newContainer(nil)
+        return windows[i]
+    end
+
+    local function pickable(frame, target)
+        frame.pick = target
+        if frame.pickReady then return end
+        frame.pickReady = true
+        frame:EnableMouse(true)
+        frame:SetScript("OnEnter", function(self) opts.pick.hover(self.pick, self) end)
+        frame:SetScript("OnLeave", function() opts.pick.hover(nil) end)
+        frame:SetScript("OnMouseUp", function(self) opts.pick.click(self.pick) end)
+    end
+
+    local function sectionTarget(layout, section)
+        for i, s in ipairs(layout.sections) do
+            if s == section then return { page = "panels", key = "section:" .. i, label = "Section " .. i .. ": " .. nameOf(s) } end
+        end
+    end
+
+    local function placeOf(section, groups)
+        local pos = section.pos
+        if preview and pos and not (pos.dockTo and groups[pos.dockTo]) then return nil end
+        return pos
+    end
+
+    function self.Build(list)
+        local layout = ns.DB.layout
+        roleOrder, classOrder = Model.RoleOrder(layout), layout.classOrder
+        local groups, order, sectionOf = {}, {}, {}
+        for _, item in ipairs(list) do
+            local key = Model.OwnWindow(layout, item.section) and item.section.id or "panel"
+            if not groups[key] then
+                groups[key] = {}
+                order[#order + 1] = key
+                sectionOf[key] = item.section
+            end
+            table.insert(groups[key], item)
+        end
+        wipe(shown)
+        local sizes, frames, nextWindow = {}, {}, 1
+        for _, key in ipairs(order) do
+            local c
+            if key == "panel" then
+                c = mainContainer()
+            else
+                c = window(nextWindow)
+                nextWindow = nextWindow + 1
+            end
+            local w, h = fill(c, key, groups[key], layout)
+            sizes[key], frames[key] = { w = w, h = h }, c
+            shown[#shown + 1] = c
+        end
+        if not groups.panel and main then main.frame:Hide() end
+        for i = nextWindow, #windows do windows[i].frame:Hide() end
+
+        local scr = ns.Docking.Screen()
+        local loose = {}
+        for _, key in ipairs(order) do
+            if key ~= "panel" and not placeOf(sectionOf[key], groups) then loose[#loose + 1] = sizes[key] end
+        end
+        local _, blockW, blockH = Grid.PlaceSections(loose, layout.panelShape, ns.Docking.GAP)
+        local start = preview and { x = 0, y = 0 } or ns.Docking.FromPoint(layout.panel.point, sizes.panel or { w = blockW, h = blockH }, scr)
+        positions = { panel = start }
+        local chain = layout.panelShape.axis == "Columns" and "Right" or "Below"
+        local previous = sizes.panel and "panel" or nil
+        for _, key in ipairs(order) do
+            if key ~= "panel" then
+                positions[key] = placeOf(sectionOf[key], groups)
+                    or { x = positions.panel.x, y = positions.panel.y, dockTo = previous, side = previous and chain, offset = previous and 0 }
+                previous = key
+            end
+        end
+        local rects = ns.Docking.Resolve(positions, sizes, not preview and scr or nil)
+        local x0, y0, x1, y1 = 0, 0, 0, 0
+        if preview and #order > 0 then
+            x0, y0, x1, y1 = math.huge, math.huge, -math.huge, -math.huge
+            for _, key in ipairs(order) do
+                local r = rects[key]
+                x0, y0 = math.min(x0, r.x), math.min(y0, r.y)
+                x1, y1 = math.max(x1, r.x + r.w), math.max(y1, r.y + r.h)
+            end
+        end
+        wipe(containers)
+        for _, key in ipairs(order) do
+            local c = frames[key]
+            local r = rects[key]
+            local f = c.frame
+            local look = key == "panel" and layout.panelLook or Model.LookOf(layout, sectionOf[key])
+            T.Backdrop(f, look)
+            if opts.pick then
+                pickable(f, key == "panel" and { page = "panels", key = "look", label = "Panel look and shape" } or sectionTarget(layout, sectionOf[key]))
+                for _, l in ipairs(c.lines) do
+                    if l.section and (l.count or 0) > 0 then pickable(l.tab.frame, sectionTarget(layout, l.section)) end
                 end
-                local sorted = Grid.Sort(l.states, l.shape, roleOrder, l.sorted, classOrder)
-                local nextAt = NEXT[l.type] and Grid.Next(sorted, roleOrder, classOrder)
-                for k, buf in ipairs(sorted) do
-                    local w = buf.widget
-                    w:Update(buf, now, sight.timers)
-                    w:SetNext(k == nextAt)
-                    if l.placed[k] ~= w then
-                        l.placed[k] = w
-                        local at = l.cells[k]
-                        w.frame:ClearAllPoints()
-                        w.frame:SetPoint("TOPLEFT", c.frame, "TOPLEFT", at.x, -at.y)
+            else
+                f:EnableMouse(false)
+            end
+            f:SetSize(r.w, r.h)
+            f:ClearAllPoints()
+            f:SetPoint("TOPLEFT", opts.parent, "TOPLEFT", r.x - x0, -(r.y - y0))
+            f:Show()
+            containers[#containers + 1] = { key = key, frame = f, name = key == "panel" and "Panel" or nameOf(sectionOf[key]) }
+        end
+        return x1 - x0, y1 - y0
+    end
+
+    function self.Containers()
+        return containers
+    end
+
+    function self.Positions()
+        return positions
+    end
+
+    function self.Update(tracker, now, sight)
+        for _, c in ipairs(shown) do
+            for i = 1, #c.lines do
+                local l = c.lines[i]
+                if (l.count or 0) > 0 then
+                    for k = 1, l.count do
+                        local w = l.widgets[k]
+                        local alts = w.alts
+                        if #alts > 1 then
+                            wipe(states)
+                            wipe(cds)
+                        end
+                        for a = 1, #alts do
+                            local e = alts[a]
+                            local buf = #alts == 1 and w.buf or e.buf
+                            if not tracker:State(e.member.guid, e.spell.id, buf) then fallback(buf) end
+                            buf.unknown = buf.ready and ns.LayoutRules.Unknown(e.spell.id, e.own, sight.plain)
+                            buf.dead = sight.live and dead(e.member.unit)
+                            if #alts > 1 then states[a], cds[a] = buf, ns.Spells[e.spell.id] and ns.Spells[e.spell.id].cd or 0 end
+                        end
+                        if #alts > 1 then
+                            local at = Grid.Best(states, cds)
+                            if alts[at] ~= w.entry then apply(w, alts[at]) end
+                            for key, v in pairs(states[at]) do w.buf[key] = v end
+                        end
+                    end
+                    local sorted = Grid.Sort(l.states, l.shape, roleOrder, l.sorted, classOrder)
+                    local nextAt = NEXT[l.type] and Grid.Next(sorted, roleOrder, classOrder)
+                    for k, buf in ipairs(sorted) do
+                        local w = buf.widget
+                        w:Update(buf, now, sight.timers)
+                        w:SetNext(k == nextAt)
+                        if l.placed[k] ~= w then
+                            l.placed[k] = w
+                            local at = l.cells[k]
+                            w.frame:ClearAllPoints()
+                            w.frame:SetPoint("TOPLEFT", c.frame, "TOPLEFT", at.x, -at.y)
+                        end
                     end
                 end
             end
         end
     end
+
+    function self.Hide()
+        if main then main.frame:Hide() end
+        for _, c in ipairs(windows) do c.frame:Hide() end
+        wipe(shown)
+        wipe(containers)
+    end
+
+    return self
 end
 
-function Panel.Hide()
-    if main then main.frame:Hide() end
-    for _, c in ipairs(windows) do c.frame:Hide() end
-    wipe(shown)
-    wipe(containers)
-end
+for k, fn in pairs(new({ parent = UIParent, named = true })) do Panel[k] = fn end
+Panel.New = new

@@ -20,7 +20,7 @@ for _, p in ipairs(ns.Potions) do potions[p.spell] = true end
 
 function OwnCasts.Resolve(spellId, member)
     if potions[spellId] then return "potion" end
-    local function has(id) return member ~= nil and ns.Cooldowns.Has(id, member.class, member.spec, member.talents, member.race) end
+    local function has(id) return member ~= nil and ns.Cooldowns.Has(id, member.class, member.spec, member.talents, member.race, member.pets) end
     if ns.Spells[spellId] and has(spellId) then return spellId end
     for _, id in ipairs(replacers[spellId] or {}) do
         if has(id) then return id end
@@ -61,5 +61,5 @@ ns.Group.OnRoster = function(list)
     for _, m in ipairs(list) do
         if m.unit == "player" then me = m end
     end
-    if ns.Group.Mode() == "party" then OwnCasts.Enable() else OwnCasts.Disable() end
+    if ns.Group.Mode() == "party" or me then OwnCasts.Enable() else OwnCasts.Disable() end
 end

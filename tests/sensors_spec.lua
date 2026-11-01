@@ -4,7 +4,7 @@ local helpers = dofile(here .. "/helpers.lua")
 
 local FILES = {
     "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/Persist.lua",
-    "Game/Inspect.lua", "Game/Group.lua", "Game/Sensors.lua", "Game/Probe.lua",
+    "Game/Inspect.lua", "Game/Group.lua", "Game/Probes.lua", "Game/Sensors.lua", "Game/AuraFlags.lua", "Game/Probe.lua",
 }
 
 local SECRET = setmetatable({}, { __tostring = function() return "secret" end })
@@ -22,39 +22,25 @@ local function world(opts)
     }
     w.buffs.player = { [17] = true }
 
-    local function slotFrame(container, id)
-        local s = {}
-        local function value(override)
-            if override == "error" then error("access denied") end
-            if override ~= nil then return override end
-            if w.secret then return SECRET end
-            return w.buffs[container.unit] and w.buffs[container.unit][id] or false
-        end
-        function s:IsShown()
-            w.reads = (w.reads or 0) + 1
-            return value(w.shown)
-        end
-        function s:IsMouseOver() return value(w.over) end
-        return s
-    end
-
     local function container()
-        local c = { slots = {}, enabled = {} }
+        local c = {}
         function c:SetPoint() end
         function c:SetSize() end
         function c:EnableMouse() end
         function c:SetEnabled(v) self.on = v end
         function c:SetUnit(u) self.unit = u end
-        function c:GetAuraSlotFrame(key) return self.slots[key] end
-        function c:SetAuraSlotEnabled(key, v) self.enabled[key] = v end
-        function c:AddAuraSlot(key, filter, options)
+        function c:AddAuraGroup(_, filter, options)
             assert(filter == "HELPFUL")
-            if w.slotError then error("UpdateAuraDisplay is nil") end
-            local id = next(options.candidateFilters.includeSpellIDs)
-            assert(key == "b" .. id)
-            self.slots[key] = slotFrame(self, id)
-            self.enabled[key] = true
-            return self.slots[key]
+            assert(options.maxFrameCount == 1 and options.layout.elementWidth > 0)
+            if w.groupError then error("UpdateAuraDisplay is nil") end
+            self.id = next(options.candidateFilters.includeSpellIDs)
+        end
+        function c:IsMouseOver()
+            w.reads = (w.reads or 0) + 1
+            if w.over == "error" then error("access denied") end
+            if w.over ~= nil then return w.over end
+            if w.secret then return SECRET end
+            return w.buffs[self.unit] and w.buffs[self.unit][self.id] or false
         end
         w.containers[#w.containers + 1] = c
         return c
@@ -96,12 +82,26 @@ local function world(opts)
             GetAuraDataByIndex = function(unit, index)
                 if unit == "player" and index == 1 and w.buffs.player[17] then return { spellId = 17 } end
             end,
+            AuraIsBigDefensive = function(id) return id == SHIELD_WALL end,
+            GetPlayerAuraBySpellID = function() return nil end,
+        },
+        C_Spell = {
+            IsExternalDefensive = function(id) return id == PAIN_BUFF end,
+            IsSpellImportant = function() return false end,
+        },
+        UnitExists = function(unit) return w.units[unit] ~= nil end,
+        C_Secrets = {
+            ShouldAurasBeSecret = function() return false end,
+            HasSecretRestrictions = function() return true end,
+            ShouldSpellAuraBeSecret = function() return false end,
         },
         C_SpecializationInfo = {
             GetSpecialization = function() return 1 end,
             GetSpecializationInfo = function() return 256 end,
         },
         C_ClassTalents = { GetActiveConfigID = function() return nil end },
+        C_SpellBook = { IsSpellKnown = function() return false end },
+        Enum = { SpellBookSpellBank = { Player = 0, Pet = 1 } },
     }
 
     function w.flush()
@@ -121,6 +121,12 @@ end
 
 local function boot(w)
     local ns = helpers.load(FILES, w.stubs)
+    local talented = { [871] = 1 }
+    local specOf = { A = 73, B = 256, C = 71 }
+    ns.Inspect.Queue = function(unit)
+        local guid = UnitGUID(unit)
+        if specOf[guid] then ns.Inspect.OnResult(guid, specOf[guid], talented) end
+    end
     helpers.fire("ADDON_LOADED", "SquadCD")
     helpers.fire("PLAYER_LOGIN")
     helpers.fire("PLAYER_ENTERING_WORLD")
@@ -155,6 +161,7 @@ describe("Sensors", function()
         local w = world({ mode = "party" })
         w.secret = true
         local ns = helpers.load(FILES, w.stubs)
+        ns.Inspect.Queue = function() end
         helpers.fire("ADDON_LOADED", "SquadCD")
         helpers.fire("PLAYER_LOGIN")
         helpers.fire("PLAYER_ENTERING_WORLD")
@@ -193,6 +200,7 @@ describe("Sensors", function()
         local w = world({ mode = "party" })
         w.buffs.party1 = { [SHIELD_WALL] = true }
         local ns = helpers.load(FILES, w.stubs)
+        ns.Inspect.Queue = function() end
         helpers.fire("ADDON_LOADED", "SquadCD")
         helpers.fire("PLAYER_LOGIN")
         helpers.fire("PLAYER_ENTERING_WORLD")
@@ -215,15 +223,15 @@ describe("Sensors", function()
         assert.are.same({ { "External", PAIN_SUPPRESSION, "P", "P" } }, w.calls)
     end)
 
-    it("player sensor keeps the self-test slots in the same container", function()
+    it("player sensor keeps the self-test probes", function()
         local ns, w = start({ mode = "party" })
-        local player
+        local player = {}
         for _, c in ipairs(w.containers) do
-            if c.unit == "player" then player = c end
+            if c.unit == "player" then player[c.id] = c.on end
         end
-        assert.is_true(player.enabled["b17"])
-        assert.is_true(player.enabled["b" .. PAIN_BUFF])
-        assert.is_nil(player.enabled["b" .. SHIELD_WALL])
+        assert.is_true(player[17])
+        assert.is_true(player[PAIN_BUFF])
+        assert.is_nil(player[SHIELD_WALL])
         w.secret = true
         w.combat = true
         helpers.fire("PLAYER_REGEN_DISABLED")
@@ -246,7 +254,7 @@ describe("Sensors", function()
 
     it("id read as secret is not read again", function()
         local _, w = start({ mode = "party" })
-        w.shown = SECRET
+        w.over = SECRET
         aura(w, "party1", SHIELD_WALL, true)
         local reads = w.reads
         assert.is_true(reads > 0)
@@ -300,7 +308,7 @@ describe("Sensors", function()
         w.combat = false
         helpers.fire("PLAYER_REGEN_ENABLED")
         w.flush()
-        assert.are.equal(before + 1, #w.containers)
+        assert.is_true(#w.containers > before)
         ns.tracker.Used = function(_, guid) w.calls[#w.calls + 1] = guid end
         aura(w, "party3", SHIELD_WALL, true)
         assert.are.same({ "C" }, w.calls)
@@ -316,26 +324,32 @@ describe("Sensors", function()
         assert.truthy(out:find("party1"))
         assert.truthy(out:find("hit%-test"))
         assert.truthy(out:find(tostring(SHIELD_WALL)))
+        assert.truthy(out:find("auras secret now false"))
+        assert.truthy(out:find("unique key within class"))
+        assert.truthy(out:find("57724 none"))
+        w.flush()
+        assert.truthy(table.concat(w.printed, "\n"):find("geometry: party1 45438 %- hit false"))
     end)
 
-    it("secret IsShown is secret even when the hit-test reads plain false", function()
-        local ns, w = start({ mode = "party" })
-        w.shown, w.over = SECRET, false
-        local sensor = ns.Sensors.Build("party1", { SHIELD_WALL })
-        assert.are.same({ nil, "secret" }, { sensor:Read(SHIELD_WALL) })
-        assert.are.same({ false }, { sensor:HitTest(SHIELD_WALL) })
+    it("secret verdict names the self-test reads", function()
+        local w = world({ mode = "party" })
+        w.secret = true
+        local ns = boot(w)
+        w.flush()
+        local _, reason = ns.Sensors.Mode()
+        assert.truthy(reason:find("buff 17 secret"))
     end)
 
     it("read that errors reports error", function()
         local ns, w = start({ mode = "party" })
-        w.shown = "error"
+        w.over = "error"
         local sensor = ns.Sensors.Build("party1", { SHIELD_WALL })
         assert.are.same({ nil, "error" }, { sensor:Read(SHIELD_WALL) })
     end)
 
     it("always shown readout fails the negative control", function()
         local w = world({ mode = "party" })
-        w.shown = true
+        w.over = true
         local ns = boot(w)
         w.flush()
         local mode, reason = ns.Sensors.Mode()
@@ -373,7 +387,7 @@ describe("Sensors", function()
 
     it("first combat re-check downgrades on error", function()
         local ns, w = start({ mode = "party" })
-        w.shown = "error"
+        w.over = "error"
         w.combat = true
         helpers.fire("PLAYER_REGEN_DISABLED")
         local mode, reason = ns.Sensors.Mode()
@@ -409,14 +423,14 @@ describe("Sensors", function()
         assert.are.equal(0, stats.party1.read["true"])
     end)
 
-    it("slot setup failure keeps one container per unit", function()
+    it("aura group setup failure stops building probes for that unit", function()
         local w = world({ mode = "party" })
-        w.slotError = true
+        w.groupError = true
         local ns = boot(w)
         w.flush()
         local mode, reason = ns.Sensors.Mode()
         assert.are.equal("unavailable", mode)
-        assert.truthy(reason:find("aura slot setup failed"))
+        assert.truthy(reason:find("aura group setup failed"))
         local before = #w.containers
         assert.is_nil((ns.Sensors.Build("party1", { SHIELD_WALL })))
         assert.is_nil((ns.Sensors.Build("party1", { SHIELD_WALL })))

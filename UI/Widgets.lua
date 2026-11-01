@@ -4,9 +4,16 @@ local _, ns = ...
 local Rules = ns.WidgetRules
 
 local Widgets = {}
+local UI = LibStub("LibVelvet-1.0")
 
-local T = ns.Theme
-local PAD, GAP, TITLE_H = 10, 6, 26
+-- The settings window's look; anything it lacks (TYPES, ClassColor...) comes from the in-game theme.
+ns.SettingsTheme = setmetatable({
+    bg = UI.T.bg, panel = UI.T.panel, border = UI.T.border, control = UI.T.control, gold = UI.T.gold,
+    text = UI.T.text, muted = UI.T.muted, selected = UI.T.selected, hover = UI.T.hover, FLAT = UI.FLAT,
+}, { __index = ns.Theme })
+
+local T = ns.SettingsTheme
+local PAD, GAP, TITLE_H = UI.PAD, UI.GAP, 32
 local LABEL_W, CONTROL_W, NOTE_W = 170, 220, 540
 Widgets.PAD, Widgets.LABEL_W, Widgets.CONTROL_W = PAD, LABEL_W, CONTROL_W
 
@@ -31,26 +38,31 @@ local function HookHover(region, spec)
 end
 
 function Widgets.PaintChoice(button, selected)
-    button:SetBackdropColor(unpack(selected and T.selected or T.panel))
-    button:SetBackdropBorderColor(unpack(selected and T.gold or T.control))
-    button.label:SetTextColor(unpack(selected and T.gold or T.text))
+    button:SetBackdropColor(unpack(selected and T.selected or UI.T.segfill))
+    button:SetBackdropBorderColor(unpack(T.control))
+    button.label:SetTextColor(unpack(selected and UI.T.selLabel or T.text))
+    if not button.underline then
+        button.underline = button:CreateTexture(nil, "ARTWORK")
+        button.underline:SetPoint("BOTTOMLEFT", 1, 1)
+        button.underline:SetPoint("BOTTOMRIGHT", -1, 1)
+        button.underline:SetHeight(2)
+        button.underline:SetColorTexture(unpack(UI.T.underline))
+    end
+    button.underline:SetShown(selected and true or false)
 end
 
 function Widgets.Button(parent, text, width)
-    local button = CreateFrame("Button", nil, parent, "BackdropTemplate")
-    button:SetSize(width, 22)
-    button:SetBackdrop(T.FLAT)
-    button:SetBackdropColor(unpack(T.panel))
-    button:SetBackdropBorderColor(unpack(T.control))
-    button.label = button:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    button.label:SetPoint("CENTER")
-    button.label:SetTextColor(unpack(T.text))
-    button:SetFontString(button.label)
-    button:SetText(text)
-    local hover = button:CreateTexture(nil, "HIGHLIGHT")
-    hover:SetAllPoints()
-    hover:SetColorTexture(1, 1, 1, 0.06)
-    return button
+    return UI.Button(parent, text, width)
+end
+
+function Widgets.SpellTooltip(owner, id)
+    GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
+    if id == "potion" then
+        GameTooltip:SetItemByID(ns.Potions[1].item)
+    else
+        GameTooltip:SetSpellByID(id)
+    end
+    GameTooltip:Show()
 end
 
 function Widgets.Grip(frame, minW, minH, onDone)
@@ -96,8 +108,7 @@ end
 
 function Group:Check(spec)
     local group = self
-    local check = CreateFrame("CheckButton", nil, self.frame, "MinimalCheckboxTemplate")
-    check:SetSize(22, 22)
+    local check = UI.Checkbox(self.frame, 22)
     check.text = check:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     check.text:SetPoint("LEFT", check, "RIGHT", 4, 0)
     check.text:SetText(spec.label)
@@ -121,29 +132,21 @@ function Group:Slider(spec)
     label:SetPoint("LEFT")
     label:SetWidth(LABEL_W - 8)
     label:SetJustifyH("LEFT")
-    local slider = CreateFrame("Frame", nil, holder, "MinimalSliderWithSteppersTemplate")
+    local slider = UI.Slider(holder, CONTROL_W)
     slider:SetPoint("LEFT", holder, "LEFT", LABEL_W, 0)
-    slider:SetSize(CONTROL_W, 19)
-    local step, format = spec.step or 1, spec.format or "%d"
-    local suppress = false
+    local format = spec.format or "%d"
     local function Caption(value)
         label:SetText(spec.label .. ": " .. format:format(value))
     end
-    HookHover(slider.Slider, spec)
-    slider:Init(spec.get(), spec.min, spec.max, (spec.max - spec.min) / step, {})
-    slider:RegisterCallback(MinimalSliderWithSteppersMixin.Event.OnValueChanged, function(_, value)
-        if suppress then return end
-        value = spec.min + math.floor((value - spec.min) / step + 0.5) * step
-        value = tonumber(("%.4f"):format(value))
+    HookHover(slider.widget, spec)
+    slider:Setup(spec.min, spec.max, spec.step or 1)
+    slider.onChange = function(value)
         spec.set(value)
         Caption(value)
-    end, holder)
+    end
     self:Add(holder, 24, function()
-        local value = spec.get()
-        suppress = true
-        slider:SetValue(value)
-        suppress = false
-        Caption(value)
+        slider:SetValue(spec.get(), true)
+        Caption(slider:GetValue())
     end, spec.visible)
 end
 
@@ -160,30 +163,21 @@ function Group:Segmented(spec)
     label:SetWidth(LABEL_W - 8)
     label:SetJustifyH("LEFT")
     label:SetText(spec.label)
-    local width = math.floor((controlW + count - 1) / count)
-    local last = controlW - (count - 1) * (width - 1)
-    local buttons = {}
-    for index, option in ipairs(spec.options) do
-        local button = Widgets.Button(holder, option.text, index == count and last or width)
-        button:SetPoint("LEFT", holder, "LEFT", LABEL_W + (index - 1) * (width - 1), 0)
-        button.value = option.value
-        button:SetScript("OnClick", function(self)
-            spec.set(self.value)
-            group.page:Refresh()
-        end)
-        buttons[index] = button
-    end
+    local set = UI.Segments(holder, spec.options, controlW, 22, function(value)
+        spec.set(value)
+        group.page:Refresh()
+    end)
+    set:SetPoint("LEFT", holder, "LEFT", LABEL_W, 0)
     if spec.note then
         local note = holder:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         note:SetPoint("LEFT", holder, "LEFT", LABEL_W + controlW + 10, 0)
+        note:SetPoint("RIGHT", self.frame, "RIGHT", -PAD, 0)
+        note:SetJustifyH("LEFT")
         note:SetTextColor(unpack(T.muted))
         note:SetText(spec.note)
     end
     self:Add(holder, 22, function()
-        local current = spec.get()
-        for _, button in ipairs(buttons) do
-            Widgets.PaintChoice(button, button.value == current)
-        end
+        set:Select(spec.get())
     end, spec.visible)
 end
 
@@ -229,15 +223,12 @@ end
 
 function Page:Group(title)
     local box = CreateFrame("Frame", nil, self.frame, "BackdropTemplate")
-    box:SetBackdrop(T.FLAT)
-    box:SetBackdropColor(unpack(T.panel))
-    box:SetBackdropBorderColor(unpack(T.border))
     box:SetPoint("TOPLEFT")
     box:SetPoint("RIGHT", self.frame, "RIGHT", -PAD, 0)
     box.title = box:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     box.title:SetPoint("TOPLEFT", PAD, -8)
-    box.title:SetTextColor(unpack(T.gold))
     box.title:SetText(type(title) == "string" and title or "")
+    UI.PaintGroup(box, title and title ~= "" and box.title or nil)
     local group = setmetatable({ page = self, frame = box, items = {}, visible = self.visible, title = title }, Group)
     self.groups[#self.groups + 1] = group
     return group
@@ -277,6 +268,7 @@ function Page:Refresh()
     end
     local offsets, total = Rules.Stack(blocks, PAD)
     for index, group in ipairs(self.groups) do
+        group.offset = offsets[index]
         if offsets[index] then
             group.frame:ClearAllPoints()
             group.frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -offsets[index])
@@ -285,6 +277,12 @@ function Page:Refresh()
     end
     self.frame:SetHeight(math.max(total, 1))
     self.frame:GetParent():SetHeight(math.max(total, 1))
+end
+
+function Page:Find(key)
+    for _, group in ipairs(self.groups) do
+        if group.key == key then return group end
+    end
 end
 
 function Page:Fail()

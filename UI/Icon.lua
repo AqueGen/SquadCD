@@ -83,6 +83,37 @@ function Icon:SetSpell(spell, member, size)
     self.dot:SetSize(math.max(3, math.floor(size / 6)), math.max(3, math.floor(size / 6)))
     self.label:SetText("")
     self.cd:Clear()
+    self:BindSecret(spell, member, size)
+    self:BindActive(spell, member, size)
+end
+
+function Icon:BindActive(spell, member, size)
+    local list = not self.secret and ns.SecretTracks and ns.SecretTracks.WatchFor and ns.SecretTracks.WatchFor(member, spell.id) or {}
+    if #list == 0 and not self.overlay then return end
+    xpcall(function()
+        self.overlay = self.overlay or ns.ActiveOverlay.New(self.frame, self.frame:GetFrameLevel() + 8)
+        self.overlay:SetLook(texture(spell), size)
+        self.overlay:Watch(list)
+    end, geterrorhandler())
+end
+
+function Icon:BindSecret(spell, member, size)
+    self.secret = false
+    if not (ns.SecretTracks and ns.SecretLayer) then return end
+    if not self.layer and not ns.SecretTracks.Track(member.guid, spell.id) then return end
+    local ok = xpcall(function()
+        self.layer = self.layer or ns.SecretLayer.New(self)
+        self.layer:SetLook(texture(spell), size)
+        self.secret = ns.SecretTracks.Bind(self.layer, member.guid, spell.id)
+        self.layer:Show(self.secret)
+    end, geterrorhandler())
+    if not ok then
+        self.secret = false
+        if self.layer then
+            ns.SecretTracks.Unbind(self.layer)
+            pcall(self.layer.Show, self.layer, false)
+        end
+    end
 end
 
 function Icon:SetLabel(text, r, g, b)
@@ -109,7 +140,21 @@ function Icon:Border()
 end
 
 function Icon:Update(state, now, timers)
+    if self.secret then
+        self.layer:SetTimers(timers ~= false)
+        if self.look ~= "secret" then
+            self.look, self.start, self.text, self.charges = "secret", nil, "", ""
+            self.cd:Clear()
+            self.time:SetText("")
+            self.count:SetText("")
+            self.mark:SetText("")
+            self.tex:SetDesaturated(false)
+            self.tex:SetAlpha(1)
+        end
+        return
+    end
     if not state then return end
+    if self.overlay then self.overlay:SetTimers(timers ~= false) end
     local cooling = not state.ready
     local unknown = not cooling and state.unknown or false
     local timer = unknown and 0 or cooling and state.remaining or state.recharge or 0
@@ -156,13 +201,23 @@ end
 local Tab = {}
 Tab.__index = Tab
 
+local GLYPHS = "Interface\\AddOns\\SquadCD\\Media\\Types\\"
+
+function Icon.TypeIcon(type)
+    return T.TYPES[type] and GLYPHS .. type or nil
+end
+
 function Icon.NewTab(parent)
     local f = CreateFrame("Frame", nil, parent)
     local fill = f:CreateTexture(nil, "BACKGROUND")
     fill:SetAllPoints(f)
     local text = f:CreateFontString(nil, "OVERLAY")
     text:SetFont(T.FONT, 9, "")
-    return setmetatable({ frame = f, fill = fill, text = text }, Tab)
+    local icon = f:CreateTexture(nil, "ARTWORK")
+    icon:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
+    icon:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
+    icon:Hide()
+    return setmetatable({ frame = f, fill = fill, text = text, icon = icon }, Tab)
 end
 
 function Icon.TabText(type, labels)
@@ -178,5 +233,15 @@ function Tab:Set(type, labels)
     self.text:SetFont(T.FONT, 9, "")
     self.text:SetTextColor(unpack(style.text))
     self.text:SetText(Icon.TabText(type, labels))
+    local icon = labels == "Icon"
+    self.icon:SetShown(icon)
+    if icon then
+        self.icon:SetTexture(Icon.TypeIcon(type))
+        self.icon:SetVertexColor(unpack(style.text))
+        self.icon:SetHeight(Icon.TAB_ICON)
+        return Icon.TAB_ICON
+    end
     return math.ceil(self.text:GetStringWidth())
 end
+
+Icon.TAB_ICON = 16

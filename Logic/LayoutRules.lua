@@ -9,14 +9,14 @@ LayoutRules.TYPES = {
 }
 
 LayoutRules.LABELS = {
-    Personal = "Personal", Burst = "Burst", Racial = "Racial", Potion = "Potion", External = "External",
-    Kick = "Kick", Control = "Control", Stun = "Stun", CC = "CC", Group = "Raid defensives", Dispel = "Dispel", Purge = "Purge",
+    Personal = "Defensives", Burst = "Burst", Racial = "Racial", Potion = "Potion", External = "External",
+    Kick = "Kick", Control = "Control", Stun = "Stun", CC = "CC", Group = "Group defensives", Dispel = "Dispel", Purge = "Purge",
     Movement = "Movement",
 }
 
 LayoutRules.SHORT = {
-    Personal = "Pers", Burst = "Burst", Racial = "Race", Potion = "Pot", External = "Ext", Kick = "Kick",
-    Control = "Ctrl", Stun = "Stun", CC = "CC", Group = "Raid", Dispel = "Disp", Purge = "Purge", Movement = "Move",
+    Personal = "Def", Burst = "Burst", Racial = "Race", Potion = "Pot", External = "Ext", Kick = "Kick",
+    Control = "Ctrl", Stun = "Stun", CC = "CC", Group = "Group", Dispel = "Disp", Purge = "Purge", Movement = "Move",
 }
 
 local rank = {}
@@ -30,7 +30,7 @@ function LayoutRules.SpellsFor(member, own, enabled)
     local list = {}
     for id, s in pairs(ns.Spells) do
         if enabled[id] ~= false and (own or s.track ~= "none")
-            and ns.Cooldowns.Has(id, member.class, member.spec, member.talents, member.race)
+            and ns.Cooldowns.Has(id, member.class, member.spec, member.talents, member.race, member.pets)
             and ns.Cooldowns.Canonical(id, member) == id then
             list[#list + 1] = { id = id, type = s.type, name = s.name, icon = s.icon }
         end
@@ -108,17 +108,12 @@ end
 
 local POTION = { track = "buff", buffs = {} }
 
-function LayoutRules.Unknown(spellId, own, plain, secret)
+function LayoutRules.Unknown(spellId, own, plain)
     if own then return false end
     local s = spellId == "potion" and POTION or ns.Spells[spellId]
     if not s then return false end
     if s.track == "buff" or s.track == "target" then return not plain or not s.buffs end
-    if s.track == "debuff" then
-        for _, id in ipairs(s.debuffs or {}) do
-            if not secret[id] then return false end
-        end
-        return true
-    end
+    if s.track == "debuff" then return not plain or not s.debuffs end
     return false
 end
 

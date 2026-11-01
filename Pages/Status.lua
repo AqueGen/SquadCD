@@ -1,7 +1,7 @@
 -- Copyright (c) 2026 AqueGen. All rights reserved. See LICENSE.
 local _, ns = ...
 
-local T = ns.Theme
+local T = ns.SettingsTheme
 local WHITE = T.text
 local INTERVAL = 1
 
@@ -28,16 +28,15 @@ local function SpellName(id)
     return ns.Spells[id] and ns.Spells[id].name or tostring(id)
 end
 
-local function Names(list)
-    if #list == 0 then return "none" end
-    local out = {}
-    for i, e in ipairs(list) do out[i] = e.name end
-    return table.concat(out, ", ")
-end
-
 local function ModeText()
     local d = ns.Probe.Data()
-    local lines = { "Group: " .. d.group .. (d.group == "party" and "" or " - SquadCD works in a party only") }
+    local why = ""
+    if d.group == "raid" then
+        why = " - SquadCD does not work in a raid"
+    elseif d.group == "solo" then
+        why = ns.DB.layout.showWhen == "always" and " - only your own cooldowns show" or " - nothing shows (Show cooldowns: Only in a group)"
+    end
+    local lines = { "Group: " .. d.group .. why }
     lines[2] = "Buff readout: " .. (MODES[d.mode] or d.mode)
     if d.reason then lines[3] = "Reason: " .. d.reason end
     if d.note then lines[#lines + 1] = d.note end
@@ -73,7 +72,7 @@ end
 
 local function MembersText()
     if ns.Group.Status() == "secret" then return "The party roster is secret right now." end
-    if #roster == 0 then return "No party members. SquadCD works in a party only." end
+    if #roster == 0 then return "No members. SquadCD shows nothing in a raid, or without a group when Show cooldowns is Only in a group." end
     local lines = {}
     for _, m in ipairs(roster) do
         local name = UnitName(m.unit)
@@ -98,8 +97,8 @@ local function OwnText()
 end
 
 local function DebuffText()
-    local s = ns.EnemyDebuffs.Status()
-    return ("Hidden by the game (secret): %s\nNo debuff id, not trackable for others: %s"):format(Names(s.secret), Names(s.noId))
+    local s = ns.SecretTracks.Status()
+    return ("Party stuns and CC are read from enemy nameplates: plates watched %d of %d, probes on them %d."):format(s.plates, s.platePool, s.plateProbes)
 end
 
 ns.Window.Register("status", function(page)
@@ -108,7 +107,7 @@ ns.Window.Register("status", function(page)
     page:Group("Own casts and kicks"):Note({ color = WHITE, text = OwnText })
     page:Group("Enemy stops and CC"):Note({ color = WHITE, text = DebuffText })
     local probe = page:Group("Probe")
-    probe:Note("Prints the full readout, with hit-test counts and every buff id seen since login, to the chat window.")
+    probe:Note("Prints the full readout, with sensor counts, every buff id seen since login and the party aura flag keys, to the chat window.")
     probe:Button({ text = "Run probe", width = 120, onClick = ns.Probe.Run })
 
     local elapsed = 0

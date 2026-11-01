@@ -6,6 +6,7 @@ local FILES = {
     "Logic/LayoutModel.lua", "Core.lua", "Logic/LayoutRules.lua", "Logic/Preview.lua", "UI/Theme.lua",
     "UI/WidgetRules.lua", "UI/Widgets.lua", "UI/LayoutParts.lua", "UI/Window.lua", "UI/Wizard.lua",
 }
+for i = #helpers.VELVET, 1, -1 do table.insert(FILES, 1, helpers.VELVET[i]) end
 
 local function stub(f)
     return setmetatable(f, {
@@ -78,6 +79,7 @@ describe("Wizard window", function()
         ns.Display = { Changed = function() changed = changed + 1 end, HasMembers = function() return false end }
         ns.Demo = { Mode = function() return "Off" end, Running = function() return false end, Set = function() end }
         ns.EditMode = { Panels = function() return false end, Members = function() return false end }
+        ns.PanelPreview = { Attach = function() end, Refresh = function() end, SetFocus = function() end }
         ns.Window.Register("about", function() end)
     end)
 

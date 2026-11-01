@@ -14,10 +14,12 @@ end
 local function groupEditor(page, gi)
     local function g() return layout().groups[gi] end
     local group = page:Group("Group " .. gi)
+    group.key = "group:" .. gi
     group.visible = function() return g() ~= nil end
-    group:Note("Click a type to turn it off.")
+    group:Note("Click a type to move it left or right, or to turn it off.")
     Parts.Types(group, {
-        get = function() return g() and g().types or {} end,
+        get = function() return g() and Model.TypeOrder(layout(), g()) or {} end,
+        move = function(t, step) Parts.Edit(Model.MoveWithin, "groups", gi, t, step) end,
         remove = function(t) Parts.Edit(Edit.ToggleType, gi, t) end,
         choices = function()
             local out = {}
@@ -107,6 +109,7 @@ ns.Window.Register("members", function(page)
     })
 
     local look = page:Group("Party frames default look")
+    look.key = "look"
     look:Note("Every group with \"Same look as the party frames default\" uses this look.")
     Parts.Look(look, {
         member = true,
@@ -115,4 +118,4 @@ ns.Window.Register("members", function(page)
     })
 
     for gi = 1, MAX_GROUPS do groupEditor(page, gi) end
-end)
+end, { preview = "panel", focus = "members" })

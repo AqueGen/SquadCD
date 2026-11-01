@@ -13,7 +13,6 @@ local pending = false
 local driver = CreateFrame("Frame")
 local elapsed = 0
 
-local NONE = {}
 local sight = {}
 
 local function tick()
@@ -23,7 +22,6 @@ local function tick()
     if isLive then tracker:Tick() end
     sight.live = isLive
     sight.plain = not isLive or ns.Sensors.Mode() == "plain"
-    sight.secret = isLive and ns.EnemyDebuffs.SecretIds() or NONE
     sight.timers = ns.DB.layout.timers
     local now = GetTime()
     ns.Rows.Update(tracker, now, sight)
@@ -74,9 +72,10 @@ function Display.Rebuild(late)
         driver:SetScript("OnUpdate", nil)
         return
     end
-    if not ns.Anchors.Scan() and not forced then return end
+    local solo = ns.Group.Mode() == "solo"
+    if not ns.Anchors.Scan(solo) and not forced then return end
     local lines, rows = collect(members)
-    ns.Rows.Build(rows)
+    ns.Rows.Build(rows, solo and source == live)
     ns.Panel.Build(lines)
     ns.EditMode.Refresh()
     tick()
@@ -89,7 +88,20 @@ function Display.Rebuild(late)
     end)
 end
 
+function Display.Lines(members)
+    return (collect(members))
+end
+
+function Display.Route(members)
+    return collect(members)
+end
+
 local warned = false
+local listeners = {}
+
+function Display.OnChanged(fn)
+    listeners[#listeners + 1] = fn
+end
 
 function Display.Changed()
     if InCombatLockdown() and not warned then
@@ -97,6 +109,7 @@ function Display.Changed()
         print("SquadCD: the change applies when combat ends.")
     end
     Display.Rebuild()
+    for _, fn in ipairs(listeners) do fn() end
 end
 
 function Display.Flush()

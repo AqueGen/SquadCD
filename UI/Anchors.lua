@@ -47,7 +47,7 @@ local function ancestors(frame)
     return p, p and p:GetParent()
 end
 
-local function thirdParty()
+local function thirdParty(solo)
     local skip = {}
     for _, name in ipairs(BLIZZARD) do
         if _G[name] then skip[_G[name]] = true end
@@ -56,7 +56,7 @@ local function thirdParty()
     scan(UIParent, 1, skip, hits)
     local own = hits.player
     hits.player = nil
-    if not next(hits) then return {} end
+    if not next(hits) then return { player = solo and own or nil } end
     if own then
         local a1, a2 = ancestors(own)
         for _, button in pairs(hits) do
@@ -86,9 +86,9 @@ local function blizzard(unit)
     end
 end
 
-function Anchors.Scan()
+function Anchors.Scan(solo)
     local old = found
-    found = thirdParty()
+    found = thirdParty(solo)
     local changed = false
     for unit in pairs(TOKENS) do
         found[unit] = found[unit] or blizzard(unit)
@@ -114,9 +114,10 @@ function Anchors.PlaceStack()
     stack:SetPoint(p[1], UIParent, p[1], p[2], p[3])
 end
 
-function Anchors.FrameFor(unit)
+function Anchors.FrameFor(unit, noStack)
     local f = found[unit]
     if f then return f, false end
+    if noStack then return nil end
     return Anchors.Stack(), true
 end
 

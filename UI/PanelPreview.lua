@@ -1,0 +1,189 @@
+-- Copyright (c) 2026 AqueGen. All rights reserved. See LICENSE.
+local _, ns = ...
+
+local PanelPreview = {}
+ns.PanelPreview = PanelPreview
+
+local INTERVAL = 0.1
+local MEMBERS = 5
+local CAPTION = "Preview: the Demo party, 5 members"
+local EMPTY = {
+    all = "Nothing to show: every type is off or hidden.",
+    panel = "Nothing in the panel: every type is at the party frames or off.",
+    members = "Nothing at the party frames: every type is in the panel or off.",
+}
+local FRAME_W, FRAME_H, FRAME_GAP, PANEL_GAP = 120, 46, 2, 16
+local GLOW = { 1, 0.82, 0, 0.2 }
+local PARTY_LOOK = { page = "members", key = "look", label = "Party frames default look" }
+
+local pane, host, panelHost, panel, rows, source, focus
+local frameW, frameH = FRAME_W, FRAME_H
+local frames, byUnit = {}, {}
+local listening = false
+local elapsed = 0
+local sight = { live = false, plain = true, secret = {} }
+
+local lit
+
+local pick = {
+    hover = function(target, frame)
+        if lit then lit:Hide() end
+        lit = nil
+        if not target then
+            pane:SetCaption(CAPTION)
+            return
+        end
+        frame.pickGlow = frame.pickGlow or frame:CreateTexture(nil, "OVERLAY")
+        frame.pickGlow:SetAllPoints(frame)
+        frame.pickGlow:SetColorTexture(unpack(GLOW))
+        frame.pickGlow:Show()
+        lit = frame.pickGlow
+        pane:SetCaption(target.label .. " - click to edit")
+    end,
+    click = function(target)
+        ns.Window.Focus(target.page, target.key)
+    end,
+}
+
+local spare
+local anchors = {
+    FrameFor = function(unit) return byUnit[unit], false end,
+    SizeOf = function() return frameW, frameH end,
+    Stack = function()
+        spare = spare or CreateFrame("Frame", nil, host, "BackdropTemplate")
+        return spare
+    end,
+    PlaceStack = function() end,
+}
+
+local function update()
+    sight.timers = ns.DB.layout.timers
+    local now = GetTime()
+    panel.Update(source.tracker, now, sight)
+    rows.Update(source.tracker, now, sight)
+end
+
+local function tick(_, dt)
+    elapsed = elapsed + dt
+    if elapsed < INTERVAL then return end
+    elapsed = 0
+    update()
+end
+
+function PanelPreview.Stop()
+    if pane then pane:SetScript("OnUpdate", nil) end
+end
+
+-- Icons wrap to fit the party frame's height, so the preview copies the real frames' size when they are on screen.
+local function realFrameSize()
+    for _, unit in ipairs({ "party1", "party2", "player" }) do
+        local f = ns.Anchors and ns.Anchors.FrameFor(unit, true)
+        if f then
+            local w, h = ns.Anchors.SizeOf(f)
+            if w > 0 and h > 0 then return w, h end
+        end
+    end
+    return FRAME_W, FRAME_H
+end
+
+local function partyFrame(i)
+    if frames[i] then return frames[i] end
+    local f = CreateFrame("Frame", nil, host)
+    f.fill = f:CreateTexture(nil, "BACKGROUND")
+    f.fill:SetAllPoints(f)
+    f.name = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    f.name:SetPoint("TOP", f, "TOP", 0, -4)
+    f:EnableMouse(true)
+    f:SetScript("OnEnter", function(self) pick.hover(PARTY_LOOK, self) end)
+    f:SetScript("OnLeave", function() pick.hover(nil) end)
+    f:SetScript("OnMouseUp", function() pick.click(PARTY_LOOK) end)
+    frames[i] = f
+    return f
+end
+
+local function bindParty(members, shown)
+    wipe(byUnit)
+    for i, m in ipairs(members) do
+        local f = partyFrame(i)
+        f:SetSize(frameW, frameH)
+        local r, g, b = ns.Theme.ClassColor(m.class)
+        f.fill:SetColorTexture(r, g, b, 0.55)
+        f.name:SetText(m.name)
+        f:SetShown(shown)
+        byUnit[m.unit] = f
+    end
+end
+
+local function placeParty(count, x, y)
+    for i = 1, count do
+        frames[i]:ClearAllPoints()
+        frames[i]:SetPoint("TOPLEFT", host, "TOPLEFT", x, -(y + (i - 1) * (frameH + FRAME_GAP)))
+    end
+end
+
+local function anyGroup(list)
+    for _, row in ipairs(list) do
+        for _, runs in pairs(row.groups) do
+            if #runs > 0 then return true end
+        end
+    end
+    return false
+end
+
+local function rebuild(fresh)
+    if not pane or not pane:IsVisible() then return end
+    if fresh or not source then source = ns.Demo.Source(MEMBERS) end
+    frameW, frameH = realFrameSize()
+    local lines, routed = ns.Display.Route(source.members)
+    if focus == "members" then lines = {} end
+    local party = focus ~= "panel" and anyGroup(routed)
+    local pw, ph = panel.Build(lines)
+    bindParty(source.members, party)
+    if party then rows.Build(routed, true) else rows.Hide() end
+    local reach = party and rows.Reach() or { Left = 0, Right = 0, Above = 0, Below = 0 }
+    local partyW = party and reach.Left + frameW + reach.Right or 0
+    local partyH = party and reach.Above + MEMBERS * frameH + (MEMBERS - 1) * FRAME_GAP + reach.Below or 0
+    local w = math.max(partyW, pw)
+    placeParty(#source.members, (w - partyW) / 2 + reach.Left, reach.Above)
+    if #lines == 0 and not party then
+        PanelPreview.Stop()
+        pane:SetOff(EMPTY[focus or "all"])
+        return
+    end
+    local gap = party and ph > 0 and PANEL_GAP or 0
+    panelHost:ClearAllPoints()
+    panelHost:SetPoint("TOPLEFT", host, "TOPLEFT", (w - pw) / 2, -(partyH + gap))
+    panelHost:SetSize(math.max(pw, 1), math.max(ph, 1))
+    local h = partyH + gap + ph
+    host:SetSize(w, h)
+    pane:SetOff(nil)
+    pane:Fit(host, w, h)
+    update()
+    elapsed = 0
+    pane:SetScript("OnUpdate", tick)
+end
+
+function PanelPreview.Attach(target)
+    if pane == target then return end
+    PanelPreview.Stop()
+    pane = target
+    host = CreateFrame("Frame", nil, pane.stage)
+    panelHost = CreateFrame("Frame", nil, host)
+    panel = ns.Panel.New({ parent = panelHost, pick = pick })
+    rows = ns.Rows.New({ parent = host, anchors = anchors, pick = pick })
+    pane:SetCaption(CAPTION)
+    pane:HookScript("OnHide", PanelPreview.Stop)
+    if not listening then
+        listening = true
+        ns.Display.OnChanged(function() rebuild(false) end)
+    end
+end
+
+-- "panel" or "members" shows only that part; nil shows both.
+function PanelPreview.SetFocus(f)
+    focus = f
+end
+
+function PanelPreview.Refresh()
+    rebuild(true)
+end

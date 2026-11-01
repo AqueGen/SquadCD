@@ -15,13 +15,18 @@ local function rank(s, specId, talents, id)
     return 0
 end
 
+local function value(s, specId, id, v)
+    local bySpec = s.modsBySpec and s.modsBySpec[id]
+    return bySpec and bySpec[specId] or v
+end
+
 local function apply(s, specId, talents, base, mods, pcts)
     local cd = base
     for id, v in pairs(mods or {}) do
-        cd = cd + v * rank(s, specId, talents, id)
+        cd = cd + value(s, specId, id, v) * rank(s, specId, talents, id)
     end
     for id, v in pairs(pcts or {}) do
-        cd = cd * (1 + v * rank(s, specId, talents, id) / 100)
+        cd = cd * (1 + value(s, specId, id, v) * rank(s, specId, talents, id) / 100)
     end
     return cd
 end
@@ -67,7 +72,7 @@ end
 for _, list in pairs(replacedBy) do table.sort(list) end
 
 local function replacement(spellId, s, member)
-    local function has(id) return Cooldowns.Has(id, member.class, member.spec, member.talents, member.race) end
+    local function has(id) return Cooldowns.Has(id, member.class, member.spec, member.talents, member.race, member.pets) end
     local known = member.talents ~= nil
     for _, r in ipairs(replacedBy[spellId] or {}) do
         if has(r) and (known or not ns.Spells[r].talentGated) then return r end
@@ -87,16 +92,18 @@ function Cooldowns.Canonical(spellId, member)
     local best
     for id, v in pairs(ns.Spells) do
         if v.races and v.name == s.name and (not best or id < best)
-            and Cooldowns.Has(id, member.class, member.spec, member.talents, member.race) then
+            and Cooldowns.Has(id, member.class, member.spec, member.talents, member.race, member.pets) then
             best = id
         end
     end
     return best or spellId
 end
 
-function Cooldowns.Has(spellId, classToken, specId, talents, race)
+-- pets: the pet spells the member's current pet has; nil when that is unknown (party members).
+function Cooldowns.Has(spellId, classToken, specId, talents, race, pets)
     local s = ns.Spells[spellId]
     if not s then return false end
+    if s.pet and pets and not pets[spellId] then return false end
     if s.races then
         return race ~= nil and contains(s.races, race) and (not s.classes or contains(s.classes, classToken))
     end
@@ -107,7 +114,7 @@ function Cooldowns.Has(spellId, classToken, specId, talents, race)
     end
     if s.talentGated then
         if talents then return (talents[spellId] or 0) > 0 end
-        return #specs == 0
+        return s.type == "Kick" and #specs == 0
     end
     return #specs == 0
 end

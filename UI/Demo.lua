@@ -61,7 +61,7 @@ local function first(m, kind)
     end
 end
 
-local function start(count)
+function Demo.Source(count)
     local shift
     local tracker = ns.Tracker.New(function() return GetTime() - (shift or 0) end)
     local list = members(count)
@@ -83,7 +83,7 @@ local function start(count)
         used(paladin, "potion", 100, true)
         used(monk, first(monk, "Burst"), 50, true)
     end
-    ns.Display.SetSource({ members = list, tracker = tracker })
+    return { members = list, tracker = tracker }
 end
 
 function Demo.Set(next)
@@ -96,7 +96,7 @@ function Demo.Set(next)
     if mode == "Off" then
         ns.Display.SetSource(nil)
     else
-        start(mode == "Me" and 1 or #MEMBERS)
+        ns.Display.SetSource(Demo.Source(mode == "Me" and 1 or #MEMBERS))
     end
     ns.EditMode.DemoChanged()
     if ns.Window then ns.Window.Refresh() end

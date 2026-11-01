@@ -52,4 +52,22 @@ describe("Anchors", function()
 
         assert.has_no.errors(function() ns.Anchors.Scan() end)
     end)
+
+    it("a lone player frame counts only when solo", function()
+        local own = add(add(root, node()), node({ kind = "Button", unit = "player" }))
+
+        ns.Anchors.Scan(false)
+        local _, stacked = ns.Anchors.FrameFor("player")
+        assert.is_true(stacked)
+
+        ns.Anchors.Scan(true)
+        assert.are.same({ own, false }, { ns.Anchors.FrameFor("player", true) })
+    end)
+
+    it("no frame falls back to the stack, or to nothing when solo", function()
+        ns.Anchors.Scan(true)
+        local _, stacked = ns.Anchors.FrameFor("player")
+        assert.is_true(stacked)
+        assert.is_nil(ns.Anchors.FrameFor("player", true))
+    end)
 end)

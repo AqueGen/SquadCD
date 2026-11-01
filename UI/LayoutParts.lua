@@ -4,7 +4,7 @@ local _, ns = ...
 local Parts = {}
 ns.LayoutParts = Parts
 
-local T = ns.Theme
+local T = ns.SettingsTheme
 local Widgets = ns.Widgets
 local CHIP_GAP, CHIP_H = 4, 22
 
@@ -15,9 +15,9 @@ local CORNERS = {
     { value = "BottomLeft", text = "Bottom left" }, { value = "BottomRight", text = "Bottom right" },
 }
 local SORTS = { { value = "Fixed", text = "Fixed" }, { value = "ReadyFirst", text = "Ready first" } }
-local LABELS = { { value = "None", text = "None" }, { value = "Glyph", text = "Glyph" }, { value = "Short", text = "Short text" }, { value = "Full", text = "Full text" } }
+local LABELS = { { value = "None", text = "None" }, { value = "Icon", text = "Icon" }, { value = "Glyph", text = "Letter" }, { value = "Short", text = "Short text" }, { value = "Full", text = "Full text" } }
 local BACKGROUNDS = { { value = "Default", text = "Default" }, { value = "Black", text = "Black" }, { value = "Slate", text = "Slate" }, { value = "None", text = "None" } }
-local WIDE = 280
+local WIDE, LABELS_W = 280, 300
 
 function Parts.Edit(fn, ...)
     fn(ns.DB.layout, ...)
@@ -30,15 +30,17 @@ function Parts.Label(t)
 end
 
 function Parts.Mark(parent, size)
-    local mark = parent:CreateTexture(nil, "ARTWORK")
+    local mark = CreateFrame("Frame", nil, parent)
     mark:SetSize(size, size)
-    local glyph = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    glyph:SetPoint("CENTER", mark, "CENTER", 0, 0)
+    mark.fill = mark:CreateTexture(nil, "BACKGROUND")
+    mark.fill:SetAllPoints(mark)
+    mark.glyph = mark:CreateTexture(nil, "ARTWORK")
+    mark.glyph:SetAllPoints(mark)
     return mark, function(t)
         local style = T.TYPES[t] or T.TYPES.Personal
-        mark:SetColorTexture(style.fill[1], style.fill[2], style.fill[3], 1)
-        glyph:SetText(style.glyph)
-        glyph:SetTextColor(unpack(style.text))
+        mark.fill:SetColorTexture(style.fill[1], style.fill[2], style.fill[3], 1)
+        mark.glyph:SetTexture(ns.Icon.TypeIcon(t))
+        mark.glyph:SetVertexColor(unpack(style.text))
     end
 end
 
@@ -57,8 +59,8 @@ function Parts.Look(group, opts)
     end
     local backdrop = both(opts.visible, opts.backdrop)
     group:Slider({ label = "Icon size", min = opts.member and 12 or 20, max = 40, get = get("iconSize"), set = setting("iconSize"), visible = opts.visible })
-    local labels = opts.member and { LABELS[1], LABELS[2], LABELS[3] } or LABELS
-    group:Segmented({ label = "Type labels", options = labels, width = WIDE, get = get("labels"), set = setting("labels"), visible = opts.visible })
+    local labels = opts.member and { LABELS[1], LABELS[2], LABELS[3], LABELS[4] } or LABELS
+    group:Segmented({ label = "Type labels", options = labels, width = opts.member and WIDE or LABELS_W, get = get("labels"), set = setting("labels"), visible = opts.visible })
     group:Segmented({ label = "Background", options = BACKGROUNDS, width = WIDE, get = get("background"), set = setting("background"), visible = backdrop })
     if opts.member then return end
     group:Slider({ label = "Opacity", min = 0, max = 100, step = 5, format = "%d%%", get = get("opacity"), set = setting("opacity"), visible = backdrop })
@@ -131,9 +133,19 @@ function Parts.Types(group, opts)
             chip.rail:SetColorTexture(fill[1], fill[2], fill[3], 1)
             local w = math.floor(chip.label:GetStringWidth() + 20)
             chip:SetWidth(w)
+            local first, last = i == 1, i == #types
             chip:SetScript("OnClick", function(self)
-                opts.remove(self.type)
-                group.page:Refresh()
+                local function act(fn, ...)
+                    fn(...)
+                    group.page:Refresh()
+                end
+                if not (opts.move and MenuUtil) then return act(opts.remove, self.type) end
+                MenuUtil.CreateContextMenu(self, function(_, root)
+                    root:CreateTitle(Parts.Label(self.type))
+                    if not first then root:CreateButton("Move left", function() act(opts.move, self.type, -1) end) end
+                    if not last then root:CreateButton("Move right", function() act(opts.move, self.type, 1) end) end
+                    root:CreateButton("Turn off", function() act(opts.remove, self.type) end)
+                end)
             end)
             chip:Show()
             place(chip, w)
@@ -309,12 +321,12 @@ function Parts.PresetCards(group, opts)
 end
 
 local PLACES = { { value = "panel", text = "Panel", w = 56 }, { value = "member", text = "At party frames", w = 104 }, { value = "off", text = "Off", w = 44 } }
-local ROW_H, NAME_X, PLACE_X, SPLIT_X, ORDER_X = 24, 22, 160, 380, 452
+local ROW_H, NAME_X, PLACE_X, SPLIT_X, ORDER_X = 24, 27, 160, 380, 452
 
 local function newTypeRow(parent)
     local row = CreateFrame("Frame", nil, parent)
     row:SetHeight(ROW_H)
-    row.mark, row.paint = Parts.Mark(row, 14)
+    row.mark, row.paint = Parts.Mark(row, 16)
     row.mark:SetPoint("LEFT", row, "LEFT", 0, 0)
     row.name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     row.name:SetPoint("LEFT", row, "LEFT", NAME_X, 0)
@@ -329,8 +341,7 @@ local function newTypeRow(parent)
         row.places[i] = b
         x = x + p.w - 1
     end
-    row.split = CreateFrame("CheckButton", nil, row, "MinimalCheckboxTemplate")
-    row.split:SetSize(22, 22)
+    row.split = LibStub("LibVelvet-1.0").Checkbox(row, 22)
     row.split:SetPoint("LEFT", row, "LEFT", SPLIT_X, 0)
     row.split.text = row.split:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     row.split.text:SetPoint("LEFT", row.split, "RIGHT", 2, 0)

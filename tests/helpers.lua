@@ -30,6 +30,15 @@ end
 
 helpers.newFrame = newFrame
 
+helpers.VELVET = {}
+do
+    local xml = assert(io.open(root .. "/Libs/LibVelvet-1.0/lib.xml", "rb"))
+    for name in xml:read("*a"):gmatch('<Script file="([^"]+)"/>') do
+        helpers.VELVET[#helpers.VELVET + 1] = "Libs/LibVelvet-1.0/" .. name
+    end
+    xml:close()
+end
+
 function helpers.load(files, stubs)
     for k, saved in pairs(applied) do
         _G[k] = saved.prev
@@ -41,6 +50,8 @@ function helpers.load(files, stubs)
     _G.CreateFrame = newFrame
     _G.geterrorhandler = function() return function() end end
     _G.issecretvalue = function() return false end
+    _G.strmatch = string.match
+    _G.CreateColor = function(r, g, b, a) return { r = r, g = g, b = b, a = a } end
     for k, v in pairs(stubs or {}) do
         applied[k] = { prev = _G[k] }
         _G[k] = v

@@ -1,7 +1,7 @@
 -- Copyright (c) 2026 AqueGen. All rights reserved. See LICENSE.
 local _, ns = ...
 
-local T = ns.Theme
+local T = ns.SettingsTheme
 local Widgets = ns.Widgets
 local Parts = ns.LayoutParts
 local Model = ns.LayoutModel
@@ -88,7 +88,7 @@ end
 
 local function priority(page)
     local group = page:Group("Role and class priority")
-    group:Note("Who goes first inside every type: the Next marker on kicks, control, externals and raid defensives, and the Fixed icon order.")
+    group:Note("Who goes first inside every type: the Next marker on kicks, control, externals and group defensives, and the Fixed icon order.")
     group:Button({
         text = "Reset to default", width = 140,
         onClick = function() Parts.Edit(Model.ResetPriority) end,
@@ -220,4 +220,4 @@ ns.Window.Register("presets", function(page)
     presetCards(page)
     Parts.TypesTable(page)
     priority(page)
-end)
+end, { preview = "panel" })

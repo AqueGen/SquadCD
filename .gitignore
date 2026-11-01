@@ -1,5 +1,6 @@
 # Libraries
-Libs/
+Libs/*
+!Libs/LibVelvet-1.0/
 
 # WoW leftovers
 *.bak
