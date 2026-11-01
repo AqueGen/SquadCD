@@ -162,7 +162,7 @@ end
 
 local DEMO = { { value = "Off", text = "Off" }, { value = "Me", text = "Only me" }, { value = "Group", text = "Whole group" } }
 
-local PACK_W, PACK_H, TRACK_W, TRACK_H = 176, 54, 170, 24
+local PACK_W, PACK_H, TRACK_W, TRACK_H = 176, 64, 170, 24
 
 local function flow(holder, items, w, h, gap, room)
     local x, y = 0, 0
@@ -191,8 +191,11 @@ function Parts.Packs(group)
         b:SetText(p.name)
         b.hint = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         b.hint:SetPoint("TOPLEFT", b.label, "BOTTOMLEFT", 0, -3)
-        b.hint:SetPoint("RIGHT", b, "RIGHT", -8, 0)
+        b.hint:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -8, 6)
         b.hint:SetJustifyH("LEFT")
+        b.hint:SetJustifyV("TOP")
+        b.hint:SetWordWrap(true)
+        b.hint:SetMaxLines(3)
         b.hint:SetTextColor(unpack(T.muted))
         b.hint:SetText(p.hint)
         b:SetScript("OnClick", function()

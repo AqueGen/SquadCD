@@ -70,4 +70,27 @@ describe("Anchors", function()
         assert.is_true(stacked)
         assert.is_nil(ns.Anchors.FrameFor("player", true))
     end)
+
+    local function stackAt()
+        ns.DB = { row = { point = { "CENTER", -360, 120 } } }
+        ns.EditMode = { Panels = function() return false end }
+        local stack = ns.Anchors.Stack()
+        local at
+        function stack:ClearAllPoints() at = nil end
+        function stack:SetPoint(...) at = { ... } end
+        ns.Anchors.PlaceStack()
+        return at
+    end
+
+    it("lines the members without a frame up under the player's frame shown solo", function()
+        local own = add(add(root, node()), node({ kind = "Button", unit = "player" }))
+        ns.Anchors.Scan(true)
+        assert.are.same({ "TOPLEFT", own, "BOTTOMLEFT", 0, -2 }, stackAt())
+    end)
+
+    it("keeps the saved spot when no player frame is shown", function()
+        ns.Anchors.Scan(true)
+        local at = stackAt()
+        assert.are.same({ "CENTER", -360, 120 }, { at[1], at[4], at[5] })
+    end)
 end)

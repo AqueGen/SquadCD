@@ -480,6 +480,15 @@ describe("LayoutModel packs and tracking", function()
         assert.are.same({ Stun = "panel", CC = "panel", Movement = "off" }, places(L, d, { "Stun", "CC", "Movement" }))
     end)
 
+    it("Everything shows every type and Healer adds dispels", function()
+        local L = load()
+        local d = L.ApplyPack(L.Defaults(), "everything")
+        for _, t in ipairs(L.VisibleTypes(d)) do assert.are_not.equal("off", L.PlaceOf(d, t), t) end
+        L.ApplyPack(d, "healer")
+        assert.are.same({ Personal = "member", External = "panel", Group = "panel", Dispel = "panel", Burst = "off", Kick = "off" },
+            places(L, d, { "Personal", "External", "Group", "Dispel", "Burst", "Kick" }))
+    end)
+
     it("every pack is listed with a name and a hint", function()
         local L = load()
         local ids = {}
