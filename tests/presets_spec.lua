@@ -4,7 +4,7 @@ local helpers = dofile(here .. "/helpers.lua")
 
 local FILES = {
     "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/LayoutGrid.lua", "Logic/LayoutRules.lua", "Logic/Preview.lua", "Logic/Profiles.lua", "UI/Theme.lua",
-    "UI/WidgetRules.lua", "UI/Widgets.lua", "UI/LayoutParts.lua", "UI/Window.lua", "Pages/Presets.lua",
+    "UI/WidgetRules.lua", "UI/Widgets.lua", "UI/LayoutParts.lua", "UI/Window.lua", "Pages/Presets.lua", "Pages/Profiles.lua",
 }
 for i = #helpers.VELVET, 1, -1 do table.insert(FILES, 1, helpers.VELVET[i]) end
 
@@ -91,10 +91,10 @@ describe("Presets page", function()
         page.hooks.OnHide(page)
         assert.is_nil(ns.Preview.Showing())
     end)
-    it("lists the class specs with the profile each one uses", function()
+    it("the Profiles page lists the class specs with the profile each one uses", function()
         ns.Profiles.New(ns.DB, "Wide")
         ns.Profiles.Assign(ns.DB, "Ann-Realm:65", "Wide")
-        ns.Window.Refresh()
+        ns.Window.Show("profiles")
         local picks = {}
         for _, f in ipairs(created) do
             if f.text == "Wide" or f.text == "Default" then picks[#picks + 1] = f.text end

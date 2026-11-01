@@ -133,9 +133,19 @@ function Parts.Types(group, opts)
             chip.rail:SetColorTexture(fill[1], fill[2], fill[3], 1)
             local w = math.floor(chip.label:GetStringWidth() + 20)
             chip:SetWidth(w)
+            local first, last = i == 1, i == #types
             chip:SetScript("OnClick", function(self)
-                opts.remove(self.type)
-                group.page:Refresh()
+                local function act(fn, ...)
+                    fn(...)
+                    group.page:Refresh()
+                end
+                if not (opts.move and MenuUtil) then return act(opts.remove, self.type) end
+                MenuUtil.CreateContextMenu(self, function(_, root)
+                    root:CreateTitle(Parts.Label(self.type))
+                    if not first then root:CreateButton("Move left", function() act(opts.move, self.type, -1) end) end
+                    if not last then root:CreateButton("Move right", function() act(opts.move, self.type, 1) end) end
+                    root:CreateButton("Turn off", function() act(opts.remove, self.type) end)
+                end)
             end)
             chip:Show()
             place(chip, w)

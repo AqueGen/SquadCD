@@ -212,9 +212,9 @@ describe("LayoutModel.SetSplit", function()
         local L = load()
         local d = L.Defaults()
         d.groups[1].types = { "Personal", "Control" }
-        d.groups[1].shape.typeOrder = { "Control", "Personal" }
+        d.groups[1].order = { "Control", "Personal" }
         L.SetSplit(d, true)
-        assert.are.same({ "Stun", "CC", "Personal" }, d.groups[1].shape.typeOrder)
+        assert.are.same({ "Stun", "CC", "Personal" }, d.groups[1].order)
     end)
 end)
 
@@ -240,8 +240,33 @@ describe("LayoutModel.TypeOrder / RoleOrder", function()
         local L = load()
         local d = L.Defaults()
         d.groups[1].types = { "Potion", "Personal", "Racial" }
-        d.groups[1].shape.typeOrder = { "Racial", "Gone", "Potion" }
+        d.groups[1].order = { "Racial", "Gone", "Potion" }
         assert.are.same({ "Racial", "Potion", "Personal" }, L.TypeOrder(d, d.groups[1]))
+    end)
+
+    it("moves a type inside one group or section only", function()
+        local L = load()
+        local d = L.Defaults()
+        d.groups[1].types = { "Personal", "Burst", "Racial" }
+        L.MoveWithin(d, "groups", 1, "Racial", -1)
+        assert.are.same({ "Personal", "Racial", "Burst" }, L.TypeOrder(d, d.groups[1]))
+        L.MoveWithin(d, "groups", 1, "Personal", -1)
+        assert.are.same({ "Personal", "Racial", "Burst" }, L.TypeOrder(d, d.groups[1]))
+        local global = L.Defaults().typeOrder
+        assert.are.same(global, d.typeOrder)
+        d.sections[1].types = { "Kick", "Control" }
+        L.MoveWithin(d, "sections", 1, "Kick", 1)
+        assert.are.same({ "Control", "Kick" }, L.TypeOrder(d, d.sections[1]))
+        assert.is_nil(d.sections[1].shape)
+    end)
+
+    it("Normalize moves an old shape.typeOrder into order", function()
+        local L = load()
+        local d = L.Defaults()
+        d.groups[1].shape.typeOrder = { "Racial", "Personal" }
+        L.Normalize(d)
+        assert.are.same({ "Racial", "Personal" }, d.groups[1].order)
+        assert.is_nil(d.groups[1].shape.typeOrder)
     end)
 
     it("reorders the global order when it changes", function()
@@ -666,7 +691,7 @@ describe("LayoutModel fix round 1", function()
         d.typeOrder = { "Kick", "Bogus", "Kick", "Group" }
         d.sections[1].types = { "Kick", "Kick", "Stun", "Bogus" }
         d.sections[2].types = { "Bogus" }
-        d.groups[1].shape.typeOrder = { "Personal", "Bogus", "Personal" }
+        d.groups[1].order = { "Personal", "Bogus", "Personal" }
         d.rolePriority = { "Healer", "Healer", "Nope" }
         d.classOrder.Tank = { 5, 5, 99, "x", 2 }
         L.Normalize(d)
@@ -674,7 +699,7 @@ describe("LayoutModel fix round 1", function()
         assert.are.equal("External", d.sections[2].id)
         assert.are.equal(3, #d.sections)
         assert.are.same({ "Kick", "Group", "Personal", "Burst", "Racial", "Potion", "External", "Control", "Dispel", "Purge", "Movement" }, d.typeOrder)
-        assert.are.same({ "Personal" }, d.groups[1].shape.typeOrder)
+        assert.are.same({ "Personal" }, d.groups[1].order)
         assert.are.same({ "Healer", "Tank", "Melee", "Ranged" }, d.rolePriority)
         assert.are.same({ 5, 2, 1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13 }, d.classOrder.Tank)
     end)

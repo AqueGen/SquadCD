@@ -68,7 +68,7 @@ describe("LayoutRules", function()
         it("runs follow the group type order", function()
             local layout = ns.LayoutModel.Defaults()
             ns.LayoutModel.SetPlace(layout, "External", "member")
-            layout.groups[1].shape.typeOrder = { "External", "Personal" }
+            layout.groups[1].order = { "External", "Personal" }
             local _, rows = R.Route(layout, input())
             assert.are.same({ "External", "Personal" }, { rows[1].groups[1][1].type, rows[1].groups[1][2].type })
         end)

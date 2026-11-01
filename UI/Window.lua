@@ -17,6 +17,7 @@ local FLASH = 1.2
 local PAGES = {
     { key = "about", label = "What SquadCD does" },
     { key = "presets", label = "Presets and types" },
+    { key = "profiles", label = "Profiles" },
     { key = "panels", label = "Panels" },
     { key = "members", label = "At party frames" },
     { key = "spells", label = "Spells" },

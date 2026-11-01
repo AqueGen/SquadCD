@@ -53,6 +53,7 @@ UI/Wizard.lua
 UI/ProfileSwitch.lua
 Pages/About.lua
 Pages/Presets.lua
+Pages/Profiles.lua
 Pages/Panels.lua
 Pages/Members.lua
 Pages/Spells.lua

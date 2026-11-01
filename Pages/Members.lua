@@ -16,9 +16,10 @@ local function groupEditor(page, gi)
     local group = page:Group("Group " .. gi)
     group.key = "group:" .. gi
     group.visible = function() return g() ~= nil end
-    group:Note("Click a type to turn it off.")
+    group:Note("Click a type to move it left or right, or to turn it off.")
     Parts.Types(group, {
-        get = function() return g() and g().types or {} end,
+        get = function() return g() and Model.TypeOrder(layout(), g()) or {} end,
+        move = function(t, step) Parts.Edit(Model.MoveWithin, "groups", gi, t, step) end,
         remove = function(t) Parts.Edit(Edit.ToggleType, gi, t) end,
         choices = function()
             local out = {}

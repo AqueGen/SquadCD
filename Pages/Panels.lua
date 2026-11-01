@@ -39,9 +39,10 @@ local function sectionEditor(page, i)
         local s = section()
         if s then Parts.Edit(function(l) fn(l, s) end) end
     end
-    group:Note("Click a type to turn it off.")
+    group:Note("Click a type to move it left or right, or to turn it off.")
     Parts.Types(group, {
-        get = function() return section() and section().types or {} end,
+        get = function() return section() and Model.TypeOrder(layout(), section()) or {} end,
+        move = function(t, step) Parts.Edit(Model.MoveWithin, "sections", i, t, step) end,
         remove = function(t) Parts.Edit(Model.SetPlace, t, "off") end,
         choices = function()
             local s, out = section(), {}
