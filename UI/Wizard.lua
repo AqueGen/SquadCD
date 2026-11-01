@@ -14,7 +14,7 @@ local SIZES = { { value = 22, text = "Small" }, { value = 26, text = "Medium" },
 local STEPS = {
     { title = "What to track", hint = "Pick a starting set, then untick what you do not need. Everything can be changed later in /squadcd." },
     { title = "Where to show it", hint = "Next to each party frame, in the panel, or a mix of both." },
-    { title = "Size and position", hint = "How big the panel icons are, and where the panels sit on screen." },
+    { title = "Size and position", hint = "How big the icons are, in the panel and at party frames, and where the panels sit on screen." },
 }
 
 local held = ns.Preview.New()
@@ -74,7 +74,12 @@ builders[3] = function(page)
         get = function() return nearest(ns.DB.layout.panelLook.iconSize) end,
         set = function(v) Parts.Edit(function(layout) layout.panelLook.iconSize = v end) end,
     })
-    size:Note("Exact sizes, and the icons at party frames, are on the Panels and At party frames pages.")
+    size:Segmented({
+        label = "Party frame icon size", options = SIZES,
+        get = function() return nearest(ns.DB.layout.memberLook.iconSize) end,
+        set = function(v) Parts.Edit(function(layout) layout.memberLook.iconSize = v end) end,
+    })
+    size:Note("Exact sizes are on the Panels and At party frames pages.")
     local position = page:Group("Position")
     position:Note("Move the panels closes the wizard, keeps your choices and outlines every panel. Drag a panel where you want it, then click Done.")
     position:Button({

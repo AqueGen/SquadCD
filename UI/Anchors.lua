@@ -100,7 +100,7 @@ end
 function Anchors.Stack()
     if not stack then
         stack = CreateFrame("Frame", "SquadCDStack", UIParent, "BackdropTemplate")
-        ns.Theme.MakeMovable(stack, function() return not ns.EditMode.Panels() end, function(point)
+        ns.Theme.MakeMovable(stack, function() return not ns.EditMode.Panels() and not found.player end, function(point)
             ns.DB.row.point = point
             Anchors.PlaceStack()
         end)
@@ -108,9 +108,14 @@ function Anchors.Stack()
     return stack
 end
 
+-- Members without a frame of their own line up under the player's frame when it is shown (party frames shown solo, demo).
 function Anchors.PlaceStack()
-    local p = ns.DB.row.point
     stack:ClearAllPoints()
+    if found.player then
+        stack:SetPoint("TOPLEFT", found.player, "BOTTOMLEFT", 0, -2)
+        return
+    end
+    local p = ns.DB.row.point
     stack:SetPoint(p[1], UIParent, p[1], p[2], p[3])
 end
 

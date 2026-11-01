@@ -235,10 +235,11 @@ local PACKS = {
         place = { Personal = "member", Burst = "member", Kick = "panel" } },
     { id = "caller", name = "Dungeon caller", hint = "Essentials plus stuns, CC and externals",
         place = { Personal = "member", Burst = "member", Kick = "panel", Control = "panel", External = "panel" } },
-    { id = "healer", name = "Healer", hint = "Defensives at frames; externals, group saves in the panel",
-        place = { Personal = "member", External = "panel", Group = "panel" } },
-    { id = "everything", name = "Everything", hint = "All but dispels, purges and movement",
-        place = { Personal = "member", Burst = "member", Racial = "member", Potion = "member", Kick = "panel", Control = "panel", External = "panel", Group = "panel" } },
+    { id = "healer", name = "Healer", hint = "Defensives at frames; externals, group saves, dispels in the panel",
+        place = { Personal = "member", External = "panel", Group = "panel", Dispel = "panel" } },
+    { id = "everything", name = "Everything", hint = "Every type: personal ones at frames, the rest in the panel",
+        place = { Personal = "member", Burst = "member", Racial = "member", Potion = "member", Kick = "panel", Control = "panel", External = "panel",
+            Group = "panel", Dispel = "panel", Purge = "panel", Movement = "panel" } },
 }
 
 function LayoutModel.Packs()
