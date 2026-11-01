@@ -104,9 +104,6 @@ local function save(d)
         if pos.dockTo then stored.dockTo, stored.side, stored.offset = pos.dockTo, pos.side, round(pos.offset) end
         if id == "panel" then
             ns.DB.layout.panel.point = { "TOPLEFT", stored.x, -stored.y }
-        elseif ns.FocusPieces.NAMES[id] then
-            ns.DB.layout.focusPos[id] = stored
-            if d.moving[id] then ns.DB.layout.focusArrange = "Custom" end
         else
             local s = sectionById(id)
             if s then s.pos = stored end
@@ -172,11 +169,7 @@ local function begin(key)
     end
     if not at then return end
     local moving = {}
-    if ns.FocusPieces.NAMES[key] and not IsAltKeyDown() then
-        for _, r in ipairs(list) do
-            if ns.FocusPieces.NAMES[r.id] then moving[r.id] = true end
-        end
-    elseif key ~= "panel" or IsAltKeyDown() then
+    if key ~= "panel" or IsAltKeyDown() then
         moving[key] = true
     else
         for _, cluster in ipairs(D.Group(list)) do
@@ -321,8 +314,6 @@ end
 
 function EditMode.ResetArrangement()
     for _, s in ipairs(ns.DB.layout.sections) do s.pos = nil end
-    ns.DB.layout.focusPos = {}
-    if ns.DB.layout.focusArrange == "Custom" then ns.DB.layout.focusArrange = "Split" end
     ns.Display.Changed()
 end
 

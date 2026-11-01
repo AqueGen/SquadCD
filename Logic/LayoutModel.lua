@@ -85,13 +85,6 @@ function LayoutModel.Defaults()
         timers = true,
         memberFit = true,
         kickStyle = "Bars",
-        kickFocus = true,
-        kickFocusSize = 14,
-        kickFocusCast = true,
-        kickFocusNext = true,
-        focusArrange = "Split",
-        focusWidth = 180,
-        focusPos = {},
         showWhen = "always",
         rolePriority = copy(ROLES),
         classOrder = defaultClassOrder(),
@@ -550,42 +543,6 @@ local function cleanOrder(c, known)
     return out
 end
 
-LayoutModel.FOCUS = { "focus", "focuscast", "focusnext" }
-local FOCUS_KEY = { focus = true, focuscast = true, focusnext = true }
--- Each arrangement: piece -> the piece it docks to (nil = the kick window) and the side.
-local ARRANGE = {
-    Split = { focus = { nil, "Right" }, focuscast = { "focus", "Below" }, focusnext = { "focus", "Right" } },
-    Row = { focus = { nil, "Right" }, focuscast = { "focus", "Right" }, focusnext = { "focuscast", "Right" } },
-    Column = { focus = { nil, "Right" }, focuscast = { "focus", "Below" }, focusnext = { "focuscast", "Below" } },
-}
-
--- The focus pieces that show: the box, then the cast and the next casts that are on (next casts only with CastAhead).
-function LayoutModel.FocusKeys(layout, withNext)
-    if not layout.kickFocus then return {} end
-    local keys = { "focus" }
-    if layout.kickFocusCast then keys[#keys + 1] = "focuscast" end
-    if withNext and layout.kickFocusNext then keys[#keys + 1] = "focusnext" end
-    return keys
-end
-
--- present: the pieces that show; a piece docked to one that does not falls back to the box, else the kick window.
-function LayoutModel.FocusPos(layout, key, anchor, mirrored, present)
-    local stored = layout.focusPos and layout.focusPos[key]
-    local pos
-    if stored then
-        pos = { x = stored.x, y = stored.y, dockTo = stored.dockTo, side = stored.side, offset = stored.offset }
-    else
-        local rule = (ARRANGE[layout.focusArrange] or ARRANGE.Split)[key]
-        local side = rule[2]
-        if mirrored and side == "Right" then side = "Left" end
-        pos = { x = 0, y = 0, dockTo = rule[1] or anchor, side = side, offset = 0 }
-    end
-    if present and FOCUS_KEY[pos.dockTo] and not present[pos.dockTo] then
-        pos.dockTo = (key ~= "focus" and present.focus) and "focus" or anchor
-    end
-    return pos
-end
-
 local function cleanPos(p)
     if type(p) ~= "table" or type(p.x) ~= "number" or type(p.y) ~= "number" or p.x ~= p.x or p.y ~= p.y then return nil end
     local out = { x = p.x, y = p.y }
@@ -605,17 +562,6 @@ function LayoutModel.Normalize(layout)
     layout.showWhen = oneOf(layout.showWhen, { "always", "group" }, d.showWhen)
     layout.split = bool(layout.split, d.split)
     layout.timers = bool(layout.timers, d.timers)
-    layout.kickFocus = bool(layout.kickFocus, d.kickFocus)
-    layout.kickFocusSize = num(layout.kickFocusSize, 8, 24, d.kickFocusSize)
-    layout.kickFocusCast = bool(layout.kickFocusCast, d.kickFocusCast)
-    layout.kickFocusNext = bool(layout.kickFocusNext, d.kickFocusNext)
-    layout.focusArrange = oneOf(layout.focusArrange, { "Split", "Row", "Column", "Custom" }, d.focusArrange)
-    layout.focusWidth = num(layout.focusWidth, 100, 320, d.focusWidth)
-    local focusPos = {}
-    for _, key in ipairs(LayoutModel.FOCUS) do
-        focusPos[key] = cleanPos(type(layout.focusPos) == "table" and layout.focusPos[key] or nil)
-    end
-    layout.focusPos = focusPos
     layout.memberFit = bool(layout.memberFit, d.memberFit)
     layout.panelShape = cleanShape(layout.panelShape, d.panelShape, {})
     layout.panelShape.typeOrder = nil
@@ -683,7 +629,7 @@ function LayoutModel.Normalize(layout)
     end
     for _, s in ipairs(sections) do
         local p = s.pos
-        if p and p.dockTo and (p.dockTo == s.id or not (byId[p.dockTo] or p.dockTo == "panel" or FOCUS_KEY[p.dockTo])) then undock(p) end
+        if p and p.dockTo and (p.dockTo == s.id or not (byId[p.dockTo] or p.dockTo == "panel")) then undock(p) end
     end
     for _, s in ipairs(sections) do
         local at, steps = s, 0
