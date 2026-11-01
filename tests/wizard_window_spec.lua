@@ -20,7 +20,7 @@ local function stub(f)
 end
 
 describe("Wizard window", function()
-    local ns, W, created, timers, changed
+    local ns, W, created, timers, changed, tickers, editing
 
     local function frame(parent, name)
         local f = stub(helpers.newFrame())
@@ -59,7 +59,7 @@ describe("Wizard window", function()
     end
 
     before_each(function()
-        created, timers, changed = {}, {}, 0
+        created, timers, changed, tickers, editing = {}, {}, 0, {}, false
         ns = helpers.load(FILES, {
             CreateFrame = function(_, name, parent)
                 local f = frame(parent, name)
@@ -68,7 +68,10 @@ describe("Wizard window", function()
             end,
             InCombatLockdown = function() return false end,
             print = function() end,
-            C_Timer = { After = function(_, fn) timers[#timers + 1] = fn end },
+            C_Timer = {
+                After = function(_, fn) timers[#timers + 1] = fn end,
+                NewTicker = function(_, fn) tickers[#tickers + 1] = fn return { Cancel = function() end } end,
+            },
             UIParent = stub({}),
             UISpecialFrames = {},
             tinsert = table.insert,
@@ -78,7 +81,7 @@ describe("Wizard window", function()
         ns.DB = ns.Defaults({ version = 2, layout = ns.LayoutModel.Defaults() })
         ns.Display = { Changed = function() changed = changed + 1 end, HasMembers = function() return false end }
         ns.Demo = { Mode = function() return "Off" end, Running = function() return false end, Set = function() end }
-        ns.EditMode = { Panels = function() return false end, Members = function() return false end }
+        ns.EditMode = { Panels = function() return editing end, Members = function() return false end, StartPanels = function() editing = true end }
         ns.PanelPreview = { Attach = function() end, Refresh = function() end, SetFocus = function() end }
         ns.Window.Register("about", function() end)
     end)
@@ -144,5 +147,23 @@ describe("Wizard window", function()
         runTimers()
         assert.are.equal(1, shownSettings())
         assert.is_false(W.IsOpen())
+    end)
+
+    it("moving the panels hides the wizard, keeps its edits pending and brings it back after Done", function()
+        ns.Icon = { TypeIcon = function() return nil end }
+        local before = ns.DB.layout
+        W.Open()
+        click("Next")
+        click("Next")
+        ns.DB.layout.timers = false
+        click("Move the panels")
+        assert.is_true(editing)
+        assert.is_false(W.IsOpen())
+        assert.is_false(ns.DB.layout.timers)
+        editing = false
+        tickers[#tickers]()
+        assert.is_true(W.IsOpen())
+        click("Cancel")
+        assert.are.equal(before, ns.DB.layout)
     end)
 end)

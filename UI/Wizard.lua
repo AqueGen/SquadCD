@@ -20,7 +20,9 @@ local STEPS = {
 local held = ns.Preview.New()
 local frame, scroll, host, stepTitle, stepHint, stepText, back, nextButton, finish
 local pages, builders = {}, {}
-local current, wanted, keep, reopen = 1, false, false, false
+local current, wanted, keep, reopen, moving = 1, false, false, false, false
+local WATCH = 0.2
+local showStep
 
 local function editing()
     return ns.EditMode.Panels() or ns.EditMode.Members()
@@ -81,17 +83,21 @@ builders[3] = function(page)
     })
     size:Note("Exact sizes are on the Panels and At party frames pages.")
     local position = page:Group("Position")
-    position:Note("Move the panels closes the wizard, keeps your choices and outlines every panel. Drag a panel where you want it, then click Done.")
+    position:Note("Move the panels hides the wizard and outlines every panel. Drag a panel where you want it, click Done, and the wizard comes back here.")
     position:Button({
         text = "Move the panels", width = 140,
         onClick = function()
-            if InCombatLockdown() then
-                ns.EditMode.StartPanels()
-                return
-            end
-            reopen = false
-            close(true)
+            moving = true
+            frame:Hide()
             ns.EditMode.StartPanels()
+            local watch
+            watch = C_Timer.NewTicker(WATCH, function()
+                if ns.EditMode.Panels() then return end
+                watch:Cancel()
+                moving = false
+                frame:Show()
+                showStep(3)
+            end)
         end,
     })
     position:Note("Icons at party frames follow your party frames.")
@@ -105,7 +111,7 @@ local function buildPage(step)
     return page
 end
 
-local function showStep(step)
+function showStep(step)
     current = step
     for k, page in pairs(pages) do
         if k ~= step then page.frame:Hide() end
@@ -197,7 +203,7 @@ local function build()
     Widgets.Grip(frame, MIN_W, MIN_H)
 
     frame:SetScript("OnHide", function(self)
-        if self:IsShown() then return end
+        if self:IsShown() or moving then return end
         if keep then
             held.Apply()
         elseif held.Cancel(ns.DB) then
