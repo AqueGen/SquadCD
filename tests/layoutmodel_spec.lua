@@ -457,13 +457,76 @@ describe("LayoutModel presets", function()
     end)
 end)
 
+describe("LayoutModel packs and tracking", function()
+    local function places(L, d, types)
+        local out = {}
+        for _, t in ipairs(types) do out[t] = L.PlaceOf(d, t) end
+        return out
+    end
+
+    it("a pack places exactly its types and switches the rest off", function()
+        local L = load()
+        local d = L.ApplyPack(L.Defaults(), "essentials")
+        assert.are.same({ Personal = "member", Burst = "member", Kick = "panel", Control = "off", External = "off", Racial = "off", Group = "off" },
+            places(L, d, { "Personal", "Burst", "Kick", "Control", "External", "Racial", "Group" }))
+        assert.are.equal("essentials", d.pack)
+    end)
+
+    it("a pack with split control places stun and CC where it puts control", function()
+        local L = load()
+        local d = L.Defaults()
+        L.SetSplit(d, true)
+        L.ApplyPack(d, "caller")
+        assert.are.same({ Stun = "panel", CC = "panel", Movement = "off" }, places(L, d, { "Stun", "CC", "Movement" }))
+    end)
+
+    it("every pack is listed with a name and a hint", function()
+        local L = load()
+        local ids = {}
+        for _, p in ipairs(L.Packs()) do
+            assert.is_truthy(p.name)
+            assert.is_truthy(p.hint)
+            ids[#ids + 1] = p.id
+        end
+        assert.are.same({ "minimal", "essentials", "caller", "healer", "everything" }, ids)
+    end)
+
+    it("tracking a type puts it in its usual place; untracking switches it off; the pack becomes custom", function()
+        local L = load()
+        local d = L.ApplyPack(L.Defaults(), "minimal")
+        L.SetTracked(d, "Burst", true)
+        L.SetTracked(d, "Kick", true)
+        assert.are.same({ Burst = "member", Kick = "panel" }, places(L, d, { "Burst", "Kick" }))
+        assert.is_nil(d.pack)
+        L.SetTracked(d, "Kick", false)
+        assert.are.equal("off", L.PlaceOf(d, "Kick"))
+    end)
+
+    it("tracking a type that is already shown leaves it where it is", function()
+        local L = load()
+        local d = L.Defaults()
+        L.SetPlace(d, "Kick", "member")
+        L.SetTracked(d, "Kick", true)
+        assert.are.equal("member", L.PlaceOf(d, "Kick"))
+    end)
+
+    it("puts every tracked type in one place and leaves the rest off", function()
+        local L = load()
+        local d = L.ApplyPack(L.Defaults(), "caller")
+        L.PlaceAll(d, "member")
+        assert.are.same({ Kick = "member", External = "member", Personal = "member", Group = "off" }, places(L, d, { "Kick", "External", "Personal", "Group" }))
+        assert.are.same({}, d.sections)
+    end)
+end)
+
 describe("LayoutModel.Migrate", function()
-    it("gives a fresh install the defaults", function()
+    it("gives a fresh install the Essentials pack and the wizard", function()
         local L = load()
         local db = {}
         L.Migrate(db)
-        assert.are.same(L.Defaults(), db.layout)
+        assert.are.same(L.ApplyPack(L.Defaults(), "essentials"), db.layout)
         assert.are.equal(2, db.version)
+        assert.is_true(db.wizardDue)
     end)
 
     it("keeps v1 choices", function()

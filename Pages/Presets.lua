@@ -210,13 +210,17 @@ local function priority(page)
 end
 
 ns.Window.Register("presets", function(page)
+    local packs = page:Group("What to track")
+    packs:Note("Pick a starting set, or untick a type to switch it off everywhere. Ticking it again puts it back where it usually shows.")
+    Parts.Packs(packs)
+    Parts.Track(packs)
     local demo = page:Group("Demo and wizard")
     Parts.Demo(demo)
     demo:Button({
         text = "Layout wizard", width = 140,
         onClick = function() ns.Wizard.Open() end,
     })
-    demo:Note("The wizard walks through a preset, the types and their order, then size and position.")
+    demo:Note("The wizard walks through what to track, where to show it, then size and position.")
     presetCards(page)
     Parts.TypesTable(page)
     priority(page)
