@@ -88,7 +88,7 @@ end
 
 local function priority(page)
     local group = page:Group("Role and class priority")
-    group:Note("Who goes first inside every type: the Next marker on kicks, control, externals and raid defensives, and the Fixed icon order.")
+    group:Note("Who goes first inside every type: the Next marker on kicks, control, externals and group defensives, and the Fixed icon order.")
     group:Button({
         text = "Reset to default", width = 140,
         onClick = function() Parts.Edit(Model.ResetPriority) end,

@@ -10,13 +10,13 @@ LayoutRules.TYPES = {
 
 LayoutRules.LABELS = {
     Personal = "Personal", Burst = "Burst", Racial = "Racial", Potion = "Potion", External = "External",
-    Kick = "Kick", Control = "Control", Stun = "Stun", CC = "CC", Group = "Raid defensives", Dispel = "Dispel", Purge = "Purge",
+    Kick = "Kick", Control = "Control", Stun = "Stun", CC = "CC", Group = "Group defensives", Dispel = "Dispel", Purge = "Purge",
     Movement = "Movement",
 }
 
 LayoutRules.SHORT = {
     Personal = "Pers", Burst = "Burst", Racial = "Race", Potion = "Pot", External = "Ext", Kick = "Kick",
-    Control = "Ctrl", Stun = "Stun", CC = "CC", Group = "Raid", Dispel = "Disp", Purge = "Purge", Movement = "Move",
+    Control = "Ctrl", Stun = "Stun", CC = "CC", Group = "Group", Dispel = "Disp", Purge = "Purge", Movement = "Move",
 }
 
 local rank = {}
