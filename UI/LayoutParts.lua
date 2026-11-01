@@ -216,7 +216,7 @@ end
 function Parts.Track(group)
     local holder = CreateFrame("Frame", nil, group.frame)
     local boxes, height = {}, TRACK_H
-    local all = { "Personal", "Burst", "Racial", "Potion", "External", "Kick", "Control", "Stun", "CC", "Group", "Dispel", "Purge", "Movement" }
+    local all = { "Burst", "Personal", "Racial", "Potion", "Kick", "External", "Control", "Stun", "CC", "Group", "Dispel", "Purge", "Movement" }
     for i, t in ipairs(all) do
         local box = LibStub("LibVelvet-1.0").Checkbox(holder, 20)
         box.type = t
