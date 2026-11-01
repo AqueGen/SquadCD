@@ -8,6 +8,9 @@ ns.KickBars = KickBars
 local T = ns.Theme
 local ICON, GAP, TRACK_W, TRACK_H, LETTERS = 20, 2, 130, 16, 10
 local TRACK = { 0.114, 0.125, 0.145, 1 }
+local RESULT = { hit = { 0.2, 0.8, 0.3 }, miss = { 0.85, 0.2, 0.2 }, cast = { 0.9, 0.9, 0.9 } }
+local RESULT_TEXT = { hit = "kicked", miss = "missed", cast = "..." }
+local MARK, MARKS = 12, "Interface\\TargetingFrame\\UI-RaidTargetingIcons"
 KickBars.W, KickBars.H = ICON + GAP + TRACK_W, ICON
 
 function KickBars.New(parent)
@@ -24,27 +27,67 @@ function KickBars.New(parent)
     local fill = track:CreateTexture(nil, "ARTWORK")
     fill:SetPoint("TOPLEFT", 1, -1)
     fill:SetHeight(TRACK_H - 2)
+    local mark = track:CreateTexture(nil, "OVERLAY")
+    mark:SetSize(MARK, MARK)
+    mark:SetPoint("LEFT", track, "LEFT", 2, 0)
+    mark:SetTexture(MARKS)
+    mark:Hide()
     local name = track:CreateFontString(nil, "OVERLAY")
     name:SetFont(T.FONT, 10, "OUTLINE")
     name:SetPoint("LEFT", track, "LEFT", 4, 0)
     local value = track:CreateFontString(nil, "OVERLAY")
     value:SetFont(T.FONT, 10, "OUTLINE")
     value:SetPoint("RIGHT", track, "RIGHT", -4, 0)
-    return setmetatable({ frame = f, icon = icon, track = track, fill = fill, name = name, value = value, buf = {} }, KickBars)
+    return setmetatable({ frame = f, icon = icon, track = track, fill = fill, mark = mark, name = name, value = value, buf = {} }, KickBars)
 end
 
 function KickBars:SetEntry(spell, member)
     self.spell = spell
     self.icon:SetSpell(spell, member, ICON)
-    self.name:SetText(ns.LayoutRules.ShortName(member.name or member.class or "?", LETTERS))
+    self.who = ns.LayoutRules.ShortName(member.name or member.class or "?", LETTERS)
+    self.name:SetText(self.who)
     self.name:SetTextColor(1, 1, 1)
-    local r, g, b = T.ClassColor(member.class)
-    self.fill:SetColorTexture(r, g, b, 0.85)
-    self.text, self.share, self.next = nil, nil, nil
+    self.own = member.unit == "player"
+    self.classColor = { T.ClassColor(member.class) }
+    self.fill:SetColorTexture(self.classColor[1], self.classColor[2], self.classColor[3], 0.85)
+    self.text, self.share, self.next, self.result, self.focus = nil, nil, nil, nil, nil
+    self.mark:Hide()
+    self.name:ClearAllPoints()
+    self.name:SetPoint("LEFT", self.track, "LEFT", 4, 0)
+end
+
+local function plain(fn, ...)
+    local ok, v = pcall(fn, ...)
+    if ok and not issecretvalue(v) then return v end
+end
+
+-- Your focus: its raid mark and name next to your own kick bar, so the party sees which mob is yours.
+function KickBars:ShowFocus()
+    local has = plain(UnitExists, "focus")
+    local index = has and plain(GetRaidTargetIndex, "focus") or nil
+    local target = has and plain(UnitName, "focus") or nil
+    local key = tostring(index) .. ":" .. tostring(target)
+    if key == self.focus then return end
+    self.focus = key
+    self.mark:SetShown(index ~= nil)
+    if index then SetRaidTargetIconTexture(self.mark, index) end
+    self.name:ClearAllPoints()
+    self.name:SetPoint("LEFT", self.track, "LEFT", index and MARK + 4 or 4, 0)
+    self.name:SetText(target and (self.who .. " > " .. ns.LayoutRules.ShortName(target, LETTERS)) or self.who)
 end
 
 function KickBars:Update(state, now, timers)
     self.icon:Update(state, now, false)
+    if self.own then
+        self:ShowFocus()
+        local result = ns.Kicks.OwnResult(now)
+        if result ~= self.result then
+            self.result = result
+            local c = RESULT[result] or self.classColor
+            self.fill:SetColorTexture(c[1], c[2], c[3], 0.85)
+            self.text = nil
+        end
+    end
     local cooling = not state.ready
     local unknown = not cooling and state.unknown or false
     local duration = self.icon.duration or 0
@@ -54,7 +97,8 @@ function KickBars:Update(state, now, timers)
         self.fill:SetShown(share > 0)
         self.fill:SetWidth(math.max(1, share * (TRACK_W - 2)))
     end
-    local text = cooling and (timers ~= false and ns.LayoutRules.FormatRemaining(state.remaining) or "") or unknown and "?" or "ready"
+    local text = self.result and RESULT_TEXT[self.result]
+        or cooling and (timers ~= false and ns.LayoutRules.FormatRemaining(state.remaining) or "") or unknown and "?" or "ready"
     if text ~= self.text then
         self.text = text
         self.value:SetText(text)

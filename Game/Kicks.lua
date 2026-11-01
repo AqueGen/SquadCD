@@ -112,6 +112,50 @@ frame:SetScript("OnEvent", function(_, event, unit, _, _, by)
     credit(by)
 end)
 
+-- Own kick result: a kick cast is a hit when an interrupt credited to the player follows within WAIT, else a miss.
+local WAIT, SHOW = 1, 3
+local own
+
+function Kicks.OwnResult(now)
+    if not own or now - own.at > SHOW then return nil end
+    if own.hit then return "hit" end
+    return now - own.at > WAIT and "miss" or "cast"
+end
+
+local ownEvents = CreateFrame("Frame")
+ownEvents:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+ownEvents:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
+ownEvents:SetScript("OnEvent", function(_, event, unit, _, spellId, by)
+    if event == "UNIT_SPELLCAST_SUCCEEDED" then
+        if issecretvalue(spellId) then return end
+        local s = ns.Spells[spellId]
+        if s and s.type == "Kick" then own = { at = GetTime(), hit = false } end
+    elseif own and not own.hit and not issecretvalue(by) and by ~= nil and by == UnitGUID("player") then
+        if GetTime() - own.at <= WAIT then own.hit = true end
+    end
+end)
+
+-- Can party members' targets (marks, names) be read at all under 12.x? Answers decide the kick-target feature.
+local function readout(fn, unit)
+    local ok, v = pcall(fn, unit)
+    if not ok then return "error" end
+    if issecretvalue(v) then return "secret" end
+    return tostring(v)
+end
+
+function Kicks.TargetProbe()
+    local lines = {}
+    for _, unit in ipairs({ "focus", "party1target", "party2target", "party3target", "party4target" }) do
+        lines[#lines + 1] = ("%s: exists %s, mark %s, name %s"):format(unit,
+            readout(UnitExists, unit), readout(GetRaidTargetIndex, unit), readout(UnitName, unit))
+    end
+    return lines
+end
+
+ns.Slash("targetprobe", function()
+    for _, line in ipairs(Kicks.TargetProbe()) do print("SquadCD targetprobe: " .. line) end
+end)
+
 local previous = ns.Group.OnRoster
 ns.Group.OnRoster = function(list)
     previous(list)

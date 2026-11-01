@@ -24,6 +24,52 @@ describe("Kicks.Attribute", function()
     end)
 end)
 
+describe("Kicks own result", function()
+    local ns, now
+
+    before_each(function()
+        now = 100
+        ns = helpers.load(FILES, {
+            UnitGUID = function(u) return u == "player" and "P" or nil end,
+            GetTime = function() return now end,
+            UnitCanAttack = function() return true end,
+        })
+    end)
+
+    it("a kick that interrupts is a hit, one that does not is a miss, both fade after a while", function()
+        assert.is_nil(ns.Kicks.OwnResult(now))
+        helpers.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "c", 96231)
+        assert.equal("cast", ns.Kicks.OwnResult(now))
+        helpers.fire("UNIT_SPELLCAST_INTERRUPTED", "nameplate1", "x", 1, "P")
+        assert.equal("hit", ns.Kicks.OwnResult(now))
+        now = now + 4
+        assert.is_nil(ns.Kicks.OwnResult(now))
+        helpers.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "c", 96231)
+        now = now + 1.5
+        assert.equal("miss", ns.Kicks.OwnResult(now))
+    end)
+
+    it("target probe says for each unit whether mark and name read plain or secret", function()
+        local SECRET = {}
+        _G.issecretvalue = function(v) return v == SECRET end
+        _G.UnitExists = function(u) return u == "focus" or u == "party1target" end
+        _G.GetRaidTargetIndex = function(u) if u == "focus" then return 8 end return SECRET end
+        _G.UnitName = function(u) if u == "focus" then return "Mob" end return SECRET end
+        local lines = ns.Kicks.TargetProbe()
+        assert.equal("focus: exists true, mark 8, name Mob", lines[1])
+        assert.equal("party1target: exists true, mark secret, name secret", lines[2])
+    end)
+
+    it("ignores casts that are not kicks and interrupts by someone else", function()
+        helpers.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "c", 642)
+        assert.is_nil(ns.Kicks.OwnResult(now))
+        helpers.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "c", 96231)
+        helpers.fire("UNIT_SPELLCAST_INTERRUPTED", "nameplate1", "x", 1, "B")
+        now = now + 1.5
+        assert.equal("miss", ns.Kicks.OwnResult(now))
+    end)
+end)
+
 describe("OwnCasts", function()
     local SECRET = {}
     local ns, used
