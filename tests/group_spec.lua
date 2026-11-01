@@ -27,6 +27,8 @@ local function game(mode, units, extra)
             GetSpecializationInfo = function() return 66 end,
         },
         C_ClassTalents = { GetActiveConfigID = function() return nil end },
+        C_SpellBook = { IsSpellKnown = function() return false end },
+        Enum = { SpellBookSpellBank = { Player = 0, Pet = 1 } },
     }
     for k, v in pairs(extra or {}) do stubs[k] = v end
     return stubs
@@ -51,6 +53,20 @@ describe("Group", function()
         assert.is_nil(ns.Group.GuessSpec("PRIEST", "HEALER"))
         assert.is_nil(ns.Group.GuessSpec("MAGE", "TANK"))
         assert.is_nil(ns.Group.GuessSpec("PALADIN", "NONE"))
+    end)
+
+    it("the player's member carries the current pet's spells; party members leave it unknown", function()
+        local units = {
+            player = { guid = "P", class = "WARLOCK", role = "DAMAGER", race = 1 },
+            party1 = { guid = "A", class = "WARLOCK", role = "DAMAGER", race = 1 },
+        }
+        local _, rosters = start("party", units, {
+            C_SpellBook = { IsSpellKnown = function(id, bank) return bank == 1 and id == 19647 end },
+            C_SpecializationInfo = { GetSpecialization = function() return 2 end, GetSpecializationInfo = function() return 266 end },
+        })
+        local list = rosters[#rosters]
+        assert.are.same({ [19647] = true }, list[1].pets)
+        assert.is_nil(list[2].pets)
     end)
 
     it("raid roster idles", function()

@@ -80,6 +80,8 @@ local function world(opts)
             GetSpecializationInfo = function() return 256 end,
         },
         C_ClassTalents = { GetActiveConfigID = function() return nil end },
+        C_SpellBook = { IsSpellKnown = function() return false end },
+        Enum = { SpellBookSpellBank = { Player = 0, Pet = 1 } },
     }
 
     function w.flush()

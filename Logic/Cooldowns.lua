@@ -72,7 +72,7 @@ end
 for _, list in pairs(replacedBy) do table.sort(list) end
 
 local function replacement(spellId, s, member)
-    local function has(id) return Cooldowns.Has(id, member.class, member.spec, member.talents, member.race) end
+    local function has(id) return Cooldowns.Has(id, member.class, member.spec, member.talents, member.race, member.pets) end
     local known = member.talents ~= nil
     for _, r in ipairs(replacedBy[spellId] or {}) do
         if has(r) and (known or not ns.Spells[r].talentGated) then return r end
@@ -92,16 +92,18 @@ function Cooldowns.Canonical(spellId, member)
     local best
     for id, v in pairs(ns.Spells) do
         if v.races and v.name == s.name and (not best or id < best)
-            and Cooldowns.Has(id, member.class, member.spec, member.talents, member.race) then
+            and Cooldowns.Has(id, member.class, member.spec, member.talents, member.race, member.pets) then
             best = id
         end
     end
     return best or spellId
 end
 
-function Cooldowns.Has(spellId, classToken, specId, talents, race)
+-- pets: the pet spells the member's current pet has; nil when that is unknown (party members).
+function Cooldowns.Has(spellId, classToken, specId, talents, race, pets)
     local s = ns.Spells[spellId]
     if not s then return false end
+    if s.pet and pets and not pets[spellId] then return false end
     if s.races then
         return race ~= nil and contains(s.races, race) and (not s.classes or contains(s.classes, classToken))
     end

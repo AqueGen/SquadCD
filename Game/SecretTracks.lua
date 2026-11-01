@@ -28,7 +28,7 @@ local function wanted(m)
     local enabled = ns.DB and ns.DB.spells or {}
     for id, s in pairs(ns.Spells) do
         if (s.track == "buff" or s.track == "target") and s.buffs and enabled[id] ~= false
-            and ns.Cooldowns.Has(id, m.class, m.spec, m.talents, m.race)
+            and ns.Cooldowns.Has(id, m.class, m.spec, m.talents, m.race, m.pets)
             and ns.Cooldowns.Canonical(id, m) == id then
             local r = ns.Cooldowns.Resolve(id, m.spec, m.talents)
             list[#list + 1] = { id = id, kind = s.track, ids = s.buffs, cd = r and r.cd or s.cd, dur = s.dur }

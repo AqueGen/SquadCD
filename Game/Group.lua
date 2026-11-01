@@ -36,6 +36,24 @@ end
 
 local known = {}
 
+-- Only the player's own pet is readable; other members' pet spells stay shown.
+local function petSpells()
+    local known = {}
+    for id, s in pairs(ns.Spells) do
+        if s.pet and C_SpellBook.IsSpellKnown(id, Enum.SpellBookSpellBank.Pet) then known[id] = true end
+    end
+    return known
+end
+
+local function petSignature(known)
+    local ids = {}
+    for id in pairs(known) do ids[#ids + 1] = id end
+    table.sort(ids)
+    return table.concat(ids, ",")
+end
+
+local lastPets
+
 local function own()
     local index = C_SpecializationInfo.GetSpecialization()
     local spec
@@ -43,7 +61,9 @@ local function own()
         spec = C_SpecializationInfo.GetSpecializationInfo(index)
     end
     if issecretvalue(spec) or not ns.Specs[spec] then spec = nil end
-    return { spec = spec, talents = ns.Inspect.ReadTalents(C_ClassTalents.GetActiveConfigID()) }
+    local pets = petSpells()
+    lastPets = petSignature(pets)
+    return { spec = spec, talents = ns.Inspect.ReadTalents(C_ClassTalents.GetActiveConfigID()), pets = pets }
 end
 
 function Group.Members()
@@ -65,6 +85,7 @@ function Group.Members()
                 race = race,
                 spec = k and k.spec or Group.GuessSpec(class, role),
                 talents = k and k.talents,
+                pets = unit == "player" and k and k.pets or nil,
             }
         end
     end
@@ -126,7 +147,9 @@ function ns.Inspect.OnResult(guid, spec, talents)
 end
 
 frame:SetScript("OnEvent", function(_, event, unit)
-    if event == "PLAYER_ENTERING_WORLD" then
+    if event == "UNIT_PET" or event == "SPELLS_CHANGED" then
+        if petSignature(petSpells()) == lastPets then return end
+    elseif event == "PLAYER_ENTERING_WORLD" then
         ns.Inspect.Reset()
     elseif event == "PLAYER_SPECIALIZATION_CHANGED" then
         if issecretvalue(unit) or unit == nil then return end
@@ -140,6 +163,8 @@ function Group:Enable()
     ns.tracker = ns.Tracker.New(GetTime)
     frame:RegisterEvent("PLAYER_ENTERING_WORLD")
     frame:RegisterEvent("GROUP_ROSTER_UPDATE")
+    frame:RegisterUnitEvent("UNIT_PET", "player")
+    frame:RegisterEvent("SPELLS_CHANGED")
 end
 
 ns.RegisterModule("Group", Group)

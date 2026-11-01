@@ -35,6 +35,13 @@ describe("Cooldowns", function()
         assert.are.equal(48, C.Resolve(204021, 581, { [389732] = 1 }).cd)
     end)
 
+    it("a pet spell needs the current pet when the pet's spells are known", function()
+        assert.is_true(C.Has(89766, "WARLOCK", 266, {}, nil, nil))
+        assert.is_true(C.Has(89766, "WARLOCK", 266, {}, nil, { [89766] = true }))
+        assert.is_false(C.Has(89766, "WARLOCK", 266, {}, nil, { [19647] = true }))
+        assert.is_false(C.Has(89766, "WARLOCK", 266, {}, nil, {}))
+    end)
+
     it("talent value can differ per spec", function()
         assert.are.equal(105, C.Resolve(6940, 65, { [384820] = 1 }).cd)
         assert.are.equal(60, C.Resolve(6940, 66, { [384820] = 1 }).cd)

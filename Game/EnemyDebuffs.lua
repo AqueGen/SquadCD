@@ -30,7 +30,7 @@ local function debuffMap(list)
     for spellId, s in pairs(ns.Spells) do
         if s.track == "debuff" then
             for _, member in ipairs(list) do
-                if ns.Cooldowns.Has(spellId, member.class, member.spec, member.talents, member.race) then
+                if ns.Cooldowns.Has(spellId, member.class, member.spec, member.talents, member.race, member.pets) then
                     if s.debuffs then
                         for _, id in ipairs(s.debuffs) do
                             m[id] = m[id] or {}

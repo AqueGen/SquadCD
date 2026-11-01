@@ -42,10 +42,10 @@ ns.Spells[13750]={name="Adrenaline Rush",icon="spell_shadow_shadowworddominate",
 ns.Spells[15286]={name="Vampiric Embrace",icon="spell_shadow_unsummonbuilding",type="Group",class="PRIEST",specs={258},cd=120,buffs={15286},dur=12,track="buff"}
 ns.Spells[15487]={name="Silence",icon="ability_priest_silence",type="Kick",class="PRIEST",specs={258},cd=30,track="kick"}
 ns.Spells[19236]={name="Desperate Prayer",icon="spell_holy_testoffaith",type="Personal",class="PRIEST",specs={},cd=90,talentGated=true,cdMods={[238100]=-20},buffs={19236},dur=10,track="buff"}
-ns.Spells[19505]={name="Devour Magic",icon="spell_nature_purge",type="Purge",class="WARLOCK",specs={},cd=15,cdMods={[385881]=-5},track="none"}
+ns.Spells[19505]={name="Devour Magic",icon="spell_nature_purge",type="Purge",class="WARLOCK",specs={},cd=15,pet=true,cdMods={[385881]=-5},track="none"}
 ns.Spells[19574]={name="Bestial Wrath",icon="ability_druid_ferociousbite",type="Burst",class="HUNTER",specs={},cd=90,talentGated=true,cdMods={[231548]=-60},buffs={19574,186254,207033,211183,1235388,1285912},dur=15,track="buff"}
 ns.Spells[19577]={name="Intimidation",icon="ability_devour",type="Stun",class="HUNTER",specs={},cd=60,talentGated=true,cdMods={[459507]=-20},debuffs={24394},track="debuff"}
-ns.Spells[19647]={name="Spell Lock",icon="spell_shadow_mindrot",type="Kick",class="WARLOCK",specs={},cd=24,cdMods={[382297]=-5},track="kick"}
+ns.Spells[19647]={name="Spell Lock",icon="spell_shadow_mindrot",type="Kick",class="WARLOCK",specs={},cd=24,pet=true,cdMods={[382297]=-5},track="kick"}
 ns.Spells[19801]={name="Tranquilizing Shot",icon="spell_nature_drowsy",type="Purge",class="HUNTER",specs={},cd=10,talentGated=true,track="none"}
 ns.Spells[20549]={name="War Stomp",icon="ability_warstomp",type="Racial",specs={},cd=90,races={6},track="none"}
 ns.Spells[20572]={name="Blood Fury",icon="racial_orc_berserkerstrength",type="Racial",specs={},cd=120,races={2},classes={"WARRIOR","HUNTER","ROGUE","DEATHKNIGHT"},buffs={20572},dur=15,track="buff"}
@@ -114,8 +114,8 @@ ns.Spells[80483]={name="Arcane Torrent",icon="spell_shadow_teleport",type="Racia
 ns.Spells[86659]={name="Guardian of Ancient Kings",icon="spell_holy_heroism",type="Personal",class="PALADIN",specs={},cd=180,charges=1,chargeCd=180,recovery=8,talentGated=true,chargeAdds={[1246481]=1},buffs={86659,212641,337851,393108},dur=8,track="buff"}
 ns.Spells[88423]={name="Nature's Cure",icon="ability_shaman_cleansespirit",type="Dispel",class="DRUID",specs={105},cd=8,charges=1,chargeCd=8,track="none"}
 ns.Spells[88625]={name="Holy Word: Chastise",icon="spell_holy_chastise",type="CC",class="PRIEST",specs={},cd=60,talentGated=true,cdMods={[1215275]=-15,[1272359]=-5},debuffs={200196,200200},track="debuff"}
-ns.Spells[89766]={name="Axe Toss",icon="ability_warrior_titansgrip",type="Stun",class="WARLOCK",specs={},cd=30,debuffs={89766},track="debuff"}
-ns.Spells[89808]={name="Singe Magic",icon="spell_fire_elementaldevastation",type="Dispel",class="WARLOCK",specs={},cd=15,track="none"}
+ns.Spells[89766]={name="Axe Toss",icon="ability_warrior_titansgrip",type="Stun",class="WARLOCK",specs={},cd=30,pet=true,debuffs={89766},track="debuff"}
+ns.Spells[89808]={name="Singe Magic",icon="spell_fire_elementaldevastation",type="Dispel",class="WARLOCK",specs={},cd=15,pet=true,track="none"}
 ns.Spells[96231]={name="Rebuke",icon="spell_holy_rebuke",type="Kick",class="PALADIN",specs={},cd=15,talentGated=true,cdMods={[382297]=-5},track="kick"}
 ns.Spells[97462]={name="Rallying Cry",icon="ability_warrior_rallyingcry",type="Group",class="WARRIOR",specs={},cd=180,talentGated=true,buffs={97463},dur=10,track="buff"}
 ns.Spells[98008]={name="Spirit Link Totem",icon="spell_shaman_spiritlink",type="Group",class="SHAMAN",specs={},cd=180,charges=1,chargeCd=180,talentGated=true,buffs={325174},dur=7,track="buff"}
