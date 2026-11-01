@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/AqueGen/SquadCD/compare/v0.3.0...v0.4.0) (2026-11-01)
+
+
+### Features
+
+* kick states, type order per place, Party frames name ([#21](https://github.com/AqueGen/SquadCD/issues/21)) ([abb1e46](https://github.com/AqueGen/SquadCD/commit/abb1e46c7930225420984689593716b1eade600c))
+
 ## [0.3.0](https://github.com/AqueGen/SquadCD/compare/v0.2.1...v0.3.0) (2026-11-01)
 
 
