@@ -7,6 +7,7 @@ ns.KickBars = KickBars
 
 local T = ns.Theme
 local ICON, GAP, TRACK_W, TRACK_H, LETTERS = 20, 2, 130, 16, 10
+local FOCUS_GAP = 10
 local TRACK = { 0.114, 0.125, 0.145, 1 }
 local RESULT = { hit = { 0.2, 0.8, 0.3 }, miss = { 0.85, 0.2, 0.2 }, cast = { 0.9, 0.9, 0.9 } }
 local RESULT_TEXT = { hit = "kicked", miss = "missed", cast = "..." }
@@ -34,13 +35,13 @@ function KickBars.New(parent)
     value:SetPoint("RIGHT", track, "RIGHT", -4, 0)
     local box = CreateFrame("Frame", nil, f, "BackdropTemplate")
     box:SetHeight(TRACK_H)
-    box:SetPoint("LEFT", track, "RIGHT", GAP, 0)
+    box:SetPoint("LEFT", track, "RIGHT", FOCUS_GAP, 0)
     box:SetBackdrop(T.FLAT)
     box:SetBackdropColor(unpack(TRACK))
     box:SetBackdropBorderColor(0, 0, 0, 0)
     local target = box:CreateFontString(nil, "OVERLAY")
     target:SetFont(T.FONT, 10, "OUTLINE")
-    target:SetPoint("LEFT", track, "RIGHT", GAP + 4, 0)
+    target:SetPoint("LEFT", track, "RIGHT", FOCUS_GAP + 4, 0)
     target:SetWordWrap(false)
     box:SetPoint("RIGHT", target, "RIGHT", 4, 0)
     box:Hide()
