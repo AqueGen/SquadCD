@@ -257,6 +257,13 @@ describe("SecretTracks", function()
             assert.is_nil(probeOn("nameplatefriend"))
         end)
 
+        it("gives CC icons no active display to watch", function()
+            rogues()
+            local layer = fakeLayer()
+            assert.is_true(ns.SecretTracks.Bind(layer, "R1", KIDNEY))
+            assert.same({}, layer.watch)
+        end)
+
         it("has no active phase: the icon stays on its cooldown look", function()
             rogues()
             local layer = fakeLayer()
