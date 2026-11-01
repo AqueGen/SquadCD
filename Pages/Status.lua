@@ -40,6 +40,8 @@ local function ModeText()
     lines[2] = "Buff readout: " .. (MODES[d.mode] or d.mode)
     if d.reason then lines[3] = "Reason: " .. d.reason end
     if d.note then lines[#lines + 1] = d.note end
+    lines[#lines + 1] = "Party icons: " .. ns.Probe.TrackLine()
+    lines[#lines + 1] = "Check: ask a party member to press a defensive near you; their icon should light up with a timer, then turn grey with its cooldown."
     return table.concat(lines, "\n")
 end
 
@@ -107,7 +109,7 @@ ns.Window.Register("status", function(page)
     page:Group("Own casts and kicks"):Note({ color = WHITE, text = OwnText })
     page:Group("Enemy stops and CC"):Note({ color = WHITE, text = DebuffText })
     local probe = page:Group("Probe")
-    probe:Note("Prints the full readout, with sensor counts, every buff id seen since login and the party aura flag keys, to the chat window.")
+    probe:Note("Prints the full readout, with sensor counts, every buff id seen since login and the party icon tracks, to the chat window.")
     probe:Button({ text = "Run probe", width = 120, onClick = ns.Probe.Run })
 
     local elapsed = 0

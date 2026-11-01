@@ -4,7 +4,7 @@ local helpers = dofile(here .. "/helpers.lua")
 
 local FILES = {
     "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/Persist.lua",
-    "Game/Inspect.lua", "Game/Group.lua", "Game/Probes.lua", "Game/Sensors.lua", "Game/AuraFlags.lua", "Game/Probe.lua",
+    "Game/Inspect.lua", "Game/Group.lua", "Game/Probes.lua", "Game/Sensors.lua", "Game/Probe.lua",
 }
 
 local SECRET = setmetatable({}, { __tostring = function() return "secret" end })
@@ -314,21 +314,29 @@ describe("Sensors", function()
         assert.are.same({ "C" }, w.calls)
     end)
 
-    it("probe prints mode and per unit counts", function()
-        local _, w = start({ mode = "party" })
+    it("probe prints mode, per unit counts and the secret track status", function()
+        local ns, w = start({ mode = "party" })
+        ns.SecretTracks = { Status = function() return { on = true, tracks = 3, probes = 7, plates = 2, platePool = 20, plateProbes = 4 } end }
         aura(w, "party1", SHIELD_WALL, true)
         w.printed = {}
         SlashCmdList.SQUADCD("probe")
+        w.flush()
         local out = table.concat(w.printed, "\n")
         assert.truthy(out:find("plain"))
         assert.truthy(out:find("party1"))
         assert.truthy(out:find("hit%-test"))
         assert.truthy(out:find(tostring(SHIELD_WALL)))
-        assert.truthy(out:find("auras secret now false"))
-        assert.truthy(out:find("unique key within class"))
-        assert.truthy(out:find("57724 none"))
-        w.flush()
-        assert.truthy(table.concat(w.printed, "\n"):find("geometry: party1 45438 %- hit false"))
+        assert.truthy(out:find("secret tracks: on, tracks 3, probes 7, plates 2 of 20"))
+        assert.falsy(out:find("flags"))
+        assert.falsy(out:find("geometry"))
+    end)
+
+    it("probe says why secret tracks are off", function()
+        local ns, w = start({ mode = "party" })
+        ns.SecretTracks = { Status = function() return { on = false, why = "curve values are not exact", tracks = 0, probes = 0, plates = 0, platePool = 20, plateProbes = 0 } end }
+        w.printed = {}
+        SlashCmdList.SQUADCD("probe")
+        assert.truthy(table.concat(w.printed, "\n"):find("secret tracks: off %(curve values are not exact%)"))
     end)
 
     it("secret verdict names the self-test reads", function()

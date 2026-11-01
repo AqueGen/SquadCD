@@ -25,7 +25,7 @@ end
 function ns.Defaults(db)
     ns.LayoutModel.Migrate(db)
     db.layout = ns.LayoutModel.Normalize(db.layout)
-    db.placement, db.panel = nil, nil
+    db.placement, db.panel, db.probe = nil, nil, nil
     if type(db.row) == "table" then db.row = { point = db.row.point } end
     local defaults = {}
     for k, v in pairs(ns.DEFAULTS) do
