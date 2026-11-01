@@ -55,6 +55,7 @@ local function widgets(c, l, list, bars, size, letters, collapse)
         for _, a in ipairs(alts) do a.buf = a.buf or {} end
         w.buf.role = Grid.RoleOf(e.member.spec)
         w.buf.classId = Grid.ClassId(e.member.class)
+        w.buf.name = e.member.name
         l.states[k] = w.buf
         widest = math.max(widest, apply(w, e))
         w.frame:Show()
@@ -159,7 +160,7 @@ local function new(opts)
     local main
     local windows = {}
     local shown = {}
-    local roleOrder, classOrder = {}, {}
+    local roleOrder, classOrder, kickQueue = {}, {}, {}
     local containers, positions = {}, {}
 
     local function newContainer(name)
@@ -206,7 +207,7 @@ local function new(opts)
 
     function self.Build(list)
         local layout = ns.DB.layout
-        roleOrder, classOrder = Model.RoleOrder(layout), layout.classOrder
+        roleOrder, classOrder, kickQueue = Model.RoleOrder(layout), layout.classOrder, layout.kickQueue
         local groups, order, sectionOf = {}, {}, {}
         for _, item in ipairs(list) do
             local key = Model.OwnWindow(layout, item.section) and item.section.id or "panel"
@@ -319,8 +320,9 @@ local function new(opts)
                             for key, v in pairs(states[at]) do w.buf[key] = v end
                         end
                     end
-                    local sorted = Grid.Sort(l.states, l.shape, roleOrder, l.sorted, classOrder)
-                    local nextAt = NEXT[l.type] and Grid.Next(sorted, roleOrder, classOrder)
+                    local queue = l.type == "Kick" and kickQueue or nil
+                    local sorted = Grid.Sort(l.states, l.shape, roleOrder, l.sorted, classOrder, queue)
+                    local nextAt = NEXT[l.type] and Grid.Next(sorted, roleOrder, classOrder, queue)
                     for k, buf in ipairs(sorted) do
                         local w = buf.widget
                         w:Update(buf, now, sight.timers)

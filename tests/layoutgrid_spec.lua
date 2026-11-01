@@ -387,6 +387,19 @@ describe("LayoutGrid", function()
             assert.are.equal(2, G.Next(states, ROLES, { Melee = { 4, 1 } }))
             assert.are.equal(1, G.Next(states, ROLES))
         end)
+
+        it("a kick queue by name goes before role and class; names not in it follow", function()
+            local states = {
+                { role = "Tank", name = "Ann", ready = true },
+                { role = "Healer", name = "Bo", ready = true },
+                { role = "Melee", name = "Cy", ready = true },
+            }
+            assert.are.equal(2, G.Next(states, ROLES, nil, { "Bo", "Cy" }))
+            states[2].ready = false
+            assert.are.equal(3, G.Next(states, ROLES, nil, { "Bo", "Cy" }))
+            local sorted = G.Sort(states, { sort = "Fixed" }, ROLES, nil, nil, { "Cy" })
+            assert.are.same({ "Cy", "Ann", "Bo" }, { sorted[1].name, sorted[2].name, sorted[3].name })
+        end)
     end)
 
     describe("ClassesIn", function()

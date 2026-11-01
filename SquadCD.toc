@@ -58,5 +58,6 @@ Pages/Presets.lua
 Pages/Profiles.lua
 Pages/Panels.lua
 Pages/Members.lua
+Pages/Kicks.lua
 Pages/Spells.lua
 Pages/Status.lua

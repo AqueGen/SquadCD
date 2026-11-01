@@ -154,9 +154,12 @@ end
 
 local roleRank = {}
 local classRank = {}
+local queueRank = {}
 local index = {}
 
 local function fixed(x, y)
+    local qx, qy = queueRank[x] or math.huge, queueRank[y] or math.huge
+    if qx ~= qy then return qx < qy end
     local rx, ry = roleRank[x] or 0, roleRank[y] or 0
     if rx ~= ry then return rx < ry end
     local cx, cy = classRank[x] or 0, classRank[y] or 0
@@ -180,9 +183,14 @@ local function rankOf(list, value)
     return #list + 1
 end
 
-local function rankRoles(states, roleOrder, classOrder)
+local function rankRoles(states, roleOrder, classOrder, queue)
     for i, s in ipairs(states) do
         index[s] = i
+        if queue and s.name then
+            for k, name in ipairs(queue) do
+                if name == s.name then queueRank[s] = k end
+            end
+        end
         if roleOrder then roleRank[s] = rankOf(roleOrder, s.role) end
         local classes = classOrder and classOrder[s.role]
         if classes then classRank[s] = rankOf(classes, s.classId) end
@@ -194,21 +202,23 @@ local function clearRanks(states)
         index[s] = nil
         roleRank[s] = nil
         classRank[s] = nil
+        queueRank[s] = nil
     end
 end
 
-function LayoutGrid.Sort(states, shape, roleOrder, out, classOrder)
+-- queue: member names that go first, in that order (the kick queue); everyone else follows role and class order.
+function LayoutGrid.Sort(states, shape, roleOrder, out, classOrder, queue)
     out = out or {}
     for i = #states + 1, #out do out[i] = nil end
     for i, s in ipairs(states) do out[i] = s end
-    rankRoles(states, roleOrder, classOrder)
+    rankRoles(states, roleOrder, classOrder, queue)
     table.sort(out, shape.sort == "ReadyFirst" and readyFirst or fixed)
     clearRanks(states)
     return out
 end
 
-function LayoutGrid.Next(states, roleOrder, classOrder)
-    rankRoles(states, roleOrder or {}, classOrder)
+function LayoutGrid.Next(states, roleOrder, classOrder, queue)
+    rankRoles(states, roleOrder or {}, classOrder, queue)
     local best
     for i, s in ipairs(states) do
         if s.ready and not s.dead and not s.unknown and (not best or fixed(s, states[best])) then best = i end

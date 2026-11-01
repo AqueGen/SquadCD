@@ -5,7 +5,6 @@ local Parts = ns.LayoutParts
 local Model = ns.LayoutModel
 
 local OVERLAY = { { value = "OnePanel", text = "One panel" }, { value = "Windows", text = "A window per section" } }
-local KICKS = { { value = "Bars", text = "Bars" }, { value = "Icons", text = "Icons" } }
 local SHOW_WHEN = { { value = "always", text = "Always" }, { value = "group", text = "Only in a group" } }
 
 local function layout()
@@ -116,8 +115,6 @@ ns.Window.Register("panels", function(page)
     panels:Note("Reset puts every window back next to the panel.")
     panels:Check({ label = "Timers", get = get("timers"), set = set("timers") })
     panels:Note("Seconds left on icons that are on cooldown. Off: the icon only greys out.")
-    panels:Segmented({ label = "Kicks in the panel", options = KICKS, get = get("kickStyle"), set = set("kickStyle") })
-    panels:Note("Bars: one bar per member that fills as the kick comes back. Icons: one icon per member.")
 
     local look = page:Group("Panel look and shape")
     look.key = "look"

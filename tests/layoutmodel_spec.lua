@@ -539,6 +539,34 @@ describe("LayoutModel packs and tracking", function()
     end)
 end)
 
+describe("LayoutModel kick queue", function()
+    it("lists the current group in queue order first, then the rest as they come", function()
+        local L = load()
+        local d = L.Defaults()
+        d.kickQueue = { "Cy", "Gone", "Ann" }
+        assert.are.same({ "Cy", "Ann", "Bo" }, L.QueueFor(d, { "Ann", "Bo", "Cy" }))
+    end)
+
+    it("moving a name swaps it with its neighbour; saving keeps absent names after the group", function()
+        local L = load()
+        local d = L.Defaults()
+        L.SetQueue(d, { "Ann", "Bo", "Cy" })
+        L.MoveInQueue(d, "Cy", -1)
+        assert.are.same({ "Ann", "Cy", "Bo" }, d.kickQueue)
+        d.kickQueue = { "Gone", "Ann" }
+        L.SetQueue(d, { "Bo", "Ann" })
+        assert.are.same({ "Bo", "Ann", "Gone" }, d.kickQueue)
+    end)
+
+    it("Normalize keeps unique names only", function()
+        local L = load()
+        local d = L.Defaults()
+        d.kickQueue = { "Ann", "Ann", 5, "", "Bo" }
+        L.Normalize(d)
+        assert.are.same({ "Ann", "Bo" }, d.kickQueue)
+    end)
+end)
+
 describe("LayoutModel.Migrate", function()
     it("gives a fresh install the Essentials pack and the wizard", function()
         local L = load()
