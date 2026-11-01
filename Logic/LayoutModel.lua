@@ -227,6 +227,53 @@ function LayoutModel.SetPlace(layout, type, place)
     return layout
 end
 
+local USUAL_PLACE = { Personal = "member", Burst = "member", Racial = "member", Potion = "member" }
+
+local PACKS = {
+    { id = "minimal", name = "Minimal", hint = "Defensives at party frames", place = { Personal = "member" } },
+    { id = "essentials", name = "Essentials", hint = "Defensives, burst at frames; kicks in the panel",
+        place = { Personal = "member", Burst = "member", Kick = "panel" } },
+    { id = "caller", name = "Dungeon caller", hint = "Essentials plus stuns, CC and externals",
+        place = { Personal = "member", Burst = "member", Kick = "panel", Control = "panel", External = "panel" } },
+    { id = "healer", name = "Healer", hint = "Defensives at frames; externals, group saves in the panel",
+        place = { Personal = "member", External = "panel", Group = "panel" } },
+    { id = "everything", name = "Everything", hint = "All but dispels, purges and movement",
+        place = { Personal = "member", Burst = "member", Racial = "member", Potion = "member", Kick = "panel", Control = "panel", External = "panel", Group = "panel" } },
+}
+
+function LayoutModel.Packs()
+    return PACKS
+end
+
+function LayoutModel.ApplyPack(layout, id)
+    for _, p in ipairs(PACKS) do
+        if p.id == id then
+            for _, t in ipairs(LayoutModel.VisibleTypes(layout)) do
+                local want = p.place[(t == "Stun" or t == "CC") and "Control" or t] or "off"
+                LayoutModel.SetPlace(layout, t, want)
+            end
+            layout.pack = id
+        end
+    end
+    return layout
+end
+
+-- Switching a type back on puts it where it usually lives; one already shown stays put.
+function LayoutModel.SetTracked(layout, type, on)
+    layout.pack = nil
+    if not on then return LayoutModel.SetPlace(layout, type, "off") end
+    if LayoutModel.PlaceOf(layout, type) ~= "off" then return layout end
+    return LayoutModel.SetPlace(layout, type, USUAL_PLACE[type] or "panel")
+end
+
+function LayoutModel.PlaceAll(layout, place)
+    layout.pack = nil
+    for _, t in ipairs(LayoutModel.VisibleTypes(layout)) do
+        if LayoutModel.PlaceOf(layout, t) ~= "off" then LayoutModel.SetPlace(layout, t, place) end
+    end
+    return layout
+end
+
 function LayoutModel.AddToSection(layout, id, type)
     local target
     for _, s in ipairs(layout.sections) do
@@ -626,7 +673,7 @@ end
 function LayoutModel.Migrate(db)
     if db.layout then return db end
     if db.placement == nil and db.row == nil and db.panel == nil then
-        db.layout = LayoutModel.Defaults()
+        db.layout = LayoutModel.ApplyPack(LayoutModel.Defaults(), "essentials")
     else
         db.layout = migrated(db)
     end

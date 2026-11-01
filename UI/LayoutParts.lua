@@ -162,6 +162,85 @@ end
 
 local DEMO = { { value = "Off", text = "Off" }, { value = "Me", text = "Only me" }, { value = "Group", text = "Whole group" } }
 
+local PACK_W, PACK_H, TRACK_W, TRACK_H = 176, 54, 170, 24
+
+local function flow(holder, items, w, h, gap, room)
+    local x, y = 0, 0
+    for _, item in ipairs(items) do
+        if item:IsShown() then
+            if x > 0 and x + w > room then x, y = 0, y + h + gap end
+            item:ClearAllPoints()
+            item:SetPoint("TOPLEFT", holder, "TOPLEFT", x, -y)
+            x = x + w + gap
+        end
+    end
+    return y + h
+end
+
+function Parts.Packs(group)
+    local holder = CreateFrame("Frame", nil, group.frame)
+    local cards, height = {}, PACK_H
+    for i, p in ipairs(ns.LayoutModel.Packs()) do
+        local b = Widgets.Button(holder, "", PACK_W)
+        b:SetHeight(PACK_H)
+        b.id = p.id
+        b.label:ClearAllPoints()
+        b.label:SetPoint("TOPLEFT", b, "TOPLEFT", 8, -7)
+        b.label:SetPoint("RIGHT", b, "RIGHT", -8, 0)
+        b.label:SetJustifyH("LEFT")
+        b:SetText(p.name)
+        b.hint = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        b.hint:SetPoint("TOPLEFT", b.label, "BOTTOMLEFT", 0, -3)
+        b.hint:SetPoint("RIGHT", b, "RIGHT", -8, 0)
+        b.hint:SetJustifyH("LEFT")
+        b.hint:SetTextColor(unpack(T.muted))
+        b.hint:SetText(p.hint)
+        b:SetScript("OnClick", function()
+            Parts.Edit(ns.LayoutModel.ApplyPack, p.id)
+            group.page:Refresh()
+        end)
+        cards[i] = b
+    end
+    group:Add(holder, function() return height end, function()
+        local room = math.max((group.frame:GetWidth() or 0) - 2 * Widgets.PAD, 200)
+        height = flow(holder, cards, PACK_W, PACK_H, CHIP_GAP, room)
+        holder:SetSize(room, height)
+        for _, b in ipairs(cards) do Widgets.PaintChoice(b, ns.DB.layout.pack == b.id) end
+    end)
+end
+
+-- One checkbox per type: off switches the type off everywhere, on puts it back where it usually lives.
+function Parts.Track(group)
+    local holder = CreateFrame("Frame", nil, group.frame)
+    local boxes, height = {}, TRACK_H
+    local all = { "Personal", "Burst", "Racial", "Potion", "External", "Kick", "Control", "Stun", "CC", "Group", "Dispel", "Purge", "Movement" }
+    for i, t in ipairs(all) do
+        local box = LibStub("LibVelvet-1.0").Checkbox(holder, 20)
+        box.type = t
+        box.text = box:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        box.text:SetPoint("LEFT", box, "RIGHT", 4, 0)
+        box.text:SetText(Parts.Label(t))
+        box:SetHitRectInsets(0, -(TRACK_W - 24), 0, 0)
+        box:SetScript("OnClick", function(self)
+            Parts.Edit(ns.LayoutModel.SetTracked, self.type, self:GetChecked() and true or false)
+            group.page:Refresh()
+        end)
+        boxes[i] = box
+    end
+    group:Add(holder, function() return height end, function()
+        local layout = ns.DB.layout
+        local visible = {}
+        for _, t in ipairs(ns.LayoutModel.VisibleTypes(layout)) do visible[t] = true end
+        for _, box in ipairs(boxes) do
+            box:SetShown(visible[box.type] == true)
+            box:SetChecked(ns.LayoutModel.PlaceOf(layout, box.type) ~= "off")
+        end
+        local room = math.max((group.frame:GetWidth() or 0) - 2 * Widgets.PAD, 200)
+        height = flow(holder, boxes, TRACK_W, TRACK_H, 2, room)
+        holder:SetSize(room, height)
+    end)
+end
+
 function Parts.Demo(group)
     group:Segmented({
         label = "Demo", options = DEMO,

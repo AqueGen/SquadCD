@@ -12,8 +12,8 @@ local DEFAULT_W, DEFAULT_H, MIN_W, MIN_H = 760, 600, 660, 420
 local TITLE_H, HEAD_H, FOOT_H, PAD = 28, 54, 40, 8
 local SIZES = { { value = 22, text = "Small" }, { value = 26, text = "Medium" }, { value = 32, text = "Large" } }
 local STEPS = {
-    { title = "Preset", hint = "A starting point for the whole layout. Every choice can be changed later in the SquadCD settings (/squadcd)." },
-    { title = "Types and order", hint = "Panel, next to each party frame, or off, and the order of the types." },
+    { title = "What to track", hint = "Pick a starting set, then untick what you do not need. Everything can be changed later in /squadcd." },
+    { title = "Where to show it", hint = "Next to each party frame, in the panel, or a mix of both." },
     { title = "Size and position", hint = "How big the panel icons are, and where the panels sit on screen." },
 }
 
@@ -42,19 +42,19 @@ end
 
 builders[1] = function(page)
     seeIt(page)
-    local group = page:Group("Presets")
-    group:Note("Click a preset to use it as the starting point. Cancel puts back the layout you had before the wizard.")
-    Parts.PresetCards(group, {
-        pick = function(n)
-            Parts.Edit(ns.LayoutModel.ApplyPreset, n)
-            page:Refresh()
-        end,
-        used = function() return ns.DB.layout.preset end,
-    })
+    local packs = page:Group("Start from")
+    packs:Note("Cancel puts back the setup you had before the wizard.")
+    Parts.Packs(packs)
+    local track = page:Group("Track")
+    Parts.Track(track)
 end
 
 builders[2] = function(page)
     seeIt(page)
+    local all = page:Group("All in one place")
+    all:Button({ text = "All at party frames", width = 180, onClick = function() Parts.Edit(ns.LayoutModel.PlaceAll, "member") end })
+    all:Button({ text = "All in the panel", width = 180, onClick = function() Parts.Edit(ns.LayoutModel.PlaceAll, "panel") end })
+    all:Note("Or choose per type below. Kicks show as bars only in the panel.")
     Parts.TypesTable(page)
 end
 
