@@ -4,7 +4,8 @@ local _, ns = ...
 local LayoutModel = {}
 ns.LayoutModel = LayoutModel
 
-local ORDER = { "Personal", "Burst", "Racial", "Potion", "External", "Kick", "Control", "Group", "Dispel", "Purge", "Movement" }
+local ORDER = { "Burst", "Personal", "Racial", "Potion", "Kick", "External", "Control", "Group", "Dispel", "Purge", "Movement" }
+local OLD_ORDER = { "Personal", "Burst", "Racial", "Potion", "External", "Kick", "Control", "Group", "Dispel", "Purge", "Movement" }
 local ROLES = { "Tank", "Melee", "Ranged", "Healer" }
 local CLASS_COUNT = 13
 
@@ -534,6 +535,10 @@ function LayoutModel.Normalize(layout)
     local shown = LayoutModel.VisibleTypes(layout)
     local known = {}
     for _, t in ipairs(shown) do known[t] = true end
+    -- An order nobody changed follows the new default (burst first, kicks before externals).
+    if type(layout.typeOrder) == "table" and table.concat(layout.typeOrder, ",") == table.concat(remap(OLD_ORDER, layout.split, {}), ",") then
+        layout.typeOrder = remap(ORDER, layout.split, {})
+    end
     local order, seen = {}, {}
     for _, list in ipairs({ type(layout.typeOrder) == "table" and layout.typeOrder or {}, shown }) do
         for _, t in ipairs(list) do

@@ -6,8 +6,8 @@ local function load()
     return helpers.load({ "Logic/LayoutModel.lua" }).LayoutModel
 end
 
-local ALL = { "Personal", "Burst", "Racial", "Potion", "External", "Kick", "Control", "Group", "Dispel", "Purge", "Movement" }
-local SPLIT = { "Personal", "Burst", "Racial", "Potion", "External", "Kick", "Stun", "CC", "Group", "Dispel", "Purge", "Movement" }
+local ALL = { "Burst", "Personal", "Racial", "Potion", "Kick", "External", "Control", "Group", "Dispel", "Purge", "Movement" }
+local SPLIT = { "Burst", "Personal", "Racial", "Potion", "Kick", "External", "Stun", "CC", "Group", "Dispel", "Purge", "Movement" }
 
 local function placements(L, layout)
     local out = {}
@@ -249,15 +249,26 @@ describe("LayoutModel.TypeOrder / RoleOrder", function()
         local d = L.Defaults()
         d.groups[1].types = { "Personal", "Burst", "Racial" }
         L.MoveWithin(d, "groups", 1, "Racial", -1)
-        assert.are.same({ "Personal", "Racial", "Burst" }, L.TypeOrder(d, d.groups[1]))
-        L.MoveWithin(d, "groups", 1, "Personal", -1)
-        assert.are.same({ "Personal", "Racial", "Burst" }, L.TypeOrder(d, d.groups[1]))
+        assert.are.same({ "Burst", "Racial", "Personal" }, L.TypeOrder(d, d.groups[1]))
+        L.MoveWithin(d, "groups", 1, "Burst", -1)
+        assert.are.same({ "Burst", "Racial", "Personal" }, L.TypeOrder(d, d.groups[1]))
         local global = L.Defaults().typeOrder
         assert.are.same(global, d.typeOrder)
         d.sections[1].types = { "Kick", "Control" }
         L.MoveWithin(d, "sections", 1, "Kick", 1)
         assert.are.same({ "Control", "Kick" }, L.TypeOrder(d, d.sections[1]))
         assert.is_nil(d.sections[1].shape)
+    end)
+
+    it("an order nobody changed follows the new default; a changed one stays", function()
+        local L = load()
+        local d = L.Defaults()
+        d.typeOrder = { "Personal", "Burst", "Racial", "Potion", "External", "Kick", "Control", "Group", "Dispel", "Purge", "Movement" }
+        L.Normalize(d)
+        assert.are.same(ALL, d.typeOrder)
+        d.typeOrder = { "Kick", "Personal", "Burst", "Racial", "Potion", "External", "Control", "Group", "Dispel", "Purge", "Movement" }
+        L.Normalize(d)
+        assert.are.equal("Kick", d.typeOrder[1])
     end)
 
     it("Normalize moves an old shape.typeOrder into order", function()
@@ -290,7 +301,7 @@ describe("LayoutModel.TypeOrder / RoleOrder", function()
         local L = load()
         local d = L.Defaults()
         L.MoveType(d, "Dispel", -1)
-        assert.are.same({ "Personal", "Burst", "Racial", "Potion", "External", "Kick", "Control", "Dispel", "Group", "Purge", "Movement" }, d.typeOrder)
+        assert.are.same({ "Burst", "Personal", "Racial", "Potion", "Kick", "External", "Control", "Dispel", "Group", "Purge", "Movement" }, d.typeOrder)
         L.MoveType(d, "Personal", -1)
         L.MoveType(d, "Movement", 1)
         L.MoveType(d, "Gone", 1)
@@ -360,7 +371,7 @@ describe("LayoutModel.TypeOrder / RoleOrder", function()
         assert.are.equal("Control", d.typeOrder[6])
         L.MoveInOrder(d, "Burst", 1)
         assert.are.same({ "Control", "Kick", "External", "Group" }, { d.sections[1].id, d.sections[2].id, d.sections[3].id, d.sections[4].id })
-        assert.are.equal("Burst", d.typeOrder[3])
+        assert.are.equal("Burst", d.typeOrder[2])
     end)
 
     it("Normalize drops the v1 panel lock", function()
@@ -770,7 +781,7 @@ describe("LayoutModel fix round 1", function()
         assert.are.same({ "Kick" }, d.sections[1].types)
         assert.are.equal("External", d.sections[2].id)
         assert.are.equal(3, #d.sections)
-        assert.are.same({ "Kick", "Group", "Personal", "Burst", "Racial", "Potion", "External", "Control", "Dispel", "Purge", "Movement" }, d.typeOrder)
+        assert.are.same({ "Kick", "Group", "Burst", "Personal", "Racial", "Potion", "External", "Control", "Dispel", "Purge", "Movement" }, d.typeOrder)
         assert.are.same({ "Personal" }, d.groups[1].order)
         assert.are.same({ "Healer", "Tank", "Melee", "Ranged" }, d.rolePriority)
         assert.are.same({ 5, 2, 1, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13 }, d.classOrder.Tank)
