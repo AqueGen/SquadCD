@@ -7,7 +7,8 @@ ns.KickBars = KickBars
 
 local T = ns.Theme
 local ICON, GAP, TRACK_W, TRACK_H, LETTERS = 20, 2, 130, 16, 10
-local FOCUS_GAP = 10
+local FOCUS_GAP, CAST_W = 10, 160
+local CAST = { 1, 0.7, 0, 1 }
 local TRACK = { 0.114, 0.125, 0.145, 1 }
 local RESULT = { hit = { 0.2, 0.8, 0.3 }, miss = { 0.85, 0.2, 0.2 }, cast = { 0.9, 0.9, 0.9 } }
 local RESULT_TEXT = { hit = "kicked", miss = "missed", cast = "..." }
@@ -45,7 +46,23 @@ function KickBars.New(parent)
     target:SetWordWrap(false)
     box:SetPoint("RIGHT", target, "RIGHT", 4, 0)
     box:Hide()
-    return setmetatable({ frame = f, icon = icon, track = track, fill = fill, name = name, box = box, target = target, value = value, buf = {} }, KickBars)
+    local cast = CreateFrame("StatusBar", nil, f)
+    cast:SetStatusBarTexture(T.FLAT.bgFile)
+    cast:SetStatusBarColor(unpack(CAST))
+    local castBack = cast:CreateTexture(nil, "BACKGROUND")
+    castBack:SetAllPoints()
+    castBack:SetColorTexture(unpack(TRACK))
+    local spellIcon = cast:CreateTexture(nil, "OVERLAY")
+    spellIcon:SetPoint("TOPLEFT", box, "BOTTOMLEFT", 0, -2)
+    cast:SetPoint("LEFT", spellIcon, "RIGHT", 2, 0)
+    local castName = cast:CreateFontString(nil, "OVERLAY")
+    castName:SetPoint("LEFT", cast, "LEFT", 4, 0)
+    castName:SetWidth(CAST_W - 8)
+    castName:SetJustifyH("LEFT")
+    castName:SetWordWrap(false)
+    cast:Hide()
+    return setmetatable({ frame = f, icon = icon, track = track, fill = fill, name = name, box = box, target = target,
+        cast = cast, spellIcon = spellIcon, castName = castName, value = value, buf = {} }, KickBars)
 end
 
 function KickBars:SetEntry(spell, member)
@@ -59,27 +76,47 @@ function KickBars:SetEntry(spell, member)
     self.fill:SetColorTexture(self.classColor[1], self.classColor[2], self.classColor[3], 0.85)
     self.text, self.share, self.next, self.result, self.focus = nil, nil, nil, nil, nil
     self.box:Hide()
+    self.cast:Hide()
 end
 
--- Your focus in a box right of your own kick bar, so the party sees which mob is yours.
-function KickBars:ShowFocus(show, size)
-    local key = show and ns.Kicks.FocusVersion() + size / 100 or -1
+-- Your focus in a box right of your own kick bar, so the party sees which mob is yours; its cast under it.
+function KickBars:ShowFocus(show, size, showCast)
+    local key = show and ns.Kicks.FocusVersion() + size / 100 + (showCast and 0.5 or 0) or -1
     if key == self.focus then return end
     self.focus = key
     if show and size ~= self.focusSize then
         self.focusSize = size
         self.target:SetFont(T.FONT, size, "OUTLINE")
         self.box:SetHeight(size + 6)
+        self.castName:SetFont(T.FONT, size, "OUTLINE")
+        self.spellIcon:SetSize(size + 6, size + 6)
+        self.cast:SetSize(CAST_W, size + 6)
     end
     local text = show and ns.Kicks.FocusText() or nil
     self.box:SetShown(text and true or false)
     self.target:SetText(text or "")
+    self:ShowCast(text and showCast)
+end
+
+function KickBars:ShowCast(on)
+    local duration, spell, icon, channel = nil, nil, nil, false
+    if on then duration, spell, icon, channel = ns.Kicks.FocusCast() end
+    if not duration then
+        self.cast:Hide()
+        return
+    end
+    local direction = channel and Enum.StatusBarTimerDirection.RemainingTime or Enum.StatusBarTimerDirection.ElapsedTime
+    self.cast:SetTimerDuration(duration, Enum.StatusBarInterpolation.Immediate, direction)
+    self.castName:SetText(spell or "")
+    self.spellIcon:SetTexture(icon)
+    self.cast:Show()
 end
 
 function KickBars:Update(state, now, timers)
     self.icon:Update(state, now, false)
     if self.own then
-        self:ShowFocus(ns.DB.layout.kickFocus, ns.DB.layout.kickFocusSize)
+        local l = ns.DB.layout
+        self:ShowFocus(l.kickFocus, l.kickFocusSize, l.kickFocusCast)
         local result = ns.Kicks.OwnResult(now)
         if result ~= self.result then
             self.result = result

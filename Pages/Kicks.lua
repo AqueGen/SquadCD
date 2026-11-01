@@ -60,9 +60,16 @@ local function tracker(page)
         set = function(on) Parts.Edit(function(l) l.kickFocus = on end) end,
         visible = function() return kickSection() ~= nil and layout().kickStyle == "Bars" end,
     })
+    group:Check({
+        label = "Show focus cast",
+        tooltip = "Your focus target's cast bar under the focus box: spell, icon and progress.",
+        get = function() return layout().kickFocusCast end,
+        set = function(on) Parts.Edit(function(l) l.kickFocusCast = on end) end,
+        visible = function() return kickSection() ~= nil and layout().kickStyle == "Bars" and layout().kickFocus end,
+    })
     group:Slider({
         label = "Focus size", min = 8, max = 24,
-        tooltip = "Text and raid mark size in the focus box.",
+        tooltip = "Text, raid mark and cast bar size in the focus box.",
         get = function() return layout().kickFocusSize end,
         set = function(v) Parts.Edit(function(l) l.kickFocusSize = v end) end,
         visible = function() return kickSection() ~= nil and layout().kickStyle == "Bars" and layout().kickFocus end,

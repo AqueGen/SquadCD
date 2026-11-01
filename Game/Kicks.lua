@@ -152,7 +152,25 @@ local focusVersion = 0
 local focusEvents = CreateFrame("Frame")
 focusEvents:RegisterEvent("PLAYER_FOCUS_CHANGED")
 focusEvents:RegisterEvent("RAID_TARGET_UPDATE")
+for _, event in ipairs({ "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_STOP", "UNIT_SPELLCAST_FAILED", "UNIT_SPELLCAST_INTERRUPTED",
+    "UNIT_SPELLCAST_DELAYED", "UNIT_SPELLCAST_CHANNEL_START", "UNIT_SPELLCAST_CHANNEL_STOP", "UNIT_SPELLCAST_CHANNEL_UPDATE" }) do
+    focusEvents:RegisterUnitEvent(event, "focus")
+end
 focusEvents:SetScript("OnEvent", function() focusVersion = focusVersion + 1 end)
+
+-- Secret-safe: the duration object goes to StatusBar:SetTimerDuration, name and icon to SetText and SetTexture.
+function Kicks.FocusCast()
+    local channel = false
+    local ok, duration = pcall(UnitCastingDuration, "focus")
+    local okInfo, name, _, icon = pcall(UnitCastingInfo, "focus")
+    if not (ok and duration) then
+        channel = true
+        ok, duration = pcall(UnitChannelDuration, "focus")
+        okInfo, name, _, icon = pcall(UnitChannelInfo, "focus")
+    end
+    if not (ok and duration) then return nil end
+    return duration, okInfo and name or nil, okInfo and icon or nil, channel
+end
 
 function Kicks.FocusVersion()
     return focusVersion

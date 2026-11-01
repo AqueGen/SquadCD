@@ -81,6 +81,27 @@ describe("Kicks own result", function()
         assert.equal(v + 2, ns.Kicks.FocusVersion())
     end)
 
+    it("focus version moves when the focus starts or stops a cast", function()
+        local v = ns.Kicks.FocusVersion()
+        helpers.fire("UNIT_SPELLCAST_START", "focus")
+        helpers.fire("UNIT_SPELLCAST_CHANNEL_STOP", "focus")
+        assert.equal(v + 2, ns.Kicks.FocusVersion())
+    end)
+
+    it("focus cast gives the cast duration, name and icon, or the channel's", function()
+        local d = {}
+        _G.UnitCastingDuration = function() return d end
+        _G.UnitCastingInfo = function() return "Shadow Bolt", "Shadow Bolt", 136197 end
+        assert.same({ d, "Shadow Bolt", 136197, false }, { ns.Kicks.FocusCast() })
+        _G.UnitCastingDuration = function() return nil end
+        _G.UnitCastingInfo = function() end
+        _G.UnitChannelDuration = function() return d end
+        _G.UnitChannelInfo = function() return "Drain", "Drain", 1 end
+        assert.same({ d, "Drain", 1, true }, { ns.Kicks.FocusCast() })
+        _G.UnitChannelDuration = function() return nil end
+        assert.is_nil(ns.Kicks.FocusCast())
+    end)
+
     it("no focus gives nothing", function()
         _G.UnitExists = function() return false end
         assert.is_nil(ns.Kicks.FocusText())
