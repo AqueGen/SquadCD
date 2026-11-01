@@ -210,6 +210,7 @@ local function build()
             ns.Display.Changed()
         end
         keep = false
+        ns.Window.StopDemo(self)
         if reopen then
             reopen = false
             C_Timer.After(0, function()

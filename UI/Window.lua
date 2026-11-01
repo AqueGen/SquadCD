@@ -107,6 +107,7 @@ end
 local function Build()
     frame = CreateFrame("Frame", "SquadCDSettings", UIParent, "BackdropTemplate")
     tinsert(UISpecialFrames, "SquadCDSettings")
+    frame:SetScript("OnHide", function(self) Window.StopDemo(self) end)
     frame:SetFrameStrata("DIALOG")
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
@@ -244,6 +245,12 @@ function Window.Focus(key, groupKey)
     scroll:SetVerticalScroll(math.min(group.offset, scroll:GetVerticalScrollRange()))
     group.frame:SetBackdropBorderColor(unpack(UI.T.underline))
     C_Timer.After(FLASH, function() group.frame:SetBackdropBorderColor(unpack(UI.T.border)) end)
+end
+
+-- The demo is for seeing settings; closing them ends it. A hide with UIParent (Alt+Z) and edit mode, which runs its own demo, leave it on.
+function Window.StopDemo(closing)
+    if closing:IsShown() or ns.EditMode.Panels() or ns.EditMode.Members() then return end
+    if ns.Demo.Running() then ns.Demo.Set("Off") end
 end
 
 function Window.Hide()

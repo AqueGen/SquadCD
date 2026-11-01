@@ -72,7 +72,7 @@ describe("Settings window preview zone", function()
         })
         ns.DB = ns.Defaults({ version = 2, layout = ns.LayoutModel.Defaults() })
         ns.Demo = { Running = function() return false end }
-        ns.EditMode = { Panels = function() return false end }
+        ns.EditMode = { Panels = function() return false end, Members = function() return false end }
         ns.PanelPreview = {
             Attach = function(p) pane = p end,
             Refresh = function() refreshed = refreshed + 1 end,
@@ -158,6 +158,18 @@ describe("Settings window preview zone", function()
     it("opens wide enough for the side zone by default", function()
         ns.Window.Show("panels")
         assert.are.equal(1000, settings.width)
+    end)
+
+    it("closing the settings ends the demo; a hide with the whole UI leaves it on", function()
+        local set = {}
+        ns.Demo = { Running = function() return true end, Set = function(m) set[#set + 1] = m end }
+        ns.Window.Show("panels")
+        settings.shown = true
+        settings.scripts.OnHide(settings)
+        assert.are.same({}, set)
+        settings.shown = false
+        settings.scripts.OnHide(settings)
+        assert.are.same({ "Off" }, set)
     end)
 
     it("tells the preview which part the page is about", function()
