@@ -4,7 +4,7 @@ local helpers = dofile(here .. "/helpers.lua")
 
 local FILES = {
     "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/Cooldowns.lua", "Logic/Tracker.lua", "Logic/LayoutGrid.lua",
-    "Logic/LayoutRules.lua", "Logic/Docking.lua", "Game/Inspect.lua", "Game/Group.lua", "UI/Theme.lua", "UI/Rows.lua", "UI/Panel.lua",
+    "Logic/LayoutRules.lua", "Logic/Docking.lua", "Game/Inspect.lua", "Game/Group.lua", "UI/Theme.lua", "UI/FocusPieces.lua", "UI/Rows.lua", "UI/Panel.lua",
     "UI/Display.lua", "UI/Demo.lua", "UI/PanelPreview.lua",
 }
 

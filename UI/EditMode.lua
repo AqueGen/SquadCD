@@ -104,6 +104,9 @@ local function save(d)
         if pos.dockTo then stored.dockTo, stored.side, stored.offset = pos.dockTo, pos.side, round(pos.offset) end
         if id == "panel" then
             ns.DB.layout.panel.point = { "TOPLEFT", stored.x, -stored.y }
+        elseif ns.FocusPieces.NAMES[id] then
+            ns.DB.layout.focusPos[id] = stored
+            if d.moving[id] then ns.DB.layout.focusArrange = "Custom" end
         else
             local s = sectionById(id)
             if s then s.pos = stored end
@@ -314,6 +317,8 @@ end
 
 function EditMode.ResetArrangement()
     for _, s in ipairs(ns.DB.layout.sections) do s.pos = nil end
+    ns.DB.layout.focusPos = {}
+    if ns.DB.layout.focusArrange == "Custom" then ns.DB.layout.focusArrange = "Split" end
     ns.Display.Changed()
 end
 

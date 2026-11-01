@@ -7,8 +7,6 @@ ns.KickBars = KickBars
 
 local T = ns.Theme
 local ICON, GAP, TRACK_W, TRACK_H, LETTERS = 20, 2, 130, 16, 10
-local FOCUS_GAP, CAST_W = 10, 160
-local CAST = { 1, 0.7, 0, 1 }
 local TRACK = { 0.114, 0.125, 0.145, 1 }
 local RESULT = { hit = { 0.2, 0.8, 0.3 }, late = { 0.95, 0.8, 0.2 }, miss = { 0.45, 0.45, 0.45 }, cast = { 0.9, 0.9, 0.9 } }
 local RESULT_TEXT = { hit = "kicked", late = "late", miss = "no hit", cast = "..." }
@@ -35,39 +33,7 @@ function KickBars.New(parent)
     local value = track:CreateFontString(nil, "OVERLAY")
     value:SetFont(T.FONT, 10, "OUTLINE")
     value:SetPoint("RIGHT", track, "RIGHT", -4, 0)
-    local box = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    box:SetHeight(TRACK_H)
-    box:SetPoint("LEFT", track, "RIGHT", FOCUS_GAP, 0)
-    box:SetBackdrop(T.FLAT)
-    box:SetBackdropColor(unpack(TRACK))
-    box:SetBackdropBorderColor(0, 0, 0, 0)
-    local target = box:CreateFontString(nil, "OVERLAY")
-    target:SetFont(T.FONT, 10, "OUTLINE")
-    target:SetPoint("LEFT", track, "RIGHT", FOCUS_GAP + 4, 0)
-    target:SetWordWrap(false)
-    box:SetPoint("RIGHT", target, "RIGHT", 4, 0)
-    box:Hide()
-    local cast = CreateFrame("StatusBar", nil, f)
-    cast:SetStatusBarTexture(T.FLAT.bgFile)
-    cast:SetStatusBarColor(unpack(CAST))
-    local castBack = cast:CreateTexture(nil, "BACKGROUND")
-    castBack:SetAllPoints()
-    castBack:SetColorTexture(unpack(TRACK))
-    local spellIcon = cast:CreateTexture(nil, "OVERLAY")
-    spellIcon:SetPoint("TOPLEFT", box, "BOTTOMLEFT", 0, -2)
-    cast:SetPoint("LEFT", spellIcon, "RIGHT", 2, 0)
-    local castName = cast:CreateFontString(nil, "OVERLAY")
-    castName:SetPoint("LEFT", cast, "LEFT", 4, 0)
-    castName:SetWidth(CAST_W - 8)
-    castName:SetJustifyH("LEFT")
-    castName:SetWordWrap(false)
-    cast:Hide()
-    local upcoming = box:CreateFontString(nil, "OVERLAY")
-    upcoming:SetFont(T.FONT, 10, "OUTLINE")
-    upcoming:SetPoint("TOPLEFT", box, "BOTTOMLEFT", 0, -2)
-    upcoming:SetJustifyH("LEFT")
-    return setmetatable({ frame = f, icon = icon, track = track, fill = fill, name = name, box = box, target = target,
-        cast = cast, spellIcon = spellIcon, castName = castName, upcoming = upcoming, value = value, buf = {} }, KickBars)
+    return setmetatable({ frame = f, icon = icon, track = track, fill = fill, name = name, value = value, buf = {} }, KickBars)
 end
 
 function KickBars:SetEntry(spell, member)
@@ -80,65 +46,13 @@ function KickBars:SetEntry(spell, member)
     self.guid = member.guid
     self.classColor = { T.ClassColor(member.class) }
     self.fill:SetColorTexture(self.classColor[1], self.classColor[2], self.classColor[3], 0.85)
-    self.text, self.share, self.next, self.down, self.result, self.focus = nil, nil, nil, nil, nil, nil
-    self.box:Hide()
-    self.cast:Hide()
-end
-
--- Your focus in a box right of your own kick bar, so the party sees which mob is yours; its cast under it.
-function KickBars:ShowFocus(show, size, showCast)
-    local key = show and ns.Kicks.FocusVersion() + size / 100 + (showCast and 0.5 or 0) or -1
-    if key == self.focus then return end
-    self.focus = key
-    if show and size ~= self.focusSize then
-        self.focusSize = size
-        self.target:SetFont(T.FONT, size, "OUTLINE")
-        self.box:SetHeight(size + 6)
-        self.castName:SetFont(T.FONT, size, "OUTLINE")
-        self.spellIcon:SetSize(size + 6, size + 6)
-        self.cast:SetSize(CAST_W, size + 6)
-        self.upcoming:SetFont(T.FONT, size, "OUTLINE")
-    end
-    local text = show and ns.Kicks.FocusText() or nil
-    self.box:SetShown(text and true or false)
-    self.target:SetText(text or "")
-    self:ShowCast(text and showCast)
-end
-
-function KickBars:ShowCast(on)
-    local duration, spell, icon, channel = nil, nil, nil, false
-    if on then duration, spell, icon, channel = ns.Kicks.FocusCast() end
-    self.upcoming:ClearAllPoints()
-    if not duration then
-        self.cast:Hide()
-        self.upcoming:SetPoint("TOPLEFT", self.box, "BOTTOMLEFT", 0, -2)
-        return
-    end
-    self.upcoming:SetPoint("TOPLEFT", self.spellIcon, "BOTTOMLEFT", 0, -2)
-    local direction = channel and Enum.StatusBarTimerDirection.RemainingTime or Enum.StatusBarTimerDirection.ElapsedTime
-    self.cast:SetTimerDuration(duration, Enum.StatusBarInterpolation.Immediate, direction)
-    self.castName:SetText(spell or "")
-    self.spellIcon:SetTexture(icon)
-    self.cast:Show()
-end
-
--- CastAhead's next casts of the focus under the focus box, refreshed a few times a second for the countdown.
-function KickBars:ShowUpcoming(on, now)
-    if self.upcomingAt and now - self.upcomingAt < 0.2 then return end
-    self.upcomingAt = now
-    local text = on and ns.Kicks.UpcomingText(ns.Kicks.FocusUpcoming(3), now) or nil
-    if text == self.upcomingText then return end
-    self.upcomingText = text
-    self.upcoming:SetText(text or "")
+    self.text, self.share, self.next, self.down, self.result = nil, nil, nil, nil, nil
 end
 
 function KickBars:Update(state, now, timers)
     self.icon:Update(state, now, false)
     local result
     if self.own then
-        local l = ns.DB.layout
-        self:ShowFocus(l.kickFocus, l.kickFocusSize, l.kickFocusCast)
-        self:ShowUpcoming(l.kickFocus and l.kickFocusNext, now)
         result = ns.Kicks.OwnResult(now)
     else
         result = ns.Kicks.HitResult(self.guid, now)

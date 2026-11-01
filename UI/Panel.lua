@@ -163,6 +163,7 @@ local function new(opts)
     local shown = {}
     local roleOrder, classOrder, kickQueue = {}, {}, {}
     local containers, positions = {}, {}
+    local focus, focusFrames, focusOn = ns.FocusPieces.New(), {}, false
 
     local function newContainer(name)
         local f = CreateFrame("Frame", name, opts.parent, "BackdropTemplate")
@@ -253,7 +254,41 @@ local function new(opts)
                 previous = key
             end
         end
+        local kickKey
+        for _, key in ipairs(order) do
+            for _, item in ipairs(groups[key]) do
+                if item.type == "Kick" then kickKey = key end
+            end
+        end
+        local focusKeys = kickKey and Model.FocusKeys(layout, type(CastAheadAPI) == "table") or {}
+        local present, focusSizes = {}, ns.FocusPieces.Sizes(layout)
+        for _, k in ipairs(focusKeys) do present[k] = true end
+        local function placeFocus(mirrored)
+            for _, k in ipairs(focusKeys) do
+                local pos = Model.FocusPos(layout, k, kickKey, mirrored, present)
+                if preview and not (groups[pos.dockTo] or present[pos.dockTo]) then
+                    pos = Model.FocusPos({ focusArrange = layout.focusArrange }, k, kickKey, mirrored, present)
+                end
+                positions[k], sizes[k] = pos, focusSizes[k]
+            end
+        end
+        placeFocus(false)
         local rects = ns.Docking.Resolve(positions, sizes, not preview and scr or nil)
+        local kickRect = kickKey and rects[kickKey]
+        if not preview and rects.focus and kickRect and not layout.focusPos.focus and rects.focus.x < kickRect.x + kickRect.w then
+            placeFocus(true)
+            rects = ns.Docking.Resolve(positions, sizes, scr)
+        end
+        for _, k in ipairs(Model.FOCUS) do
+            if present[k] then
+                focusFrames[k] = focusFrames[k] or newContainer(nil)
+                frames[k] = focusFrames[k]
+                order[#order + 1] = k
+            elseif focusFrames[k] then
+                focusFrames[k].frame:Hide()
+            end
+        end
+        focusOn = #focusKeys > 0
         local x0, y0, x1, y1 = 0, 0, 0, 0
         if preview and #order > 0 then
             x0, y0, x1, y1 = math.huge, math.huge, -math.huge, -math.huge
@@ -268,22 +303,29 @@ local function new(opts)
             local c = frames[key]
             local r = rects[key]
             local f = c.frame
-            local look = key == "panel" and layout.panelLook or Model.LookOf(layout, sectionOf[key])
-            T.Backdrop(f, look)
-            if opts.pick then
-                pickable(f, key == "panel" and { page = "panels", key = "look", label = "Panel look and shape" } or sectionTarget(layout, sectionOf[key]))
-                for _, l in ipairs(c.lines) do
-                    if l.section and (l.count or 0) > 0 then pickable(l.tab.frame, sectionTarget(layout, l.section)) end
-                end
+            local focusName = ns.FocusPieces.NAMES[key]
+            if focusName then
+                focus:Attach(key, f)
+                if opts.pick then pickable(f, { page = "kicks", key = "focus", label = focusName }) else f:EnableMouse(false) end
             else
-                f:EnableMouse(false)
+                local look = key == "panel" and layout.panelLook or Model.LookOf(layout, sectionOf[key])
+                T.Backdrop(f, look)
+                if opts.pick then
+                    pickable(f, key == "panel" and { page = "panels", key = "look", label = "Panel look and shape" } or sectionTarget(layout, sectionOf[key]))
+                    for _, l in ipairs(c.lines) do
+                        if l.section and (l.count or 0) > 0 then pickable(l.tab.frame, sectionTarget(layout, l.section)) end
+                    end
+                else
+                    f:EnableMouse(false)
+                end
             end
             f:SetSize(r.w, r.h)
             f:ClearAllPoints()
             f:SetPoint("TOPLEFT", opts.parent, "TOPLEFT", r.x - x0, -(r.y - y0))
             f:Show()
-            containers[#containers + 1] = { key = key, frame = f, name = key == "panel" and "Panel" or nameOf(sectionOf[key]) }
+            containers[#containers + 1] = { key = key, frame = f, name = focusName or (key == "panel" and "Panel" or nameOf(sectionOf[key])) }
         end
+        if focusOn then focus:Apply(layout) end
         return x1 - x0, y1 - y0
     end
 
@@ -296,6 +338,7 @@ local function new(opts)
     end
 
     function self.Update(tracker, now, sight)
+        if focusOn then focus:Update(now, preview or not ns.Display.IsLive()) end
         for _, c in ipairs(shown) do
             for i = 1, #c.lines do
                 local l = c.lines[i]
@@ -344,6 +387,8 @@ local function new(opts)
     function self.Hide()
         if main then main.frame:Hide() end
         for _, c in ipairs(windows) do c.frame:Hide() end
+        for _, c in pairs(focusFrames) do c.frame:Hide() end
+        focusOn = false
         wipe(shown)
         wipe(containers)
     end

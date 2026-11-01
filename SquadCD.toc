@@ -39,6 +39,7 @@ UI/ActiveOverlay.lua
 UI/Icon.lua
 UI/SecretLayer.lua
 UI/KickBars.lua
+UI/FocusPieces.lua
 UI/Anchors.lua
 UI/Rows.lua
 UI/Panel.lua

@@ -955,3 +955,58 @@ describe("LayoutModel fix round 1", function()
         end)
     end)
 end)
+
+describe("LayoutModel focus pieces", function()
+    it("shows the box, then the cast and next casts that are on", function()
+        local L = load()
+        local d = L.Defaults()
+        assert.same({ "focus", "focuscast", "focusnext" }, L.FocusKeys(d, true))
+        assert.same({ "focus", "focuscast" }, L.FocusKeys(d, false))
+        d.kickFocusCast = false
+        assert.same({ "focus" }, L.FocusKeys(d, false))
+        d.kickFocus = false
+        assert.same({}, L.FocusKeys(d, true))
+    end)
+
+    it("default arrangement: box right of the kick window, next casts right of the box, cast below it", function()
+        local L = load()
+        local d = L.Defaults()
+        assert.equal("Split", d.focusArrange)
+        assert.same({ x = 0, y = 0, dockTo = "s2", side = "Right", offset = 0 }, L.FocusPos(d, "focus", "s2"))
+        assert.same({ x = 0, y = 0, dockTo = "focus", side = "Right", offset = 0 }, L.FocusPos(d, "focusnext", "s2"))
+        assert.same({ x = 0, y = 0, dockTo = "focus", side = "Below", offset = 0 }, L.FocusPos(d, "focuscast", "s2"))
+    end)
+
+    it("row and column chain the pieces, mirrored puts them on the left", function()
+        local L = load()
+        local d = L.Defaults()
+        d.focusArrange = "Row"
+        assert.same({ x = 0, y = 0, dockTo = "focuscast", side = "Right", offset = 0 }, L.FocusPos(d, "focusnext", "panel"))
+        d.focusArrange = "Column"
+        assert.same({ x = 0, y = 0, dockTo = "focuscast", side = "Below", offset = 0 }, L.FocusPos(d, "focusnext", "panel"))
+        d.focusArrange = "Split"
+        assert.same({ x = 0, y = 0, dockTo = "panel", side = "Left", offset = 0 }, L.FocusPos(d, "focus", "panel", true))
+        assert.same({ x = 0, y = 0, dockTo = "focus", side = "Left", offset = 0 }, L.FocusPos(d, "focusnext", "panel", true))
+    end)
+
+    it("a stored position wins, a piece docked to a hidden one falls back to the box or the kick window", function()
+        local L = load()
+        local d = L.Defaults()
+        d.focusPos = { focusnext = { x = 5, y = 6, dockTo = "focuscast", side = "Below", offset = 2 } }
+        assert.same({ x = 5, y = 6, dockTo = "focuscast", side = "Below", offset = 2 }, L.FocusPos(d, "focusnext", "s1"))
+        assert.same({ x = 5, y = 6, dockTo = "focus", side = "Below", offset = 2 }, L.FocusPos(d, "focusnext", "s1", false, { focus = true }))
+    end)
+
+    it("Normalize keeps valid focus settings and lets sections dock to focus pieces", function()
+        local L = load()
+        local d = L.Defaults()
+        d.focusArrange, d.focusWidth = "Sideways", 9999
+        d.focusPos = { focus = { x = 1, y = 2, dockTo = "panel", side = "Above", offset = 0 }, junk = { x = 1, y = 1 }, focuscast = "bad" }
+        d.sections[1].pos = { x = 0, y = 0, dockTo = "focusnext", side = "Below", offset = 0 }
+        L.Normalize(d)
+        assert.equal("Split", d.focusArrange)
+        assert.equal(320, d.focusWidth)
+        assert.same({ focus = { x = 1, y = 2, dockTo = "panel", side = "Above", offset = 0 } }, d.focusPos)
+        assert.equal("focusnext", d.sections[1].pos.dockTo)
+    end)
+end)

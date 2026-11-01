@@ -54,34 +54,6 @@ local function tracker(page)
     })
     group:Note({ text = "Bars: one bar per member that fills as the kick comes back. Icons: one icon per member.", visible = function() return kickSection() ~= nil end })
     group:Check({
-        label = "Show focus target",
-        tooltip = "Your focus target's raid mark and name in a box right of your own kick bar.",
-        get = function() return layout().kickFocus end,
-        set = function(on) Parts.Edit(function(l) l.kickFocus = on end) end,
-        visible = function() return kickSection() ~= nil and layout().kickStyle == "Bars" end,
-    })
-    group:Check({
-        label = "Show focus cast",
-        tooltip = "Your focus target's cast bar under the focus box: spell, icon and progress.",
-        get = function() return layout().kickFocusCast end,
-        set = function(on) Parts.Edit(function(l) l.kickFocusCast = on end) end,
-        visible = function() return kickSection() ~= nil and layout().kickStyle == "Bars" and layout().kickFocus end,
-    })
-    group:Check({
-        label = "Show focus next casts",
-        tooltip = "With CastAhead installed: the casts it expects next from your focus target, with seconds until each.",
-        get = function() return layout().kickFocusNext end,
-        set = function(on) Parts.Edit(function(l) l.kickFocusNext = on end) end,
-        visible = function() return kickSection() ~= nil and layout().kickStyle == "Bars" and layout().kickFocus and type(CastAheadAPI) == "table" end,
-    })
-    group:Slider({
-        label = "Focus size", min = 8, max = 24,
-        tooltip = "Text, raid mark and cast bar size in the focus box.",
-        get = function() return layout().kickFocusSize end,
-        set = function(v) Parts.Edit(function(l) l.kickFocusSize = v end) end,
-        visible = function() return kickSection() ~= nil and layout().kickStyle == "Bars" and layout().kickFocus end,
-    })
-    group:Check({
         label = "Own window",
         get = function() return kickSection() ~= nil and kickSection().ownWindow end,
         set = function(on) editSection(function(_, s) s.ownWindow = on end) end,
@@ -100,6 +72,61 @@ local function tracker(page)
     })
     group:Note({ text = "Kicks are at the party frames now; the panel options apply when they are in the panel (Presets and types).", visible = function() return Model.PlaceOf(layout(), "Kick") == "member" end })
     group:Button({ text = "Move the panels", width = 140, onClick = function() ns.EditMode.TogglePanels() end, visible = function() return kickSection() ~= nil end })
+end
+
+local ARRANGE = { { value = "Split", text = "Cast below" }, { value = "Row", text = "One row" }, { value = "Column", text = "One column" } }
+
+local function focusGroup(page)
+    local group = page:Group("Focus target")
+    group.key = "focus"
+    local function on() return kickSection() ~= nil and layout().kickFocus end
+    group:Note({ text = "Your focus target, its cast and the casts it is expected to make next, next to the kick tracker. Drag each piece with Move the panels.", visible = function() return kickSection() ~= nil end })
+    group:Check({
+        label = "Show focus target",
+        tooltip = "Raid mark and name of your focus target.",
+        get = function() return layout().kickFocus end,
+        set = function(v) Parts.Edit(function(l) l.kickFocus = v end) end,
+        visible = function() return kickSection() ~= nil end,
+    })
+    group:Check({
+        label = "Show focus cast",
+        tooltip = "What your focus target is casting now: spell, icon and progress.",
+        get = function() return layout().kickFocusCast end,
+        set = function(v) Parts.Edit(function(l) l.kickFocusCast = v end) end,
+        visible = on,
+    })
+    group:Check({
+        label = "Show focus next casts",
+        tooltip = "The casts CastAhead expects next from your focus target, with seconds until each.",
+        get = function() return layout().kickFocusNext end,
+        set = function(v) Parts.Edit(function(l) l.kickFocusNext = v end) end,
+        visible = function() return on() and type(CastAheadAPI) == "table" end,
+    })
+    group:Note({ text = "Next casts need the CastAhead addon.", color = T.muted, visible = function() return on() and type(CastAheadAPI) ~= "table" end })
+    group:Segmented({
+        label = "Arrangement", options = ARRANGE,
+        get = function() return layout().focusArrange end,
+        set = function(v) Parts.Edit(function(l) l.focusArrange, l.focusPos = v, {} end) end,
+        visible = on,
+    })
+    group:Note({ text = "Custom: you moved the pieces yourself. Pick an arrangement to line them up again.", color = T.muted, visible = function() return on() and layout().focusArrange == "Custom" end })
+    group:Slider({
+        label = "Text size", min = 8, max = 24,
+        get = function() return layout().kickFocusSize end,
+        set = function(v) Parts.Edit(function(l) l.kickFocusSize = v end) end,
+        visible = on,
+    })
+    group:Slider({
+        label = "Box width", min = 100, max = 320,
+        tooltip = "Width of the focus target and cast boxes. Longer names are cut at the edge.",
+        get = function() return layout().focusWidth end,
+        set = function(v) Parts.Edit(function(l) l.focusWidth = v end) end,
+        visible = on,
+    })
+    group:Button({
+        text = "Reset focus layout", width = 140, visible = on,
+        onClick = function() Parts.Edit(function(l) l.focusArrange, l.focusPos = "Split", {} end) end,
+    })
 end
 
 local function queue(page)
@@ -154,5 +181,6 @@ end
 
 ns.Window.Register("kicks", function(page)
     tracker(page)
+    focusGroup(page)
     queue(page)
 end, { preview = "panel", focus = "panel" })

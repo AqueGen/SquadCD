@@ -2,7 +2,7 @@
 local here = debug.getinfo(1, "S").source:match("^@(.*)[/\\][^/\\]*$") or "tests"
 local helpers = dofile(here .. "/helpers.lua")
 
-local FILES = { "Logic/LayoutModel.lua", "Core.lua", "Logic/Docking.lua", "Logic/MemberEdit.lua", "Logic/Preview.lua", "UI/Theme.lua", "UI/EditMode.lua" }
+local FILES = { "Logic/LayoutModel.lua", "Core.lua", "Logic/Docking.lua", "Logic/MemberEdit.lua", "Logic/Preview.lua", "UI/Theme.lua", "UI/FocusPieces.lua", "UI/EditMode.lua" }
 
 local function stub(f)
     return setmetatable(f, {

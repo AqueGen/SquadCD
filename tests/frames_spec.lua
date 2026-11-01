@@ -20,7 +20,7 @@ local function frameStub()
 end
 
 local BASE = {
-    "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/LayoutGrid.lua", "Logic/LayoutRules.lua", "Logic/Docking.lua", "UI/Theme.lua",
+    "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/LayoutGrid.lua", "Logic/LayoutRules.lua", "Logic/Docking.lua", "UI/Theme.lua", "UI/FocusPieces.lua",
 }
 
 local icons
@@ -150,6 +150,26 @@ describe("Panel instances", function()
         assert.are.same({ 0, 0 }, { w, h })
     end)
 
+    it("docks the focus box right of the kick window and its cast below it; next casts only with CastAhead", function()
+        local layout = ns.DB.layout
+        layout.kickStyle = "Icons"
+        local kick = layout.sections[1]
+        local preview = ns.Panel.New({ parent = parent })
+        preview.Build({ { section = kick, type = "Kick", entries = entries("Kick") } })
+        local keys = {}
+        for _, c in ipairs(preview.Containers()) do keys[#keys + 1] = c.key end
+        assert.same({ "panel", "focus", "focuscast" }, keys)
+        assert.same({ dockTo = "panel", side = "Right" }, { dockTo = preview.Positions().focus.dockTo, side = preview.Positions().focus.side })
+        assert.same({ dockTo = "focus", side = "Below" }, { dockTo = preview.Positions().focuscast.dockTo, side = preview.Positions().focuscast.side })
+        _G.CastAheadAPI = {}
+        preview.Build({ { section = kick, type = "Kick", entries = entries("Kick") } })
+        assert.same({ dockTo = "focus", side = "Right" }, { dockTo = preview.Positions().focusnext.dockTo, side = preview.Positions().focusnext.side })
+        _G.CastAheadAPI = nil
+        layout.kickFocus = false
+        preview.Build({ { section = kick, type = "Kick", entries = entries("Kick") } })
+        assert.equal(1, #preview.Containers())
+    end)
+
     it("chains a freely placed section window next to the panel", function()
         local layout = ns.DB.layout
         layout.kickStyle = "Icons"
@@ -159,7 +179,7 @@ describe("Panel instances", function()
         preview.Build({ external(), { section = kick, type = "Kick", entries = entries("Kick") } })
         local panel, window
         for _, c in ipairs(preview.Containers()) do
-            if c.key == "panel" then panel = c.frame else window = c.frame end
+            if c.key == "panel" then panel = c.frame elseif c.key == kick.id then window = c.frame end
         end
         local at = window.points[1]
         local right = at[4] == panel.width + ns.Docking.GAP and at[5] == 0
