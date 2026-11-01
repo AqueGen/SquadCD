@@ -8,7 +8,7 @@ local T = ns.Theme
 local D = ns.Docking
 
 local THRESHOLD = 4
-local BAR_TEXT = "Moving the panels: drag a panel, panels snap and dock to each other. Drag moves a docked group, Alt-drag moves one panel."
+local BAR_TEXT = "Moving the panels: a window moves on its own and docks to the edge of a panel you drop it next to. The main panel takes its docked windows along, Alt-drag moves it alone."
 
 local panels, members, selected = false, false, 1
 local startedDemo = false
@@ -169,7 +169,7 @@ local function begin(key)
     end
     if not at then return end
     local moving = {}
-    if IsAltKeyDown() then
+    if key ~= "panel" or IsAltKeyDown() then
         moving[key] = true
     else
         for _, cluster in ipairs(D.Group(list)) do
