@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/AqueGen/SquadCD/compare/v0.1.0...v0.2.0) (2026-11-01)
+
+
+### Features
+
+* party cooldowns in secret mode, CC from nameplates, layout profiles ([40c7e5e](https://github.com/AqueGen/SquadCD/commit/40c7e5e8f83c57a68c10571ea7e52e64cc0ed560))
+
 ## 0.1.0 (2026-10-31)
 
 ### Features
