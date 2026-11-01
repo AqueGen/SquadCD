@@ -135,6 +135,16 @@ ownEvents:SetScript("OnEvent", function(_, event, unit, _, spellId, by)
     end
 end)
 
+-- Inside instances the focus mark and name are secret: the mark is dropped, the name still goes to FontString:SetText.
+function Kicks.Focus()
+    local ok, has = pcall(UnitExists, "focus")
+    if not ok or issecretvalue(has) or not has then return nil end
+    local okMark, mark = pcall(GetRaidTargetIndex, "focus")
+    local okName, name = pcall(UnitName, "focus")
+    if not okName then name = nil end
+    return okMark and not issecretvalue(mark) and mark or nil, name, issecretvalue(name)
+end
+
 -- Can party members' targets (marks, names) be read at all under 12.x? Answers decide the kick-target feature.
 local function readout(fn, unit)
     local ok, v = pcall(fn, unit)

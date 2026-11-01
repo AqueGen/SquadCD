@@ -38,7 +38,13 @@ function KickBars.New(parent)
     local value = track:CreateFontString(nil, "OVERLAY")
     value:SetFont(T.FONT, 10, "OUTLINE")
     value:SetPoint("RIGHT", track, "RIGHT", -4, 0)
-    return setmetatable({ frame = f, icon = icon, track = track, fill = fill, mark = mark, name = name, value = value, buf = {} }, KickBars)
+    local target = track:CreateFontString(nil, "OVERLAY")
+    target:SetFont(T.FONT, 10, "OUTLINE")
+    target:SetPoint("LEFT", name, "RIGHT", 3, 0)
+    target:SetPoint("RIGHT", value, "LEFT", -4, 0)
+    target:SetJustifyH("LEFT")
+    target:SetWordWrap(false)
+    return setmetatable({ frame = f, icon = icon, track = track, fill = fill, mark = mark, name = name, target = target, value = value, buf = {} }, KickBars)
 end
 
 function KickBars:SetEntry(spell, member)
@@ -52,28 +58,23 @@ function KickBars:SetEntry(spell, member)
     self.fill:SetColorTexture(self.classColor[1], self.classColor[2], self.classColor[3], 0.85)
     self.text, self.share, self.next, self.result, self.focus = nil, nil, nil, nil, nil
     self.mark:Hide()
+    self.target:SetText("")
     self.name:ClearAllPoints()
     self.name:SetPoint("LEFT", self.track, "LEFT", 4, 0)
 end
 
-local function plain(fn, ...)
-    local ok, v = pcall(fn, ...)
-    if ok and not issecretvalue(v) then return v end
-end
-
 -- Your focus: its raid mark and name next to your own kick bar, so the party sees which mob is yours.
 function KickBars:ShowFocus()
-    local has = plain(UnitExists, "focus")
-    local index = has and plain(GetRaidTargetIndex, "focus") or nil
-    local target = has and plain(UnitName, "focus") or nil
-    local key = tostring(index) .. ":" .. tostring(target)
-    if key == self.focus then return end
+    local index, target, secret = ns.Kicks.Focus()
+    local key = secret and "secret" or tostring(index) .. ":" .. tostring(target)
+    if key == self.focus and not secret then return end
     self.focus = key
     self.mark:SetShown(index ~= nil)
     if index then SetRaidTargetIconTexture(self.mark, index) end
     self.name:ClearAllPoints()
     self.name:SetPoint("LEFT", self.track, "LEFT", index and MARK + 4 or 4, 0)
-    self.name:SetText(target and (self.who .. " > " .. ns.LayoutRules.ShortName(target, LETTERS)) or self.who)
+    self.name:SetText(target and (self.who .. " >") or self.who)
+    self.target:SetText(secret and target or target and ns.LayoutRules.ShortName(target, LETTERS) or "")
 end
 
 function KickBars:Update(state, now, timers)

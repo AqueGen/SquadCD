@@ -60,6 +60,30 @@ describe("Kicks own result", function()
         assert.equal("party1target: exists true, mark secret, name secret", lines[2])
     end)
 
+    it("focus gives a plain mark and name as they are", function()
+        _G.UnitExists = function(u) return u == "focus" end
+        _G.GetRaidTargetIndex = function() return 8 end
+        _G.UnitName = function() return "Mob" end
+        assert.same({ 8, "Mob", false }, { ns.Kicks.Focus() })
+    end)
+
+    it("focus inside an instance drops the secret mark and passes the secret name on for display", function()
+        local SECRET = {}
+        _G.issecretvalue = function(v) return v == SECRET end
+        _G.UnitExists = function(u) return u == "focus" end
+        _G.GetRaidTargetIndex = function() return SECRET end
+        _G.UnitName = function() return SECRET end
+        local mark, name, secret = ns.Kicks.Focus()
+        assert.is_nil(mark)
+        assert.equal(SECRET, name)
+        assert.is_true(secret)
+    end)
+
+    it("no focus gives nothing", function()
+        _G.UnitExists = function() return false end
+        assert.is_nil(ns.Kicks.Focus())
+    end)
+
     it("ignores casts that are not kicks and interrupts by someone else", function()
         helpers.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "c", 642)
         assert.is_nil(ns.Kicks.OwnResult(now))
