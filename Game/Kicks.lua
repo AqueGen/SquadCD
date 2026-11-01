@@ -148,27 +148,6 @@ ownEvents:SetScript("OnEvent", function(_, event, unit, _, spellId, by)
     if by == UnitGUID("player") then own.hit = true else own.late = true end
 end)
 
--- Can party members' targets (marks, names) be read at all under 12.x? Answers decide the kick-target feature.
-local function readout(fn, unit)
-    local ok, v = pcall(fn, unit)
-    if not ok then return "error" end
-    if issecretvalue(v) then return "secret" end
-    return tostring(v)
-end
-
-function Kicks.TargetProbe()
-    local lines = {}
-    for _, unit in ipairs({ "focus", "party1target", "party2target", "party3target", "party4target" }) do
-        lines[#lines + 1] = ("%s: exists %s, mark %s, name %s"):format(unit,
-            readout(UnitExists, unit), readout(GetRaidTargetIndex, unit), readout(UnitName, unit))
-    end
-    return lines
-end
-
-ns.Slash("targetprobe", function()
-    for _, line in ipairs(Kicks.TargetProbe()) do print("SquadCD targetprobe: " .. line) end
-end)
-
 local previous = ns.Group.OnRoster
 ns.Group.OnRoster = function(list)
     previous(list)

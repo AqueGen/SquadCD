@@ -49,17 +49,6 @@ describe("Kicks own result", function()
         assert.equal("miss", ns.Kicks.OwnResult(now))
     end)
 
-    it("target probe says for each unit whether mark and name read plain or secret", function()
-        local SECRET = {}
-        _G.issecretvalue = function(v) return v == SECRET end
-        _G.UnitExists = function(u) return u == "focus" or u == "party1target" end
-        _G.GetRaidTargetIndex = function(u) if u == "focus" then return 8 end return SECRET end
-        _G.UnitName = function(u) if u == "focus" then return "Mob" end return SECRET end
-        local lines = ns.Kicks.TargetProbe()
-        assert.equal("focus: exists true, mark 8, name Mob", lines[1])
-        assert.equal("party1target: exists true, mark secret, name secret", lines[2])
-    end)
-
     it("ignores casts that are not kicks", function()
         helpers.fire("UNIT_SPELLCAST_SUCCEEDED", "player", "c", 642)
         assert.is_nil(ns.Kicks.OwnResult(now))
