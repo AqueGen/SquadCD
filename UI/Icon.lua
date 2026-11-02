@@ -214,8 +214,7 @@ function Icon.NewTab(parent)
     local text = f:CreateFontString(nil, "OVERLAY")
     text:SetFont(T.FONT, 9, "")
     local icon = f:CreateTexture(nil, "ARTWORK")
-    icon:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    icon:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
+    icon:SetPoint("TOP", f, "TOP", 0, 0)
     icon:Hide()
     return setmetatable({ frame = f, fill = fill, text = text, icon = icon }, Tab)
 end
@@ -238,7 +237,7 @@ function Tab:Set(type, labels)
     if icon then
         self.icon:SetTexture(Icon.TypeIcon(type))
         self.icon:SetVertexColor(unpack(style.text))
-        self.icon:SetHeight(Icon.TAB_ICON)
+        self.icon:SetSize(Icon.TAB_ICON, Icon.TAB_ICON)
         return Icon.TAB_ICON
     end
     return math.ceil(self.text:GetStringWidth())
