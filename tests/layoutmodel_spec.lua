@@ -445,6 +445,15 @@ describe("LayoutModel.TypeOrder / RoleOrder", function()
         assert.are.equal("TopLeft", d.panelGrow)
     end)
 
+    it("Normalize gives a saved layout without panelGrow the corner its icon fill used to pin", function()
+        local L = load()
+        local d = L.Defaults()
+        d.panelGrow = nil
+        d.panelShape.origin = "BottomRight"
+        L.Normalize(d)
+        assert.are.equal("BottomRight", d.panelGrow)
+    end)
+
     it("Normalize keeps the active-cooldown look and resets broken values", function()
         local L = load()
         local d = L.Defaults()

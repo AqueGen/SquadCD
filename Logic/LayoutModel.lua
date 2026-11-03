@@ -637,7 +637,8 @@ function LayoutModel.Normalize(layout)
     layout.activeTimers = bool(layout.activeTimers, d.activeTimers)
     layout.glow = bool(layout.glow, d.glow)
     layout.glowColor = oneOf(layout.glowColor, LayoutModel.GLOW_COLORS, d.glowColor)
-    layout.panelGrow = oneOf(layout.panelGrow, CORNERS, d.panelGrow)
+    local oldOrigin = type(layout.panelShape) == "table" and layout.panelShape.origin or nil
+    layout.panelGrow = oneOf(layout.panelGrow or oldOrigin, CORNERS, d.panelGrow)
     layout.memberFit = bool(layout.memberFit, d.memberFit)
     layout.panelShape = cleanShape(layout.panelShape, d.panelShape, {})
     layout.panelShape.typeOrder = nil
