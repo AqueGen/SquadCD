@@ -23,6 +23,7 @@ local function tick()
     sight.live = isLive
     sight.plain = not isLive or ns.Sensors.Mode() == "plain"
     sight.timers = ns.DB.layout.timers
+    sight.active = ns.LayoutModel.ActiveStyle(ns.DB.layout, sight.active)
     local now = GetTime()
     ns.Rows.Update(tracker, now, sight)
     ns.Panel.Update(tracker, now, sight)

@@ -8,7 +8,7 @@ local Model = ns.LayoutModel
 local Preview = ns.Preview
 
 local ROLE_NAMES = { Tank = "Tank", Melee = "Melee", Ranged = "Ranged", Healer = "Healer" }
-local ITEM_W, ITEM_H, CLASS_X, CLASS_COLUMNS = 150, 22, 180, 2
+local ITEM_W, ITEM_H, CLASS_X, CLASS_COLUMNS = 180, 22, 200, 1
 
 local function cancelPreview()
     if Preview.Cancel(ns.DB) then ns.Display.Changed() end
@@ -142,7 +142,10 @@ local function priority(page)
     end
     holder:EnableMouse(true)
     holder:SetScript("OnLeave", left)
-    holder:SetScript("OnHide", deaf)
+    holder:SetScript("OnHide", function()
+        holder:SetScript("OnUpdate", nil)
+        deaf()
+    end)
 
     local function wire(item, list, index)
         item:SetScript("OnClick", function()
@@ -152,17 +155,23 @@ local function priority(page)
             page:Refresh()
         end)
         item:SetScript("OnLeave", left)
-        item:SetScript("OnDragStart", function() item.dragging = true end)
-        item:SetScript("OnDragStop", function()
-            item.dragging = nil
-            local pool = list == "role" and roles or classes
-            for to, other in ipairs(pool) do
-                if other:IsShown() and other:IsMouseOver() and to ~= index then
-                    move(list, index, to)
-                    return
+        item:SetScript("OnDragStart", function()
+            if list == "role" then role = ns.DB.layout.rolePriority[index] end
+            local drag = { list = list, index = index }
+            selected = { list = list, index = index }
+            page:Refresh()
+            holder:SetScript("OnUpdate", function()
+                local pool = drag.list == "role" and roles or classes
+                for to, other in ipairs(pool) do
+                    if to ~= drag.index and other:IsShown() and other:IsMouseOver() then
+                        move(drag.list, drag.index, to)
+                        drag.index = to
+                        return
+                    end
                 end
-            end
+            end)
         end)
+        item:SetScript("OnDragStop", function() holder:SetScript("OnUpdate", nil) end)
     end
     for i = 1, 4 do
         roles[i] = newItem(holder)
@@ -206,7 +215,7 @@ local function priority(page)
         holder:SetSize(CLASS_X + CLASS_COLUMNS * ITEM_W, height)
     end)
     group:Note("A class counts in the role of its current spec. Click a role to order its classes. Drag a row, or click it and press Alt+Up or Alt+Down.")
-    group:Note("Default: Tank > Melee > Ranged > Healer, classes in the game's class list order.")
+    group:Note("Default: Tank > Melee > Ranged > Healer, classes from the fastest kick to the slowest, classes without a kick last.")
 end
 
 ns.Window.Register("presets", function(page)

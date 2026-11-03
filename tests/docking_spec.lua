@@ -205,6 +205,41 @@ describe("Docking", function()
         end)
     end)
 
+    describe("ToPoint", function()
+        local screen = { x = 0, y = 0, w = 1000, h = 800 }
+        local rect = { x = 10, y = 20, w = 100, h = 40 }
+
+        it("stores the rect from the corner the icons grow out of", function()
+            assert.are.same({ "TOPLEFT", 10, -20 }, D.ToPoint(rect, "TopLeft", screen))
+            assert.are.same({ "BOTTOMLEFT", 10, 740 }, D.ToPoint(rect, "BottomLeft", screen))
+            assert.are.same({ "TOPRIGHT", -890, -20 }, D.ToPoint(rect, "TopRight", screen))
+            assert.are.same({ "BOTTOMRIGHT", -890, 740 }, D.ToPoint(rect, "BottomRight", screen))
+        end)
+
+        it("round-trips through FromPoint", function()
+            for _, corner in ipairs({ "TopLeft", "TopRight", "BottomLeft", "BottomRight" }) do
+                assert.are.same({ x = 10, y = 20 }, D.FromPoint(D.ToPoint(rect, corner, screen), rect, screen))
+            end
+        end)
+
+        it("a taller panel pinned at the bottom keeps its bottom edge", function()
+            local point = D.ToPoint(rect, "BottomLeft", screen)
+            local grown = D.FromPoint(point, { w = 100, h = 80 }, screen)
+            assert.are.equal(rect.y + rect.h, grown.y + 80)
+        end)
+    end)
+
+    describe("Reanchor", function()
+        local screen = { x = 0, y = 0, w = 1000, h = 800 }
+
+        it("moves the stored point to the new corner without moving the panel", function()
+            local size = { w = 100, h = 40 }
+            local point = D.Reanchor({ "TOPLEFT", 10, -20 }, size, "BottomRight", screen)
+            assert.are.same({ "BOTTOMRIGHT", -890, 740 }, point)
+            assert.are.same({ x = 10, y = 20 }, D.FromPoint(point, size, screen))
+        end)
+    end)
+
     describe("Near", function()
         it("keeps rects within the snap distance, nearest first", function()
             local rect = { x = 100, y = 100, w = 50, h = 50 }

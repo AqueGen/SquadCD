@@ -55,6 +55,9 @@ describe("LayoutModel.Defaults", function()
         assert.are.equal("OnePanel", d.overlay)
         assert.is_false(d.split)
         assert.is_true(d.timers)
+        assert.is_true(d.activeTimers)
+        assert.is_true(d.glow)
+        assert.are.equal("Cyan", d.glowColor)
         assert.is_true(d.memberFit)
         assert.are.equal("Bars", d.kickStyle)
         assert.are.equal("always", d.showWhen)
@@ -326,6 +329,39 @@ describe("LayoutModel.TypeOrder / RoleOrder", function()
         assert.are.same({ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 }, d.classOrder.Healer)
     end)
 
+    describe("default class order with the spell catalog", function()
+        local L
+        local function pos(list, id)
+            for i, v in ipairs(list) do if v == id then return i end end
+        end
+
+        before_each(function()
+            L = helpers.load({ "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/LayoutGrid.lua" }).LayoutModel
+        end)
+
+        it("puts the fastest kick of the role first and classes without one last", function()
+            local healer = L.Defaults().classOrder.Healer
+            assert.are.equal(7, healer[1])
+            assert.is_true(pos(healer, 2) < pos(healer, 5))
+            assert.are.equal(13, #healer)
+        end)
+
+        it("ranged follows the curated kick priority, then the rest by kick speed", function()
+            local ranged = L.Defaults().classOrder.Ranged
+            assert.are.same({ 7, 3, 12, 8, 13, 9, 5, 11 }, { unpack(ranged, 1, 8) })
+            assert.are.equal(13, #ranged)
+        end)
+
+        it("moves an order nobody changed to the new default, keeps a changed one", function()
+            local d = L.Defaults()
+            d.classOrder.Ranged = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 }
+            d.classOrder.Tank = { 2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 }
+            L.Normalize(d)
+            assert.are.same(L.Defaults().classOrder.Ranged, d.classOrder.Ranged)
+            assert.are.same({ 2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 }, d.classOrder.Tank)
+        end)
+    end)
+
     it("ResetPriority restores the default roles and classes", function()
         local L = load()
         local d = L.Defaults()
@@ -394,6 +430,21 @@ describe("LayoutModel.TypeOrder / RoleOrder", function()
         assert.are.equal("Kick", blocks[1].types[1])
         assert.are.equal("Burst", blocks[2].types[1])
         assert.are.equal("Movement", blocks[3].types[#blocks[3].types])
+    end)
+
+    it("Normalize keeps the active-cooldown look and resets broken values", function()
+        local L = load()
+        local d = L.Defaults()
+        d.activeTimers, d.glow, d.glowColor = false, false, "Gold"
+        L.Normalize(d)
+        assert.is_false(d.activeTimers)
+        assert.is_false(d.glow)
+        assert.are.equal("Gold", d.glowColor)
+        d.activeTimers, d.glow, d.glowColor = "yes", nil, "Pink"
+        L.Normalize(d)
+        assert.is_true(d.activeTimers)
+        assert.is_true(d.glow)
+        assert.are.equal("Cyan", d.glowColor)
     end)
 
     it("Normalize drops the v1 panel lock", function()

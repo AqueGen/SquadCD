@@ -119,7 +119,10 @@ end
 
 function Layer:SetTimers(on)
     self.window:SetShown(on)
-    self.overlay:SetTimers(on)
+end
+
+function Layer:SetActive(style)
+    self.overlay:SetStyle(style)
 end
 
 function Layer:Show(on)

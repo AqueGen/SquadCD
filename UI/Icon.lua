@@ -139,9 +139,10 @@ function Icon:Border()
     self.frame:SetBackdropBorderColor(unpack(color))
 end
 
-function Icon:Update(state, now, timers)
+function Icon:Update(state, now, timers, active)
     if self.secret then
         self.layer:SetTimers(timers ~= false)
+        self.layer:SetActive(active)
         if self.look ~= "secret" then
             self.look, self.start, self.text, self.charges = "secret", nil, "", ""
             self.cd:Clear()
@@ -154,7 +155,7 @@ function Icon:Update(state, now, timers)
         return
     end
     if not state then return end
-    if self.overlay then self.overlay:SetTimers(timers ~= false) end
+    if self.overlay then self.overlay:SetStyle(active) end
     local cooling = not state.ready
     local unknown = not cooling and state.unknown or false
     local timer = unknown and 0 or cooling and state.remaining or state.recharge or 0
@@ -214,8 +215,7 @@ function Icon.NewTab(parent)
     local text = f:CreateFontString(nil, "OVERLAY")
     text:SetFont(T.FONT, 9, "")
     local icon = f:CreateTexture(nil, "ARTWORK")
-    icon:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-    icon:SetPoint("TOPRIGHT", f, "TOPRIGHT", 0, 0)
+    icon:SetPoint("TOP", f, "TOP", 0, 0)
     icon:Hide()
     return setmetatable({ frame = f, fill = fill, text = text, icon = icon }, Tab)
 end
@@ -238,7 +238,7 @@ function Tab:Set(type, labels)
     if icon then
         self.icon:SetTexture(Icon.TypeIcon(type))
         self.icon:SetVertexColor(unpack(style.text))
-        self.icon:SetHeight(Icon.TAB_ICON)
+        self.icon:SetSize(Icon.TAB_ICON, Icon.TAB_ICON)
         return Icon.TAB_ICON
     end
     return math.ceil(self.text:GetStringWidth())

@@ -242,7 +242,11 @@ local function new(opts)
             if key ~= "panel" and not placeOf(sectionOf[key], groups) then loose[#loose + 1] = sizes[key] end
         end
         local _, blockW, blockH = Grid.PlaceSections(loose, layout.panelShape, ns.Docking.GAP)
-        local start = preview and { x = 0, y = 0 } or ns.Docking.FromPoint(layout.panel.point, sizes.panel or { w = blockW, h = blockH }, scr)
+        local mainSize = sizes.panel or { w = blockW, h = blockH }
+        if not preview then
+            layout.panel.point = ns.Docking.Reanchor(layout.panel.point, mainSize, layout.panelShape.origin, scr)
+        end
+        local start = preview and { x = 0, y = 0 } or ns.Docking.FromPoint(layout.panel.point, mainSize, scr)
         positions = { panel = start }
         local chain = layout.panelShape.axis == "Columns" and "Right" or "Below"
         local previous = sizes.panel and "panel" or nil
@@ -327,7 +331,7 @@ local function new(opts)
                     local down = l.type == "Kick" and Grid.AllCooling(sorted)
                     for k, buf in ipairs(sorted) do
                         local w = buf.widget
-                        w:Update(buf, now, sight.timers)
+                        w:Update(buf, now, sight.timers, sight.active)
                         w:SetNext(k == nextAt, down)
                         if l.placed[k] ~= w then
                             l.placed[k] = w

@@ -58,6 +58,7 @@ local anchors = {
 
 local function update()
     sight.timers = ns.DB.layout.timers
+    sight.active = ns.LayoutModel.ActiveStyle(ns.DB.layout, sight.active)
     local now = GetTime()
     panel.Update(source.tracker, now, sight)
     rows.Update(source.tracker, now, sight)

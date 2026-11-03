@@ -95,8 +95,8 @@ local function Layout()
     pane:Show()
 end
 
-local function TitleButton(parent, text, width, anchor, onClick)
-    local button = Widgets.Button(parent, text, width)
+local function TitleButton(parent, text, width, anchor, onClick, primary)
+    local button = Widgets.Button(parent, text, width, primary)
     button:SetPoint("RIGHT", anchor, anchor == parent and "RIGHT" or "LEFT", anchor == parent and -(TITLE_H - 22) / 2 or -GAP, 0)
     button:SetScript("OnClick", function()
         onClick()
@@ -145,7 +145,7 @@ local function Build()
     name:SetText("SquadCD")
 
     local close = TitleButton(title, "X", 22, title, function() frame:Hide() end)
-    unlock = TitleButton(title, "Move the panels", 110, close, ns.EditMode.TogglePanels)
+    unlock = TitleButton(title, "Move the panels", 110, close, ns.EditMode.TogglePanels, true)
     demo = TitleButton(title, "Demo", 80, unlock, ns.Demo.Toggle)
 
     menu = CreateFrame("Frame", nil, frame, "BackdropTemplate")

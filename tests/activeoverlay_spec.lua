@@ -73,6 +73,11 @@ describe("ActiveOverlay", function()
         assert.is_not_nil(groups[1].calls.Play)
     end)
 
+    it("sizes the aura button itself: the engine layout only spaces elements and leaves the button 0x0", function()
+        local b = button()
+        assert.same({ 30, 30 }, b.calls.SetSize)
+    end)
+
     it("re-points watched displays instead of building new ones", function()
         overlay:Watch({ { unit = "party1", ids = { 48707 } } })
         overlay:Watch({ { unit = "party2", ids = { 48707 } } })
@@ -128,13 +133,45 @@ describe("ActiveOverlay", function()
         assert.same({ elementWidth = 40, elementHeight = 40 }, options.layout)
     end)
 
-    it("hides the time text when timers are off, on a display of its own", function()
+    local function dressedWith(style)
+        overlay:Watch({ { unit = "party1", ids = { 48707 } } })
+        overlay:SetStyle(style)
+        local c = containers()
+        local _, _, options = unpack(c[#c].calls.AddAuraGroup)
+        local before = #made
+        options.initializeFrame(stub("Button", made))
+        local textures, groups = {}, {}
+        for i = before + 1, #made do
+            local o = made[i]
+            if o.kind == "CreateTexture" then textures[#textures + 1] = o end
+            if o.kind == "CreateAnimationGroup" then groups[#groups + 1] = o end
+        end
+        return textures, groups, last("CreateFontString")
+    end
+
+    it("hides the time text when active timers are off, on a display of its own", function()
         button()
         local shown = last("CreateFontString")
-        overlay:SetTimers(false)
+        local _, _, text = dressedWith({ timers = false, glow = true, color = "Cyan" })
         assert.same({ 1 }, shown.calls.SetAlpha)
-        local _, _, options = unpack(containers()[2].calls.AddAuraGroup)
-        options.initializeFrame(stub("Button", made))
-        assert.same({ 0 }, last("CreateFontString").calls.SetAlpha)
+        assert.same({ 0 }, text.calls.SetAlpha)
+    end)
+
+    it("drops the halo and its breathing when the glow is off", function()
+        local textures, groups = dressedWith({ timers = true, glow = false, color = "Cyan" })
+        assert.equal(2, #textures)
+        assert.equal(0, #groups)
+    end)
+
+    it("paints the halo in the chosen colour", function()
+        local textures = dressedWith({ timers = true, glow = true, color = "Gold" })
+        assert.same(ns.ActiveOverlay.COLORS.Gold, textures[1].calls.SetVertexColor)
+    end)
+
+    it("keeps the current display while the style does not change", function()
+        overlay:Watch({ { unit = "party1", ids = { 48707 } } })
+        overlay:SetStyle({ timers = true, glow = true, color = "Cyan" })
+        overlay:SetStyle({ timers = true, glow = true, color = "Cyan" })
+        assert.equal(1, #containers())
     end)
 end)

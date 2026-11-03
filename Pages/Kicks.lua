@@ -71,7 +71,7 @@ local function tracker(page)
         visible = function() return kickSection() ~= nil and Model.OwnWindow(layout(), kickSection()) end,
     })
     group:Note({ text = "Kicks are at the party frames now; the panel options apply when they are in the panel (Presets and types).", visible = function() return Model.PlaceOf(layout(), "Kick") == "member" end })
-    group:Button({ text = "Move the panels", width = 140, onClick = function() ns.EditMode.TogglePanels() end, visible = function() return kickSection() ~= nil end })
+    group:Button({ text = "Move the panels", width = 140, primary = true, onClick = function() ns.EditMode.TogglePanels() end, visible = function() return kickSection() ~= nil end })
 end
 
 local function queue(page)

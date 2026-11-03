@@ -6,6 +6,10 @@ local Model = ns.LayoutModel
 
 local OVERLAY = { { value = "OnePanel", text = "One panel" }, { value = "Windows", text = "A window per section" } }
 local SHOW_WHEN = { { value = "always", text = "Always" }, { value = "group", text = "Only in a group" } }
+local GLOW_COLORS = {
+    { value = "Cyan", text = "Cyan" }, { value = "Gold", text = "Gold" },
+    { value = "Green", text = "Green" }, { value = "White", text = "White" },
+}
 
 local function layout()
     return ns.DB.layout
@@ -108,13 +112,20 @@ ns.Window.Register("panels", function(page)
     panels:Segmented({ label = "Sections show in", options = OVERLAY, width = 260, get = get("overlay"), set = set("overlay") })
     panels:Note("One panel: every section stacks in one panel, a section can still get its own window. A window per section: each section is its own panel.")
     panels:Button({
-        text = "Move the panels", width = 140,
+        text = "Move the panels", width = 140, primary = true,
         onClick = function() ns.EditMode.TogglePanels() end,
     })
     panels:Button({ text = "Reset arrangement", width = 140, onClick = function() ns.EditMode.ResetArrangement() end })
     panels:Note("Reset puts every window back next to the panel.")
     panels:Check({ label = "Timers", get = get("timers"), set = set("timers") })
     panels:Note("Seconds left on icons that are on cooldown. Off: the icon only greys out.")
+    panels:Check({ label = "Time left on active cooldowns", get = get("activeTimers"), set = set("activeTimers") })
+    panels:Check({ label = "Glow on active cooldowns", get = get("glow"), set = set("glow") })
+    panels:Segmented({
+        label = "Glow colour", options = GLOW_COLORS, width = 300, get = get("glowColor"), set = set("glowColor"),
+        visible = function() return layout().glow end,
+    })
+    panels:Note("Active: the buff is still on. The icon lights up, and the time left is the game's own.")
 
     local look = page:Group("Panel look and shape")
     look.key = "look"

@@ -166,4 +166,16 @@ describe("Wizard window", function()
         click("Cancel")
         assert.are.equal(before, ns.DB.layout)
     end)
+
+    it("the panels can be moved from the first step and the wizard comes back to it", function()
+        ns.Icon = { TypeIcon = function() return nil end }
+        W.Open()
+        click("Move the panels")
+        assert.is_true(editing)
+        assert.is_false(W.IsOpen())
+        editing = false
+        tickers[#tickers]()
+        assert.is_true(W.IsOpen())
+        click("Cancel")
+    end)
 end)

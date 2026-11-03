@@ -218,7 +218,7 @@ local function new(opts)
                     if state then
                         state.unknown = state.ready and ns.LayoutRules.Unknown(icon.spell.id, icon.own, sight.plain)
                     end
-                    icon:Update(state, now, sight.timers)
+                    icon:Update(state, now, sight.timers, sight.active)
                 end
             end
         end
