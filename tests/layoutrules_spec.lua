@@ -369,6 +369,19 @@ describe("LayoutRules", function()
             end
         end)
 
+        it("a row is on only while every one of its ids is on", function()
+            assert.is_true(R.SpellsOn({}, { 1, 2 }))
+            assert.is_false(R.SpellsOn({ [2] = false }, { 1, 2 }))
+        end)
+
+        it("unticking stores false for every id, ticking clears them", function()
+            local spells = {}
+            R.SetSpellsOn(spells, { 1, 2 }, false)
+            assert.are.same({ [1] = false, [2] = false }, spells)
+            R.SetSpellsOn(spells, { 1, 2 }, true)
+            assert.are.same({}, spells)
+        end)
+
         it("flags spells nobody else can see", function()
             local byId = {}
             for _, e in ipairs(R.Catalog(nil)) do byId[e.id] = e end

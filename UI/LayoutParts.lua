@@ -15,14 +15,14 @@ local CORNERS = {
     { value = "BottomLeft", text = "Bottom left" }, { value = "BottomRight", text = "Bottom right" },
 }
 local GROW_ROWS = {
-    { value = "TopLeft", text = "Right, then down" }, { value = "TopRight", text = "Left, then down" },
-    { value = "BottomLeft", text = "Right, then up" }, { value = "BottomRight", text = "Left, then up" },
+    { value = "TopLeft", text = "Right, down" }, { value = "TopRight", text = "Left, down" },
+    { value = "BottomLeft", text = "Right, up" }, { value = "BottomRight", text = "Left, up" },
 }
 local GROW_COLUMNS = {
-    { value = "TopLeft", text = "Down, then right" }, { value = "TopRight", text = "Down, then left" },
-    { value = "BottomLeft", text = "Up, then right" }, { value = "BottomRight", text = "Up, then left" },
+    { value = "TopLeft", text = "Down, right" }, { value = "TopRight", text = "Down, left" },
+    { value = "BottomLeft", text = "Up, right" }, { value = "BottomRight", text = "Up, left" },
 }
-local GROW_W = 460
+local GROW_W = 320
 local SORTS ={ { value = "Fixed", text = "Fixed" }, { value = "ReadyFirst", text = "Ready first" } }
 local LABELS = { { value = "None", text = "None" }, { value = "Icon", text = "Icon" }, { value = "Glyph", text = "Letter" }, { value = "Short", text = "Short text" }, { value = "Full", text = "Full text" } }
 local BACKGROUNDS = { { value = "Default", text = "Default" }, { value = "Black", text = "Black" }, { value = "Slate", text = "Slate" }, { value = "None", text = "None" } }
@@ -97,7 +97,7 @@ function Parts.Shape(group, opts)
     end
     group:Segmented({ label = "Icons grow", options = GROW_ROWS, width = GROW_W, get = get("origin"), set = setting("origin"), visible = axisIs("Rows") })
     group:Segmented({ label = "Icons grow", options = GROW_COLUMNS, width = GROW_W, get = get("origin"), set = setting("origin"), visible = axisIs("Columns") })
-    group:Note({ text = "The first icon's corner stays put on screen. Icons that do not fit the line go the second way.", visible = opts.visible })
+    group:Note({ text = "Icons fill the first way; icons that do not fit the line go the second way. The first icon's corner stays put on screen.", visible = opts.visible })
     group:Segmented({
         label = "Order inside a type", options = SORTS, get = get("sort"), set = setting("sort"), visible = opts.visible,
         note = "Fixed: role and class priority",

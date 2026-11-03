@@ -58,8 +58,7 @@ local function NewRow(list)
     row.check = LibStub("LibVelvet-1.0").Checkbox(row, 20)
     row.check:SetPoint("LEFT")
     row.check:SetScript("OnClick", function(self)
-        local value = not self:GetChecked() and false or nil
-        for _, id in ipairs(row.ids) do ns.DB.spells[id] = value end
+        ns.LayoutRules.SetSpellsOn(ns.DB.spells, row.ids, self:GetChecked() and true or false)
         ns.Display.Changed()
     end)
     row.icon = row:CreateTexture(nil, "ARTWORK")
@@ -84,7 +83,7 @@ end
 
 local function Fill(row, e)
     row.id, row.ids = e.id, e.ids or { e.id }
-    row.check:SetChecked(ns.DB.spells[e.id] ~= false)
+    row.check:SetChecked(ns.LayoutRules.SpellsOn(ns.DB.spells, row.ids))
     local texture = e.id == "potion" and C_Item.GetItemIconByID(ns.Potions[1].item) or (e.icon and "Interface\\Icons\\" .. e.icon)
     row.icon:SetTexture((issecretvalue(texture) or texture == nil) and QUESTION or texture)
     row.name:SetText(e.name)

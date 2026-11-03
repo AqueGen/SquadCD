@@ -46,6 +46,19 @@ function LayoutRules.SpellsFor(member, own, enabled)
     return list
 end
 
+function LayoutRules.SpellsOn(spells, ids)
+    for _, id in ipairs(ids) do
+        if spells[id] == false then return false end
+    end
+    return true
+end
+
+function LayoutRules.SetSpellsOn(spells, ids, on)
+    for _, id in ipairs(ids) do
+        if on then spells[id] = nil else spells[id] = false end
+    end
+end
+
 function LayoutRules.Catalog(class)
     local list, racial = {}, {}
     for id, s in pairs(ns.Spells) do
