@@ -206,7 +206,7 @@ local function priority(page)
         holder:SetSize(CLASS_X + CLASS_COLUMNS * ITEM_W, height)
     end)
     group:Note("A class counts in the role of its current spec. Click a role to order its classes. Drag a row, or click it and press Alt+Up or Alt+Down.")
-    group:Note("Default: Tank > Melee > Ranged > Healer, classes in the game's class list order.")
+    group:Note("Default: Tank > Melee > Ranged > Healer, classes from the fastest kick to the slowest, classes without a kick last.")
 end
 
 ns.Window.Register("presets", function(page)

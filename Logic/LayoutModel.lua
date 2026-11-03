@@ -78,13 +78,20 @@ local function fastestKicks(role)
     return best
 end
 
+-- Owner's ranged kick priority: Balance only has Solar Beam in practice, the catalog's talent data cannot tell that.
+local CURATED_ORDER = { Ranged = { 7, 3, 12, 8, 13, 9, 5, 11 } }
+
 local function defaultClassOrder()
     local classOrder = {}
     for _, role in ipairs(ROLES) do
         local best = fastestKicks(role)
+        local curated = {}
+        for i, c in ipairs(CURATED_ORDER[role] or {}) do curated[c] = i end
         local order = {}
         for i = 1, CLASS_COUNT do order[i] = i end
         table.sort(order, function(a, b)
+            local ca, cb = curated[a] or math.huge, curated[b] or math.huge
+            if ca ~= cb then return ca < cb end
             local x, y = best[a] or math.huge, best[b] or math.huge
             if x ~= y then return x < y end
             return a < b

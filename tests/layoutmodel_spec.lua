@@ -340,10 +340,15 @@ describe("LayoutModel.TypeOrder / RoleOrder", function()
         end)
 
         it("puts the fastest kick of the role first and classes without one last", function()
+            local healer = L.Defaults().classOrder.Healer
+            assert.are.equal(7, healer[1])
+            assert.is_true(pos(healer, 2) < pos(healer, 5))
+            assert.are.equal(13, #healer)
+        end)
+
+        it("ranged follows the curated kick priority, then the rest by kick speed", function()
             local ranged = L.Defaults().classOrder.Ranged
-            assert.are.equal(7, ranged[1])
-            assert.is_true(pos(ranged, 8) < pos(ranged, 5))
-            assert.is_true(pos(ranged, 5) < pos(ranged, 1))
+            assert.are.same({ 7, 3, 12, 8, 13, 9, 5, 11 }, { unpack(ranged, 1, 8) })
             assert.are.equal(13, #ranged)
         end)
 
