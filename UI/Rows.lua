@@ -25,14 +25,17 @@ local function measure(row, g, gi, layout, isStack, fw, fh)
     local shape = g.shape
     local gap = g.gap or ICON_GAP
     if layout.memberFit and not isStack then
-        shape = Grid.FitShape(shape, side, total, size, size, lead, fw, fh, gap)
+        shape = Grid.FitShape(shape, side, counts, size, size, lead, fw, fh, gap)
     end
-    local tabs = Grid.Tabs(counts, shape.perLine)
-    local cells = {}
-    for k = 1, total do cells[k] = { w = size + (tabs[k] and lead or 0), h = size } end
-    local rects, w, h = Grid.PlaceMemberRow(cells, shape, side, isStack and 0 or fh, gap)
+    local breaks, tabs = Grid.RunLines(counts, shape.perLine)
+    local leads, cells = {}, {}
+    for k = 1, total do
+        leads[k] = tabs[k] or breaks[k]
+        cells[k] = { w = size + (leads[k] and lead or 0), h = size }
+    end
+    local rects, w, h = Grid.PlaceMemberRow(cells, shape, side, isStack and 0 or fh, gap, breaks)
     return {
-        gi = gi, group = g, look = look, size = size, side = side, tabW = tabW, tabs = tabs, rects = rects,
+        gi = gi, group = g, look = look, size = size, side = side, tabW = tabW, tabs = tabs, leads = leads, rects = rects,
         corner = Grid.MemberOrigin(shape.origin, side), w = w + 2 * RING, h = h + 2 * RING,
         offsetX = g.offsetX, offsetY = g.offsetY,
     }
@@ -127,6 +130,7 @@ local function new(opts)
                 icon:SetSpell(spell, row.member, m.size)
                 icon.guid, icon.own = row.member.guid, row.own
                 local iconX = r.x
+                if m.leads[k] and m.tabW > 0 and not mirrored then iconX = r.x + m.tabW + TAB_GAP end
                 if m.tabs[k] and m.tabW > 0 then
                     used = used + 1
                     local tab = holderOf.tabs[used] or ns.Icon.NewTab(f)
@@ -135,7 +139,6 @@ local function new(opts)
                     tab.frame:SetSize(m.tabW, m.size)
                     tab.frame:ClearAllPoints()
                     local tabX = mirrored and r.x + m.size + TAB_GAP or r.x
-                    if not mirrored then iconX = r.x + m.tabW + TAB_GAP end
                     tab.frame:SetPoint("TOPLEFT", f, "TOPLEFT", RING + tabX, -(RING + r.y))
                     tab.text:ClearAllPoints()
                     tab.text:SetPoint("CENTER", tab.frame, "CENTER", 0, 0)
