@@ -58,13 +58,48 @@ local function memberLook()
     return { iconSize = 26, labels = "Icon", background = "None", opacity = 100, nameLetters = 5 }
 end
 
+local function fastestKicks(role)
+    local best = {}
+    local Grid = ns.LayoutGrid
+    if not (Grid and ns.Spells and ns.Specs) then return best end
+    for _, s in pairs(ns.Spells) do
+        if s.type == "Kick" then
+            local anySpec = not s.specs or #s.specs == 0
+            for specId, spec in pairs(ns.Specs) do
+                local fits = anySpec
+                for _, id in ipairs(s.specs or {}) do fits = fits or id == specId end
+                if fits and spec.class == s.class and Grid.RoleOf(specId) == role then
+                    local c = Grid.ClassId(s.class)
+                    if c then best[c] = math.min(best[c] or math.huge, s.cd or math.huge) end
+                end
+            end
+        end
+    end
+    return best
+end
+
 local function defaultClassOrder()
     local classOrder = {}
     for _, role in ipairs(ROLES) do
-        classOrder[role] = {}
-        for i = 1, CLASS_COUNT do classOrder[role][i] = i end
+        local best = fastestKicks(role)
+        local order = {}
+        for i = 1, CLASS_COUNT do order[i] = i end
+        table.sort(order, function(a, b)
+            local x, y = best[a] or math.huge, best[b] or math.huge
+            if x ~= y then return x < y end
+            return a < b
+        end)
+        classOrder[role] = order
     end
     return classOrder
+end
+
+local function untouched(order)
+    if type(order) ~= "table" or #order ~= CLASS_COUNT then return false end
+    for i = 1, CLASS_COUNT do
+        if order[i] ~= i then return false end
+    end
+    return true
 end
 
 function LayoutModel.Defaults()
@@ -701,6 +736,7 @@ function LayoutModel.Normalize(layout)
     for _, role in ipairs(ROLES) do
         local out, have = {}, {}
         local src = type(classOrder[role]) == "table" and classOrder[role] or {}
+        if untouched(src) then src = d.classOrder[role] end
         for i = 1, #src + CLASS_COUNT do
             local c = i <= #src and src[i] or i - #src
             if type(c) == "number" and c >= 1 and c <= CLASS_COUNT and c % 1 == 0 and not have[c] then

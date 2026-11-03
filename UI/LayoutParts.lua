@@ -14,7 +14,16 @@ local CORNERS = {
     { value = "TopLeft", text = "Top left" }, { value = "TopRight", text = "Top right" },
     { value = "BottomLeft", text = "Bottom left" }, { value = "BottomRight", text = "Bottom right" },
 }
-local SORTS = { { value = "Fixed", text = "Fixed" }, { value = "ReadyFirst", text = "Ready first" } }
+local GROW_ROWS = {
+    { value = "TopLeft", text = "Right, then down" }, { value = "TopRight", text = "Left, then down" },
+    { value = "BottomLeft", text = "Right, then up" }, { value = "BottomRight", text = "Left, then up" },
+}
+local GROW_COLUMNS = {
+    { value = "TopLeft", text = "Down, then right" }, { value = "TopRight", text = "Down, then left" },
+    { value = "BottomLeft", text = "Up, then right" }, { value = "BottomRight", text = "Up, then left" },
+}
+local GROW_W = 460
+local SORTS ={ { value = "Fixed", text = "Fixed" }, { value = "ReadyFirst", text = "Ready first" } }
 local LABELS = { { value = "None", text = "None" }, { value = "Icon", text = "Icon" }, { value = "Glyph", text = "Letter" }, { value = "Short", text = "Short text" }, { value = "Full", text = "Full text" } }
 local BACKGROUNDS = { { value = "Default", text = "Default" }, { value = "Black", text = "Black" }, { value = "Slate", text = "Slate" }, { value = "None", text = "None" } }
 local WIDE, LABELS_W = 280, 300
@@ -79,8 +88,16 @@ function Parts.Shape(group, opts)
     end
     group:Segmented({ label = "Fill order", options = AXES, get = get("axis"), set = setting("axis"), visible = opts.visible })
     group:Slider({ label = "Icons per line", min = 1, max = 12, get = get("perLine"), set = setting("perLine"), visible = opts.visible })
-    group:Segmented({ label = "Grows from corner", options = CORNERS, width = WIDE, get = get("origin"), set = setting("origin"), visible = opts.visible })
-    if opts.member then return end
+    if opts.member then
+        group:Segmented({ label = "Grows from corner", options = CORNERS, width = WIDE, get = get("origin"), set = setting("origin"), visible = opts.visible })
+        return
+    end
+    local function axisIs(axis)
+        return both(opts.visible, function() return (opts.get().axis == "Columns") == (axis == "Columns") end)
+    end
+    group:Segmented({ label = "Icons grow", options = GROW_ROWS, width = GROW_W, get = get("origin"), set = setting("origin"), visible = axisIs("Rows") })
+    group:Segmented({ label = "Icons grow", options = GROW_COLUMNS, width = GROW_W, get = get("origin"), set = setting("origin"), visible = axisIs("Columns") })
+    group:Note({ text = "The first icon's corner stays put on screen. Icons that do not fit the line go the second way.", visible = opts.visible })
     group:Segmented({
         label = "Order inside a type", options = SORTS, get = get("sort"), set = setting("sort"), visible = opts.visible,
         note = "Fixed: role and class priority",

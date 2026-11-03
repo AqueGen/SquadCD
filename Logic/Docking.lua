@@ -198,6 +198,20 @@ function Docking.FromPoint(point, size, screen)
     }
 end
 
+local CORNER_POINT = { TopLeft = "TOPLEFT", TopRight = "TOPRIGHT", BottomLeft = "BOTTOMLEFT", BottomRight = "BOTTOMRIGHT" }
+
+function Docking.ToPoint(rect, corner, screen)
+    local p = CORNER_POINT[corner] or "TOPLEFT"
+    local fx = p:find("RIGHT") and 1 or 0
+    local fy = p:find("BOTTOM") and 1 or 0
+    return { p, rect.x - screen.x - fx * (screen.w - rect.w), -(rect.y - screen.y - fy * (screen.h - rect.h)) }
+end
+
+function Docking.Reanchor(point, size, corner, screen)
+    local at = Docking.FromPoint(point, size, screen)
+    return Docking.ToPoint({ x = at.x, y = at.y, w = size.w, h = size.h }, corner, screen)
+end
+
 local function placed(pos, target, size, gap)
     local x, y
     if pos.side == "Right" then x, y = right(target) + gap, target.y + pos.offset

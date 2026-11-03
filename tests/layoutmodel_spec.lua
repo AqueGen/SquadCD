@@ -329,6 +329,34 @@ describe("LayoutModel.TypeOrder / RoleOrder", function()
         assert.are.same({ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 }, d.classOrder.Healer)
     end)
 
+    describe("default class order with the spell catalog", function()
+        local L
+        local function pos(list, id)
+            for i, v in ipairs(list) do if v == id then return i end end
+        end
+
+        before_each(function()
+            L = helpers.load({ "Logic/LayoutModel.lua", "Core.lua", "Data.lua", "Logic/LayoutGrid.lua" }).LayoutModel
+        end)
+
+        it("puts the fastest kick of the role first and classes without one last", function()
+            local ranged = L.Defaults().classOrder.Ranged
+            assert.are.equal(7, ranged[1])
+            assert.is_true(pos(ranged, 8) < pos(ranged, 5))
+            assert.is_true(pos(ranged, 5) < pos(ranged, 1))
+            assert.are.equal(13, #ranged)
+        end)
+
+        it("moves an order nobody changed to the new default, keeps a changed one", function()
+            local d = L.Defaults()
+            d.classOrder.Ranged = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 }
+            d.classOrder.Tank = { 2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 }
+            L.Normalize(d)
+            assert.are.same(L.Defaults().classOrder.Ranged, d.classOrder.Ranged)
+            assert.are.same({ 2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 }, d.classOrder.Tank)
+        end)
+    end)
+
     it("ResetPriority restores the default roles and classes", function()
         local L = load()
         local d = L.Defaults()
