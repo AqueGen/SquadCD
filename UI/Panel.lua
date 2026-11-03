@@ -327,7 +327,7 @@ local function new(opts)
                     local down = l.type == "Kick" and Grid.AllCooling(sorted)
                     for k, buf in ipairs(sorted) do
                         local w = buf.widget
-                        w:Update(buf, now, sight.timers)
+                        w:Update(buf, now, sight.timers, sight.active)
                         w:SetNext(k == nextAt, down)
                         if l.placed[k] ~= w then
                             l.placed[k] = w

@@ -139,9 +139,10 @@ function Icon:Border()
     self.frame:SetBackdropBorderColor(unpack(color))
 end
 
-function Icon:Update(state, now, timers)
+function Icon:Update(state, now, timers, active)
     if self.secret then
         self.layer:SetTimers(timers ~= false)
+        self.layer:SetActive(active)
         if self.look ~= "secret" then
             self.look, self.start, self.text, self.charges = "secret", nil, "", ""
             self.cd:Clear()
@@ -154,7 +155,7 @@ function Icon:Update(state, now, timers)
         return
     end
     if not state then return end
-    if self.overlay then self.overlay:SetTimers(timers ~= false) end
+    if self.overlay then self.overlay:SetStyle(active) end
     local cooling = not state.ready
     local unknown = not cooling and state.unknown or false
     local timer = unknown and 0 or cooling and state.remaining or state.recharge or 0

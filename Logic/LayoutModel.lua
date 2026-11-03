@@ -83,6 +83,9 @@ function LayoutModel.Defaults()
         memberLook = memberLook(),
         panel = { point = { "CENTER", 0, -200 } },
         timers = true,
+        activeTimers = true,
+        glow = true,
+        glowColor = "Cyan",
         memberFit = true,
         kickStyle = "Bars",
         showWhen = "always",
@@ -517,6 +520,13 @@ local function bool(v, default)
 end
 
 local AXES = { "Rows", "Columns" }
+LayoutModel.GLOW_COLORS = { "Cyan", "Gold", "Green", "White" }
+
+function LayoutModel.ActiveStyle(layout, out)
+    out = out or {}
+    out.timers, out.glow, out.color = layout.activeTimers ~= false, layout.glow ~= false, layout.glowColor
+    return out
+end
 local CORNERS = { "TopLeft", "TopRight", "BottomLeft", "BottomRight" }
 local SORTS = { "Fixed", "ReadyFirst" }
 local SIDES = { "Right", "Left", "Above", "Below" }
@@ -581,6 +591,9 @@ function LayoutModel.Normalize(layout)
     layout.showWhen = oneOf(layout.showWhen, { "always", "group" }, d.showWhen)
     layout.split = bool(layout.split, d.split)
     layout.timers = bool(layout.timers, d.timers)
+    layout.activeTimers = bool(layout.activeTimers, d.activeTimers)
+    layout.glow = bool(layout.glow, d.glow)
+    layout.glowColor = oneOf(layout.glowColor, LayoutModel.GLOW_COLORS, d.glowColor)
     layout.memberFit = bool(layout.memberFit, d.memberFit)
     layout.panelShape = cleanShape(layout.panelShape, d.panelShape, {})
     layout.panelShape.typeOrder = nil
