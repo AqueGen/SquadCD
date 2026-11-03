@@ -123,7 +123,7 @@ function LayoutModel.Defaults()
         panelShape = shape("Rows", 6, "TopLeft"),
         panelLook = panelLook(),
         memberLook = memberLook(),
-        panel = { point = { "CENTER", 0, -200 } },
+        panel = { point = { "TOPLEFT", 20, -260 } },
         timers = true,
         activeTimers = true,
         glow = true,

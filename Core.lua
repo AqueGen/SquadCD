@@ -4,7 +4,7 @@ local addonName, ns = ...
 ns.DEFAULTS = {
     version = 2,
     layout = ns.LayoutModel.Defaults(),
-    row = { point = { "CENTER", -360, 120 } },
+    row = { point = { "TOPLEFT", 20, -80 } },
     spells = {},
     window = {},
     timers = {},
