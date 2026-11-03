@@ -47,14 +47,25 @@ function LayoutRules.SpellsFor(member, own, enabled)
 end
 
 function LayoutRules.Catalog(class)
-    local list = {}
+    local list, racial = {}, {}
     for id, s in pairs(ns.Spells) do
         if class == nil or s.class == class then
-            list[#list + 1] = {
-                id = id, name = s.name, type = s.type, cd = s.cd, icon = s.icon,
-                untrackable = s.track == "none" or (s.track == "debuff" and not s.debuffs),
-            }
+            local e = s.races and racial[s.name]
+            if e then
+                e.ids[#e.ids + 1] = id
+            else
+                e = {
+                    id = id, ids = { id }, name = s.name, type = s.type, cd = s.cd, icon = s.icon,
+                    untrackable = s.track == "none" or (s.track == "debuff" and not s.debuffs),
+                }
+                if s.races then racial[s.name] = e end
+                list[#list + 1] = e
+            end
         end
+    end
+    for _, e in pairs(racial) do
+        table.sort(e.ids)
+        e.id = e.ids[1]
     end
     table.sort(list, function(a, b)
         local ra, rb = LayoutRules.TypeRank(a.type), LayoutRules.TypeRank(b.type)

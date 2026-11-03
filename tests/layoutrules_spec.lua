@@ -344,10 +344,29 @@ describe("LayoutRules", function()
             end
         end)
 
-        it("all lists every spell", function()
-            local n = 0
-            for _ in pairs(ns.Spells) do n = n + 1 end
-            assert.are.equal(n, #R.Catalog(nil))
+        it("all lists every spell, a racial once for all its class variants", function()
+            local names, n = {}, 0
+            for _, s in pairs(ns.Spells) do
+                if s.races then
+                    if not names[s.name] then n = n + 1 end
+                    names[s.name] = true
+                else
+                    n = n + 1
+                end
+            end
+            local list = R.Catalog(nil)
+            assert.are.equal(n, #list)
+            local seen = {}
+            for _, e in ipairs(list) do
+                if ns.Spells[e.id].races then
+                    assert.is_nil(seen[e.name], e.name)
+                    seen[e.name] = true
+                    for _, id in ipairs(e.ids) do assert.are.equal(e.name, ns.Spells[id].name) end
+                    assert.are.equal(e.ids[1], e.id)
+                else
+                    assert.are.same({ e.id }, e.ids)
+                end
+            end
         end)
 
         it("flags spells nobody else can see", function()

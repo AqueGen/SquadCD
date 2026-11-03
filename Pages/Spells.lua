@@ -5,7 +5,7 @@ local T = ns.SettingsTheme
 local Widgets = ns.Widgets
 local TAB_W, TAB_MIN_W, TAB_H, TAB_COLUMNS = 92, 84, 24, 7
 local ROW_H = 22
-local NAME_X, TYPE_X, CD_X, TAG_X = 48, 250, 360, 420
+local NAME_X, CLASS_X, TYPE_X, CD_X, TAG_X = 48, 250, 360, 470, 530
 local QUESTION = "Interface\\Icons\\INV_Misc_QuestionMark"
 local POTION = { id = "potion", name = "Combat potion", type = "Potion", cd = ns.Potions[1].cd }
 
@@ -58,7 +58,8 @@ local function NewRow(list)
     row.check = LibStub("LibVelvet-1.0").Checkbox(row, 20)
     row.check:SetPoint("LEFT")
     row.check:SetScript("OnClick", function(self)
-        if self:GetChecked() then ns.DB.spells[row.id] = nil else ns.DB.spells[row.id] = false end
+        local value = not self:GetChecked() and false or nil
+        for _, id in ipairs(row.ids) do ns.DB.spells[id] = value end
         ns.Display.Changed()
     end)
     row.icon = row:CreateTexture(nil, "ARTWORK")
@@ -66,7 +67,9 @@ local function NewRow(list)
     row.icon:SetPoint("LEFT", row, "LEFT", 24, 0)
     row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     row.name = Text(row, NAME_X)
-    row.name:SetWidth(TYPE_X - NAME_X - 8)
+    row.name:SetWidth(CLASS_X - NAME_X - 8)
+    row.class = Text(row, CLASS_X)
+    row.class:SetWidth(TYPE_X - CLASS_X - 8)
     row.type = Text(row, TYPE_X, T.muted)
     row.cd = Text(row, CD_X, T.muted)
     row.tag = Text(row, TAG_X, T.muted)
@@ -80,13 +83,15 @@ local function NewRow(list)
 end
 
 local function Fill(row, e)
-    row.id = e.id
+    row.id, row.ids = e.id, e.ids or { e.id }
     row.check:SetChecked(ns.DB.spells[e.id] ~= false)
     local texture = e.id == "potion" and C_Item.GetItemIconByID(ns.Potions[1].item) or (e.icon and "Interface\\Icons\\" .. e.icon)
     row.icon:SetTexture((issecretvalue(texture) or texture == nil) and QUESTION or texture)
     row.name:SetText(e.name)
     local class = ns.Spells[e.id] and ns.Spells[e.id].class
     if class then row.name:SetTextColor(T.ClassColor(class)) else row.name:SetTextColor(unpack(T.text)) end
+    row.class:SetText(class and T.ClassName(class) or "Any")
+    if class then row.class:SetTextColor(T.ClassColor(class)) else row.class:SetTextColor(unpack(T.muted)) end
     row.type:SetText(ns.LayoutRules.LABELS[e.type] or e.type)
     row.cd:SetText(Duration(e.cd))
     row.tag:SetText(e.untrackable and "not trackable for others" or "")
@@ -110,6 +115,7 @@ ns.Window.Register("spells", function(page)
     header:SetPoint("RIGHT")
     header:SetHeight(ROW_H)
     Text(header, NAME_X, T.gold):SetText("Spell")
+    Text(header, CLASS_X, T.gold):SetText("Class")
     Text(header, TYPE_X, T.gold):SetText("Type")
     Text(header, CD_X, T.gold):SetText("Cooldown")
     local rows, shown, filled = {}, 0, nil
