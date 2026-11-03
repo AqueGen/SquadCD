@@ -47,6 +47,7 @@ end
 
 -- Everything here lives on the engine's aura button, which exists only while the aura is on: no Lua reads of secret state.
 function Overlay:Dress(b, look)
+    b:SetSize(look.size, look.size)
     pcall(b.SetMouseClickEnabled, b, false)
     pcall(b.SetMouseMotionEnabled, b, false)
     local halo = b:CreateTexture(nil, "BACKGROUND", nil, -1)

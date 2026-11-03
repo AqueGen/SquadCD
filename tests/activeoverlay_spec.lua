@@ -73,6 +73,11 @@ describe("ActiveOverlay", function()
         assert.is_not_nil(groups[1].calls.Play)
     end)
 
+    it("sizes the aura button itself: the engine layout only spaces elements and leaves the button 0x0", function()
+        local b = button()
+        assert.same({ 30, 30 }, b.calls.SetSize)
+    end)
+
     it("re-points watched displays instead of building new ones", function()
         overlay:Watch({ { unit = "party1", ids = { 48707 } } })
         overlay:Watch({ { unit = "party2", ids = { 48707 } } })
