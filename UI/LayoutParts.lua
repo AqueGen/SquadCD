@@ -97,7 +97,7 @@ function Parts.Shape(group, opts)
     end
     group:Segmented({ label = "Icons grow", options = GROW_ROWS, width = GROW_W, get = get("origin"), set = setting("origin"), visible = axisIs("Rows") })
     group:Segmented({ label = "Icons grow", options = GROW_COLUMNS, width = GROW_W, get = get("origin"), set = setting("origin"), visible = axisIs("Columns") })
-    group:Note({ text = "Icons fill the first way; icons that do not fit the line go the second way. The first icon's corner stays put on screen.", visible = opts.visible })
+    group:Note({ text = "Icons fill the first way; icons that do not fit the line go the second way.", visible = opts.visible })
     group:Segmented({
         label = "Order inside a type", options = SORTS, get = get("sort"), set = setting("sort"), visible = opts.visible,
         note = "Fixed: role and class priority",

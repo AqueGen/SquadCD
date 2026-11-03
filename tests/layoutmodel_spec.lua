@@ -432,6 +432,19 @@ describe("LayoutModel.TypeOrder / RoleOrder", function()
         assert.are.equal("Movement", blocks[3].types[#blocks[3].types])
     end)
 
+    it("Normalize keeps the corner the panel grows from, apart from the icon fill corner", function()
+        local L = load()
+        local d = L.Defaults()
+        assert.are.equal("TopLeft", d.panelGrow)
+        d.panelGrow = "BottomLeft"
+        L.Normalize(d)
+        assert.are.equal("BottomLeft", d.panelGrow)
+        assert.are.equal("TopLeft", d.panelShape.origin)
+        d.panelGrow = "Middle"
+        L.Normalize(d)
+        assert.are.equal("TopLeft", d.panelGrow)
+    end)
+
     it("Normalize keeps the active-cooldown look and resets broken values", function()
         local L = load()
         local d = L.Defaults()

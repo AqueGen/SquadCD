@@ -244,7 +244,7 @@ local function new(opts)
         local _, blockW, blockH = Grid.PlaceSections(loose, layout.panelShape, ns.Docking.GAP)
         local mainSize = sizes.panel or { w = blockW, h = blockH }
         if not preview then
-            layout.panel.point = ns.Docking.Reanchor(layout.panel.point, mainSize, layout.panelShape.origin, scr)
+            layout.panel.point = ns.Docking.Reanchor(layout.panel.point, mainSize, layout.panelGrow, scr)
         end
         local start = preview and { x = 0, y = 0 } or ns.Docking.FromPoint(layout.panel.point, mainSize, scr)
         positions = { panel = start }

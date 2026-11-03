@@ -124,6 +124,7 @@ function LayoutModel.Defaults()
         panelLook = panelLook(),
         memberLook = memberLook(),
         panel = { point = { "TOPLEFT", 20, -260 } },
+        panelGrow = "TopLeft",
         timers = true,
         activeTimers = true,
         glow = true,
@@ -636,6 +637,7 @@ function LayoutModel.Normalize(layout)
     layout.activeTimers = bool(layout.activeTimers, d.activeTimers)
     layout.glow = bool(layout.glow, d.glow)
     layout.glowColor = oneOf(layout.glowColor, LayoutModel.GLOW_COLORS, d.glowColor)
+    layout.panelGrow = oneOf(layout.panelGrow, CORNERS, d.panelGrow)
     layout.memberFit = bool(layout.memberFit, d.memberFit)
     layout.panelShape = cleanShape(layout.panelShape, d.panelShape, {})
     layout.panelShape.typeOrder = nil
