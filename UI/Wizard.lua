@@ -83,24 +83,23 @@ builders[3] = function(page)
     })
     size:Note("Exact sizes are on the Panels and Party frames pages.")
     local position = page:Group("Position")
-    position:Note("Move the panels hides the wizard and outlines every panel. Drag a panel where you want it, click Done, and the wizard comes back here.")
-    position:Button({
-        text = "Move the panels", width = 140,
-        onClick = function()
-            moving = true
-            frame:Hide()
-            ns.EditMode.StartPanels()
-            local watch
-            watch = C_Timer.NewTicker(WATCH, function()
-                if ns.EditMode.Panels() then return end
-                watch:Cancel()
-                moving = false
-                frame:Show()
-                showStep(3)
-            end)
-        end,
-    })
+    position:Note("Move the panels, at the bottom of every step, hides the wizard and outlines every panel. Drag a panel where you want it, click Done, and the wizard comes back to the same step.")
     position:Note("Icons at party frames follow your party frames.")
+end
+
+local function movePanels()
+    local step = current
+    moving = true
+    frame:Hide()
+    ns.EditMode.StartPanels()
+    local watch
+    watch = C_Timer.NewTicker(WATCH, function()
+        if ns.EditMode.Panels() then return end
+        watch:Cancel()
+        moving = false
+        frame:Show()
+        showStep(step)
+    end)
 end
 
 local function buildPage(step)
@@ -200,6 +199,9 @@ local function build()
     back = Widgets.Button(frame, "Back", 80)
     back:SetPoint("RIGHT", finish, "LEFT", -6, 0)
     back:SetScript("OnClick", function() showStep(current - 1) end)
+    local move = Widgets.Button(frame, "Move the panels", 130)
+    move:SetPoint("RIGHT", back, "LEFT", -12, 0)
+    move:SetScript("OnClick", movePanels)
     Widgets.Grip(frame, MIN_W, MIN_H)
 
     frame:SetScript("OnHide", function(self)
