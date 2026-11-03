@@ -6,6 +6,10 @@ local Model = ns.LayoutModel
 
 local OVERLAY = { { value = "OnePanel", text = "One panel" }, { value = "Windows", text = "A window per section" } }
 local SHOW_WHEN = { { value = "always", text = "Always" }, { value = "group", text = "Only in a group" } }
+local PANEL_GROWS = {
+    { value = "TopLeft", text = "Down, right" }, { value = "TopRight", text = "Down, left" },
+    { value = "BottomLeft", text = "Up, right" }, { value = "BottomRight", text = "Up, left" },
+}
 local GLOW_COLORS = {
     { value = "Cyan", text = "Cyan" }, { value = "Gold", text = "Gold" },
     { value = "Green", text = "Green" }, { value = "White", text = "White" },
@@ -117,6 +121,8 @@ ns.Window.Register("panels", function(page)
     })
     panels:Button({ text = "Reset arrangement", width = 140, onClick = function() ns.EditMode.ResetArrangement() end })
     panels:Note("Reset puts every window back next to the panel.")
+    panels:Segmented({ label = "Panel grows", options = PANEL_GROWS, width = 320, get = get("panelGrow"), set = set("panelGrow") })
+    panels:Note("The panel keeps its place on screen and gets bigger this way when more members or icons show. The order of the icons inside it does not change.")
     panels:Check({ label = "Timers", get = get("timers"), set = set("timers") })
     panels:Note("Seconds left on icons that are on cooldown. Off: the icon only greys out.")
     panels:Check({ label = "Time left on active cooldowns", get = get("activeTimers"), set = set("activeTimers") })

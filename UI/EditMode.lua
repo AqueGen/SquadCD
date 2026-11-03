@@ -103,7 +103,7 @@ local function save(d)
         local stored = { x = round(r.x), y = round(r.y) }
         if pos.dockTo then stored.dockTo, stored.side, stored.offset = pos.dockTo, pos.side, round(pos.offset) end
         if id == "panel" then
-            ns.DB.layout.panel.point = D.ToPoint({ x = stored.x, y = stored.y, w = r.w, h = r.h }, ns.DB.layout.panelShape.origin, ns.Docking.Screen())
+            ns.DB.layout.panel.point = D.ToPoint({ x = stored.x, y = stored.y, w = r.w, h = r.h }, ns.DB.layout.panelGrow, ns.Docking.Screen())
         else
             local s = sectionById(id)
             if s then s.pos = stored end

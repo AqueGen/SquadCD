@@ -18,13 +18,25 @@ local function perLine(n)
     return math.max(MIN_PER_LINE, math.min(MAX_PER_LINE, math.floor(n or MIN_PER_LINE)))
 end
 
-local function flow(cells, axis, per, origin, gap, acrossLimit)
+local function lineSpans(n, per, breaks)
+    local spans = {}
+    for i = 1, n do
+        if i == 1 or (breaks and breaks[i]) or (not breaks and (i - 1) % per == 0) then
+            spans[#spans + 1] = { i, i }
+        else
+            spans[#spans][2] = i
+        end
+    end
+    return spans
+end
+
+local function flow(cells, axis, per, origin, gap, acrossLimit, breaks)
     per = perLine(per)
     local rows = axis ~= "Columns"
     local placed = {}
     local blockU, blockAlong, v, maxU, maxV = 0, 0, 0, 0, 0
-    for first = 1, #cells, per do
-        local last = math.min(first + per - 1, #cells)
+    for _, span in ipairs(lineSpans(#cells, per, breaks)) do
+        local first, last = span[1], span[2]
         local thick = 0
         for i = first, last do thick = math.max(thick, rows and cells[i].h or cells[i].w) end
         if v > 0 and v + thick > acrossLimit then
@@ -77,9 +89,27 @@ local function beside(side)
     return side == "Left" or side == "Right"
 end
 
-function LayoutGrid.PlaceMemberRow(cells, shape, side, frameHeight, gap)
+function LayoutGrid.PlaceMemberRow(cells, shape, side, frameHeight, gap, breaks)
     local limit = beside(side) and shape.axis ~= "Columns" and frameHeight > 0 and frameHeight or math.huge
-    return flow(cells, shape.axis, shape.perLine, LayoutGrid.MemberOrigin(shape.origin, side), gap, limit)
+    return flow(cells, shape.axis, shape.perLine, LayoutGrid.MemberOrigin(shape.origin, side), gap, limit, breaks)
+end
+
+function LayoutGrid.RunLines(runs, per)
+    per = perLine(per)
+    local breaks, tabs, lines, room = {}, {}, 0, 0
+    for _, n in ipairs(runs) do
+        for i = 1, n do
+            local k = #breaks + 1
+            tabs[k] = i == 1
+            if room == 0 or (i == 1 and n > room and room < per) then
+                lines, room, breaks[k] = lines + 1, per, true
+            else
+                breaks[k] = false
+            end
+            room = room - 1
+        end
+    end
+    return breaks, tabs, lines
 end
 
 local function fits(room, cell, gap)
@@ -90,12 +120,27 @@ local function ceilDiv(a, b)
     return math.ceil(a / b)
 end
 
-function LayoutGrid.FitShape(shape, side, count, cellW, cellH, lead, frameW, frameH, gap)
+local function besidePer(runs, count, lines)
+    local longest, first = 0, nil
+    for _, n in ipairs(runs) do longest = math.max(longest, n) end
+    for per = ceilDiv(count, lines), MAX_PER_LINE do
+        local _, _, used = LayoutGrid.RunLines(runs, per)
+        if used <= lines then
+            if per >= longest then return per end
+            first = first or per
+        end
+    end
+    return first or ceilDiv(count, lines)
+end
+
+function LayoutGrid.FitShape(shape, side, runs, cellW, cellH, lead, frameW, frameH, gap)
+    local count = 0
+    for _, n in ipairs(runs) do count = count + n end
     if count <= 0 or shape.axis == "Columns" then return shape end
     local per
     if beside(side) then
         if frameH <= 0 then return shape end
-        per = ceilDiv(count, fits(frameH, cellH, gap))
+        per = besidePer(runs, count, fits(frameH, cellH, gap))
     else
         if frameW <= 0 then return shape end
         per = ceilDiv(count, ceilDiv(count, fits(frameW - lead, cellW, gap)))
@@ -103,15 +148,6 @@ function LayoutGrid.FitShape(shape, side, count, cellW, cellH, lead, frameW, fra
     local out = {}
     for k, v in pairs(shape) do out[k] = v end
     out.perLine = perLine(per)
-    return out
-end
-
-function LayoutGrid.Tabs(runs, per)
-    per = perLine(per)
-    local out = {}
-    for _, n in ipairs(runs) do
-        for i = 1, n do out[#out + 1] = i == 1 or #out % per == 0 end
-    end
     return out
 end
 
