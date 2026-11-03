@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/AqueGen/SquadCD/compare/v0.4.0...v0.5.0) (2026-11-03)
+
+
+### Features
+
+* lit cooldowns show again, glow and growth settings, kick-first class priority, cleaner Spells page ([#23](https://github.com/AqueGen/SquadCD/issues/23)) ([edef708](https://github.com/AqueGen/SquadCD/commit/edef70843bcb39077834604ebcd35128d72be82c))
+
 ## [0.4.0](https://github.com/AqueGen/SquadCD/compare/v0.3.0...v0.4.0) (2026-11-01)
 
 
