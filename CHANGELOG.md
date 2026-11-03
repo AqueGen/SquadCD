@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/AqueGen/SquadCD/compare/v0.5.0...v0.6.0) (2026-11-03)
+
+
+### Features
+
+* Panel grows setting and one line per spell type at party frames ([#26](https://github.com/AqueGen/SquadCD/issues/26)) ([6696cc4](https://github.com/AqueGen/SquadCD/commit/6696cc4f075eee5d8bde95bbff8c164d2719156e))
+* place the panel and the member stack top-left on a fresh install ([#25](https://github.com/AqueGen/SquadCD/issues/25)) ([efea411](https://github.com/AqueGen/SquadCD/commit/efea4114063d6e02b2c0214651ea9c7847d0a243))
+
 ## [0.5.0](https://github.com/AqueGen/SquadCD/compare/v0.4.0...v0.5.0) (2026-11-03)
 
 
