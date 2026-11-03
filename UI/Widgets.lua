@@ -51,8 +51,8 @@ function Widgets.PaintChoice(button, selected)
     button.underline:SetShown(selected and true or false)
 end
 
-function Widgets.Button(parent, text, width)
-    return UI.Button(parent, text, width)
+function Widgets.Button(parent, text, width, primary)
+    return UI.Button(parent, text, width, primary)
 end
 
 function Widgets.SpellTooltip(owner, id)
@@ -183,7 +183,7 @@ end
 
 function Group:Button(spec)
     local group = self
-    local button = Widgets.Button(self.frame, spec.text or spec.label, spec.width or 180)
+    local button = Widgets.Button(self.frame, spec.text or spec.label, spec.width or 180, spec.primary)
     button:SetScript("OnClick", function()
         spec.onClick()
         group.page:Refresh()

@@ -112,7 +112,7 @@ ns.Window.Register("panels", function(page)
     panels:Segmented({ label = "Sections show in", options = OVERLAY, width = 260, get = get("overlay"), set = set("overlay") })
     panels:Note("One panel: every section stacks in one panel, a section can still get its own window. A window per section: each section is its own panel.")
     panels:Button({
-        text = "Move the panels", width = 140,
+        text = "Move the panels", width = 140, primary = true,
         onClick = function() ns.EditMode.TogglePanels() end,
     })
     panels:Button({ text = "Reset arrangement", width = 140, onClick = function() ns.EditMode.ResetArrangement() end })
