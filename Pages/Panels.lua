@@ -29,6 +29,13 @@ local function get(key)
     return function() return layout()[key] end
 end
 
+local function hasLine(types, bars)
+    for _, t in ipairs(types) do
+        if Model.Bars(layout(), t) == bars then return true end
+    end
+    return false
+end
+
 local function sectionEditor(page, i)
     local function section() return layout().sections[i] end
     local function own()
@@ -99,6 +106,8 @@ local function sectionEditor(page, i)
         set = function(key, value) edit(function(_, s) if s.look then s.look[key] = value end end) end,
         visible = function() return section() ~= nil and section().look ~= nil end,
         backdrop = own,
+        icons = function() return hasLine(section().types, false) end,
+        bars = function() return hasLine(section().types, true) end,
     })
 end
 
@@ -139,6 +148,7 @@ ns.Window.Register("panels", function(page)
     Parts.Look(look, {
         get = function() return layout().panelLook end,
         set = function(key, value) Parts.Edit(function(l) l.panelLook[key] = value end) end,
+        bars = function() return Model.PlaceOf(layout(), "Kick") == "panel" and Model.Bars(layout(), "Kick") end,
     })
     Parts.Shape(look, {
         get = function() return layout().panelShape end,

@@ -6,39 +6,46 @@ KickBars.__index = KickBars
 ns.KickBars = KickBars
 
 local T = ns.Theme
-local ICON, GAP, TRACK_W, TRACK_H, LETTERS = 20, 2, 130, 16, 10
+local GAP, LETTERS, FONT = 2, 10, 10
 local TRACK = { 0.114, 0.125, 0.145, 1 }
 local RESULT = { hit = { 0.2, 0.8, 0.3 }, late = { 0.95, 0.8, 0.2 }, miss = { 0.45, 0.45, 0.45 }, cast = { 0.9, 0.9, 0.9 } }
 local RESULT_TEXT = { hit = "kicked", late = "late", miss = "no hit", cast = "..." }
 local DOWN = { 0.9, 0.15, 0.15, 1 }
-KickBars.W, KickBars.H = ICON + GAP + TRACK_W, ICON
+
+function KickBars.Size(look)
+    local icon = look.barHeight + 4
+    return icon + GAP + look.barWidth, icon
+end
 
 function KickBars.New(parent)
     local f = CreateFrame("Frame", nil, parent)
-    f:SetSize(KickBars.W, KickBars.H)
     local icon = ns.Icon.New(f)
     icon.frame:SetPoint("LEFT", f, "LEFT", 0, 0)
     local track = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    track:SetSize(TRACK_W, TRACK_H)
     track:SetPoint("LEFT", icon.frame, "RIGHT", GAP, 0)
     track:SetBackdrop(T.FLAT)
     track:SetBackdropColor(unpack(TRACK))
     track:SetBackdropBorderColor(0, 0, 0, 0)
     local fill = track:CreateTexture(nil, "ARTWORK")
     fill:SetPoint("TOPLEFT", 1, -1)
-    fill:SetHeight(TRACK_H - 2)
     local name = track:CreateFontString(nil, "OVERLAY")
-    name:SetFont(T.FONT, 10, "OUTLINE")
     name:SetPoint("LEFT", track, "LEFT", 4, 0)
     local value = track:CreateFontString(nil, "OVERLAY")
-    value:SetFont(T.FONT, 10, "OUTLINE")
     value:SetPoint("RIGHT", track, "RIGHT", -4, 0)
     return setmetatable({ frame = f, icon = icon, track = track, fill = fill, name = name, value = value, buf = {} }, KickBars)
 end
 
-function KickBars:SetEntry(spell, member)
+function KickBars:SetEntry(spell, member, look)
+    local w, h = KickBars.Size(look)
+    local font = math.floor(FONT * look.textSize / 100 + 0.5)
+    self.trackW = look.barWidth
+    self.frame:SetSize(w, h)
+    self.track:SetSize(look.barWidth, look.barHeight)
+    self.fill:SetHeight(look.barHeight - 2)
+    self.name:SetFont(T.FONT, font, "OUTLINE")
+    self.value:SetFont(T.FONT, font, "OUTLINE")
     self.spell = spell
-    self.icon:SetSpell(spell, member, ICON)
+    self.icon:SetSpell(spell, member, h)
     self.who = ns.LayoutRules.ShortName(member.name or member.class or "?", LETTERS)
     self.name:SetText(self.who)
     self.name:SetTextColor(1, 1, 1)
@@ -70,7 +77,7 @@ function KickBars:Update(state, now, timers)
     if share ~= self.share then
         self.share = share
         self.fill:SetShown(share > 0)
-        self.fill:SetWidth(math.max(1, share * (TRACK_W - 2)))
+        self.fill:SetWidth(math.max(1, share * (self.trackW - 2)))
     end
     local text = self.result and RESULT_TEXT[self.result]
         or cooling and (timers ~= false and ns.LayoutRules.FormatRemaining(state.remaining) or "") or unknown and "?"

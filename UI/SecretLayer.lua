@@ -73,19 +73,16 @@ local function linePitch(fontSize)
     return heights[fontSize]
 end
 
-local function fontSize(size)
-    return math.max(8, math.floor(size * 0.42))
-end
-
-function Layer:SetLook(texture, size)
+function Layer:SetLook(texture, size, scale)
     self.size = size
+    local font = ns.Icon.TimerFont(size, scale)
     for _, slot in ipairs(self.slots) do
         slot.gate:SetStatusBarTexture(texture)
         slot.gate:GetStatusBarTexture():SetDesaturated(true)
-        slot.coolText:SetFont(T.FONT, fontSize(size), "OUTLINE")
+        slot.coolText:SetFont(T.FONT, font, "OUTLINE")
         slot.coolText:SetWidth(size)
     end
-    self.line = linePitch(fontSize(size))
+    self.line = linePitch(font)
     self.window:SetSize(size, self.line)
     self.overlay:SetLook(texture, size)
 end
