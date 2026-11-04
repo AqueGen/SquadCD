@@ -51,7 +51,7 @@ function LayoutModel.NewGroup(types, side)
 end
 
 local function panelLook()
-    return { iconSize = 26, labels = "Icon", background = "None", opacity = 90, nameLetters = 5 }
+    return { iconSize = 26, labels = "Icon", background = "None", opacity = 90, nameLetters = 5, textSize = 100, barWidth = 130, barHeight = 16 }
 end
 
 local function memberLook()
@@ -580,13 +580,20 @@ local function cleanLook(look, fallback, minSize, member)
     if type(look) ~= "table" then return nil end
     local labels = oneOf(look.labels, LABELS, fallback.labels)
     if member and labels == "Full" then labels = "Short" end
-    return {
+    local out = {
         iconSize = num(look.iconSize, minSize, 40, fallback.iconSize),
         labels = labels,
         background = oneOf(look.background, BACKGROUNDS, fallback.background),
         opacity = num(look.opacity, 0, 100, fallback.opacity),
         nameLetters = num(look.nameLetters, 3, 6, fallback.nameLetters),
     }
+    if not member then
+        local d = panelLook()
+        out.textSize = num(look.textSize, 70, 160, fallback.textSize or d.textSize)
+        out.barWidth = num(look.barWidth, 80, 260, fallback.barWidth or d.barWidth)
+        out.barHeight = num(look.barHeight, 12, 32, fallback.barHeight or d.barHeight)
+    end
+    return out
 end
 
 local function cleanShape(s, fallback, known)

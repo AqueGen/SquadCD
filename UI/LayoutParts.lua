@@ -67,14 +67,23 @@ function Parts.Look(group, opts)
         return function() return opts.get()[key] end
     end
     local backdrop = both(opts.visible, opts.backdrop)
-    group:Slider({ label = "Icon size", min = opts.member and 12 or 20, max = 40, get = get("iconSize"), set = setting("iconSize"), visible = opts.visible })
+    local icons, bars = both(opts.visible, opts.icons), both(opts.visible, opts.bars)
+    group:Slider({ label = "Icon size", min = opts.member and 12 or 20, max = 40, get = get("iconSize"), set = setting("iconSize"), visible = icons })
+    if not opts.member then
+        group:Slider({ label = "Kick bar width", min = 80, max = 260, step = 10, get = get("barWidth"), set = setting("barWidth"), visible = bars })
+        group:Slider({ label = "Kick bar height", min = 12, max = 32, get = get("barHeight"), set = setting("barHeight"), visible = bars })
+        group:Slider({
+            label = "Text size", min = 70, max = 160, step = 10, format = "%d%%", get = get("textSize"), set = setting("textSize"), visible = opts.visible,
+            tooltip = "Names and timers on icons, names and status on kick bars.",
+        })
+    end
     local labels = opts.member and { LABELS[1], LABELS[2], LABELS[3], LABELS[4] } or LABELS
     group:Segmented({ label = "Type labels", options = labels, width = opts.member and WIDE or LABELS_W, get = get("labels"), set = setting("labels"), visible = opts.visible })
     group:Segmented({ label = "Background", options = BACKGROUNDS, width = WIDE, get = get("background"), set = setting("background"), visible = backdrop })
     if opts.member then return end
     group:Slider({ label = "Opacity", min = 0, max = 100, step = 5, format = "%d%%", get = get("opacity"), set = setting("opacity"), visible = backdrop })
     group:Slider({
-        label = "Name letters", min = 3, max = 6, get = get("nameLetters"), set = setting("nameLetters"), visible = opts.visible,
+        label = "Name letters", min = 3, max = 6, get = get("nameLetters"), set = setting("nameLetters"), visible = icons,
         tooltip = "Letters of each name under the icons.",
     })
 end

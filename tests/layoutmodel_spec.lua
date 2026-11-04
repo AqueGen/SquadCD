@@ -81,7 +81,7 @@ describe("LayoutModel.Defaults", function()
         assert.are.equal(0, g.offsetY)
         assert.is_true(g.shown)
         assert.are.same({ axis = "Rows", perLine = 6, origin = "TopLeft", sort = "Fixed" }, d.panelShape)
-        assert.are.same({ iconSize = 26, labels = "Icon", background = "None", opacity = 90, nameLetters = 5 }, d.panelLook)
+        assert.are.same({ iconSize = 26, labels = "Icon", background = "None", opacity = 90, nameLetters = 5, textSize = 100, barWidth = 130, barHeight = 16 }, d.panelLook)
         assert.are.same({ iconSize = 26, labels = "Icon", background = "None", opacity = 100, nameLetters = 5 }, d.memberLook)
         assert.are.same({ "Tank", "Melee", "Ranged", "Healer" }, d.rolePriority)
         assert.are.same({ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 }, d.classOrder.Tank)
@@ -854,7 +854,7 @@ describe("LayoutModel fix round 1", function()
     it("Normalize clamps out-of-range values", function()
         local L = load()
         local d = L.Defaults()
-        d.panelLook = { iconSize = 5, labels = "Bogus", background = "Pink", opacity = 500, nameLetters = 1 }
+        d.panelLook = { iconSize = 5, labels = "Bogus", background = "Pink", opacity = 500, nameLetters = 1, textSize = 500, barWidth = 10, barHeight = 99 }
         d.memberLook = { iconSize = 99, labels = "Full", background = "None", opacity = -4, nameLetters = 9 }
         d.panelShape.perLine = 50
         d.groups[1].shape.perLine = 0
@@ -863,7 +863,7 @@ describe("LayoutModel fix round 1", function()
         d.sections[1].look = { iconSize = 3 }
         d.overlay, d.kickStyle, d.groups[1].side = "x", "y", "z"
         L.Normalize(d)
-        assert.are.same({ iconSize = 20, labels = "Icon", background = "None", opacity = 100, nameLetters = 3 }, d.panelLook)
+        assert.are.same({ iconSize = 20, labels = "Icon", background = "None", opacity = 100, nameLetters = 3, textSize = 160, barWidth = 80, barHeight = 32 }, d.panelLook)
         assert.are.same({ iconSize = 40, labels = "Short", background = "None", opacity = 0, nameLetters = 6 }, d.memberLook)
         assert.are.equal(12, d.panelShape.perLine)
         assert.are.equal(1, d.groups[1].shape.perLine)
@@ -875,6 +875,27 @@ describe("LayoutModel fix round 1", function()
         assert.are.equal("OnePanel", d.overlay)
         assert.are.equal("Bars", d.kickStyle)
         assert.are.equal("Left", d.groups[1].side)
+    end)
+
+    it("Normalize gives an old section look the panel's text and kick bar sizes", function()
+        local L = load()
+        local d = L.Defaults()
+        d.panelLook.textSize, d.panelLook.barWidth, d.panelLook.barHeight = 120, 200, 24
+        d.sections[1].look = { iconSize = 30 }
+        d.groups[1].look = { iconSize = 30 }
+        L.Normalize(d)
+        local look = d.sections[1].look
+        assert.are.same({ 120, 200, 24 }, { look.textSize, look.barWidth, look.barHeight })
+        assert.is_nil(d.groups[1].look.textSize)
+        assert.is_nil(d.memberLook.barWidth)
+    end)
+
+    it("Normalize fills text and kick bar sizes into a saved panel look that has none", function()
+        local L = load()
+        local d = L.Defaults()
+        d.panelLook = { iconSize = 30, labels = "Icon", background = "None", opacity = 90, nameLetters = 5 }
+        L.Normalize(d)
+        assert.are.same({ 100, 130, 16 }, { d.panelLook.textSize, d.panelLook.barWidth, d.panelLook.barHeight })
     end)
 
     it("Normalize keeps a valid showWhen and turns anything else into always", function()

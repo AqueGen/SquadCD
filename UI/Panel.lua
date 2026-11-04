@@ -28,18 +28,19 @@ end
 local function apply(w, e)
     w.entry = e
     if w.bars then
-        w:SetEntry(e.spell, e.member)
+        w:SetEntry(e.spell, e.member, w.sizes)
         return 0
     end
-    w:SetSpell(e.spell, e.member, w.size)
-    return w:SetLabel(ns.LayoutRules.ShortName(e.member.name or e.member.class or "?", w.letters), T.ClassColor(e.member.class))
+    local sizes = w.sizes
+    w:SetSpell(e.spell, e.member, sizes.iconSize, sizes.textSize / 100)
+    return w:SetLabel(ns.LayoutRules.ShortName(e.member.name or e.member.class or "?", sizes.nameLetters), T.ClassColor(e.member.class))
 end
 
-local function widgets(c, l, list, bars, size, letters, collapse)
+local function widgets(c, l, list, bars, look, collapse)
     local pool = bars and l.bars or l.icons
     local other = bars and l.icons or l.bars
     for _, w in ipairs(other) do w.frame:Hide() end
-    local widest = size
+    local widest = look.iconSize
     wipe(l.states)
     wipe(l.placed)
     local groups = collapse and Grid.ByMember(list) or {}
@@ -51,7 +52,7 @@ local function widgets(c, l, list, bars, size, letters, collapse)
         local w = pool[k] or (bars and ns.KickBars.New(c.frame) or ns.Icon.New(c.frame))
         pool[k] = w
         w.buf.widget = w
-        w.alts, w.bars, w.size, w.letters = alts, bars, size, letters
+        w.alts, w.bars, w.sizes = alts, bars, look
         for _, a in ipairs(alts) do a.buf = a.buf or {} end
         w.buf.role = Grid.RoleOf(e.member.spec)
         w.buf.classId = Grid.ClassId(e.member.class)
@@ -63,8 +64,8 @@ local function widgets(c, l, list, bars, size, letters, collapse)
     end
     for k = #groups + 1, #pool do pool[k].frame:Hide() end
     l.widgets, l.count = pool, #groups
-    if bars then return ns.KickBars.W, ns.KickBars.H end
-    return widest, size + 1 + NAME_H
+    if bars then return ns.KickBars.Size(look) end
+    return widest, look.iconSize + 1 + math.ceil(NAME_H * look.textSize / 100)
 end
 
 local function stackShape(layout, key, lines)
@@ -82,13 +83,13 @@ local function fill(c, key, list, layout)
         local l = line(c, i)
         local look = Model.LookOf(layout, item.section)
         local bars = Model.Bars(layout, item.type)
-        local cellW, cellH = widgets(c, l, item.entries, bars, look.iconSize, look.nameLetters, item.type == "Kick")
+        local cellW, cellH = widgets(c, l, item.entries, bars, look, item.type == "Kick")
         local cells = {}
         for k = 1, l.count do cells[k] = { w = cellW, h = cellH } end
         l.type, l.shape, l.labels, l.section = item.type, Model.LineShape(layout, item.section, item.type), look.labels, item.section
         local rects, w, h = Grid.Place(cells, l.shape, CELL_GAP)
         l.rects = rects
-        l.head = bars and ns.KickBars.H or look.iconSize
+        l.head = bars and select(2, ns.KickBars.Size(look)) or look.iconSize
         if look.labels ~= "None" then
             labelW = math.max(labelW, l.tab:Set(item.type, look.labels))
         end

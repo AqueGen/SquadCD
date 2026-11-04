@@ -27,7 +27,7 @@ local icons
 
 local function fakeIcon()
     local w = { frame = frameStub(), buf = {} }
-    function w:SetSpell(spell, member) self.spell, self.member = spell, member end
+    function w:SetSpell(spell, member) self.spell, self.member, self.look = spell, member, nil end
     function w:SetLabel() return 20 end
     function w:Update() end
     function w:SetNext(on) self.next = on end
@@ -165,6 +165,32 @@ describe("Panel instances", function()
         local right = at[4] == panel.width + ns.Docking.GAP and at[5] == 0
         local below = at[4] == 0 and at[5] == -(panel.height + ns.Docking.GAP)
         assert.is_true(right or below)
+    end)
+end)
+
+describe("Section look sizes", function()
+    local function size(look, type)
+        local ns = load({ "UI/KickBars.lua", "UI/Panel.lua" })
+        local layout = ns.DB.layout
+        local section = layout.sections[1]
+        section.look = ns.Copy(layout.panelLook)
+        section.look.labels = "None"
+        for k, v in pairs(look) do section.look[k] = v end
+        local spell = { id = 999001, type = type }
+        local member = { guid = "A", class = "PRIEST", spec = 256, name = "A" }
+        return ns.Panel.New({ parent = frameStub() }).Build({ { section = section, type = type, entries = { { spell = spell, member = member } } } })
+    end
+
+    it("draws kick bars at the section's bar width and height", function()
+        local w1, h1 = size({ barWidth = 120, barHeight = 16 }, "Kick")
+        local w2, h2 = size({ barWidth = 200, barHeight = 24 }, "Kick")
+        assert.are.same({ 88, 8 }, { w2 - w1, h2 - h1 })
+    end)
+
+    it("makes room for bigger names under icons", function()
+        local _, h1 = size({ textSize = 100 }, "External")
+        local _, h2 = size({ textSize = 160 }, "External")
+        assert.are.equal(7, h2 - h1)
     end)
 end)
 

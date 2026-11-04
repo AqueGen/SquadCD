@@ -70,20 +70,28 @@ function Icon.New(parent)
     return setmetatable({ frame = f, tex = tex, cd = cd, time = time, mark = mark, count = count, dot = dot, label = label, buf = {} }, Icon)
 end
 
-function Icon:SetSpell(spell, member, size)
+function Icon.TimerFont(size, scale)
+    return math.max(8, math.floor(size * 0.42 * (scale or 1)))
+end
+
+function Icon.NameFont(scale)
+    return math.floor(9 * (scale or 1) + 0.5)
+end
+
+function Icon:SetSpell(spell, member, size, scale)
     self.spell, self.member = spell, member
     self.duration, self.maxCharges = resolve(spell, member)
     self.start, self.text, self.charges, self.look, self.maybe, self.unread, self.next = nil, nil, nil, nil, nil, nil, nil
     self.frame:SetSize(size, size)
     self.tex:SetTexture(texture(spell))
-    self.time:SetFont(T.FONT, math.max(8, math.floor(size * 0.42)), "OUTLINE")
+    self.time:SetFont(T.FONT, Icon.TimerFont(size, scale), "OUTLINE")
     self.mark:SetFont(T.FONT, math.max(8, math.floor(size * 0.55)), "OUTLINE")
     self.count:SetFont(T.FONT, math.max(7, math.floor(size * 0.32)), "OUTLINE")
-    self.label:SetFont(T.FONT, 9, "OUTLINE")
+    self.label:SetFont(T.FONT, Icon.NameFont(scale), "OUTLINE")
     self.dot:SetSize(math.max(3, math.floor(size / 6)), math.max(3, math.floor(size / 6)))
     self.label:SetText("")
     self.cd:Clear()
-    self:BindSecret(spell, member, size)
+    self:BindSecret(spell, member, size, scale)
     self:BindActive(spell, member, size)
 end
 
@@ -97,13 +105,13 @@ function Icon:BindActive(spell, member, size)
     end, geterrorhandler())
 end
 
-function Icon:BindSecret(spell, member, size)
+function Icon:BindSecret(spell, member, size, scale)
     self.secret = false
     if not (ns.SecretTracks and ns.SecretLayer) then return end
     if not self.layer and not ns.SecretTracks.Track(member.guid, spell.id) then return end
     local ok = xpcall(function()
         self.layer = self.layer or ns.SecretLayer.New(self)
-        self.layer:SetLook(texture(spell), size)
+        self.layer:SetLook(texture(spell), size, scale)
         self.secret = ns.SecretTracks.Bind(self.layer, member.guid, spell.id)
         self.layer:Show(self.secret)
     end, geterrorhandler())
